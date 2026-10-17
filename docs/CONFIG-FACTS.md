@@ -29,11 +29,11 @@
 | ZPE_MILESTONES（ZPE 里程碑） | **6** |  |
 | ETERNITY_MILESTONES（永恒里程碑） | **8** | em1~em8 |
 | ETERNITY_MILESTONES 占位中 | **2** | em7, em8 |
-| DREAM_UPGRADES（梦想升级） | **5** | 其中可重复 1 条 |
+| DREAM_UPGRADES（梦想升级） | **11** | 其中可重复 1 条 |
 | REPEATABLE（可重复升级） | **3** |  |
 | ETERNITY_MILESTONES 里 pending 的 | **em7, em8** | ⭐ 2026：`em7` 因 IC 删除而退回 pending（见其注释） |
 | ZONES（乘区） | **13** |  |
-| ZONE_OF（id 乘区登记） | **58** | 由 dom-smoke 的「乘区登记」断言守 |
+| ZONE_OF（id 乘区登记） | **64** | 由 dom-smoke 的「乘区登记」断言守 |
 | NEKO.tiers（好感度档位） | **3** | >25 ⇒ ×1.002｜>50 ⇒ ×1.005｜>75 ⇒ ×1.015 |
 | NEKO 叠乘总指数 | **1.0221151** | em2 达成后 ×2 加成部分 |
 | NEKO_BONUS_DOUBLE（em2 倍率） | **2** |  |

@@ -2326,6 +2326,57 @@ export const DREAM_UPGRADES = [
     hoursPerLevel: 1,        // 每级 +1 小时
     desc: "离线时间上限 +1 小时/级（上限 16 小时）",
     effect: { kind: "offlineCap" } },
+  // ★★★ 2026（用户裁定：「梦想升级全部迁到梦想页」「不是自动解锁而是手动解锁」）——
+  //   **永恒自动化组**（`group: "emauto"`）：买下只是解锁能力，还要点右侧开关才生效 ✓
+  //   代价一律「梦想点」；`effect.kind` 决定 UI 与实现（autoBuy / autoInfinities / keep*）✓
+  {
+    id: "autoInfinities",
+    group: "emauto",
+    name: "无限自动化",
+    desc: "自动进行大坍缩（模式与阈值见「自动无限」小页，类 AD 的自动无限）",
+    cost: 1,
+    effect: { kind: "autoInfinities" },
+  },
+  {
+    id: "autoIpDouble",
+    group: "emauto",
+    name: "倍增自动化",
+    desc: "自动买满「IP 点倍增」（买到买不动为止）",
+    cost: 2,
+    effect: { kind: "autoBuy", target: "ipDouble" },
+  },
+  {
+    id: "autoZpeEngine",
+    group: "emauto",
+    name: "引擎自动化",
+    desc: "自动买满 ZPE 引擎等级（买到买不动为止）",
+    cost: 2,
+    effect: { kind: "autoBuy", target: "zpeEngine" },
+  },
+  {
+    id: "keepDeEternity",
+    group: "emauto",
+    name: "暗能量永存",
+    desc: "永恒时**不再清空暗能量**（被动，无需开关）",
+    cost: 3,
+    effect: { kind: "keep", target: "darkEnergy" },
+  },
+  {
+    id: "engineAtStart",
+    group: "emauto",
+    name: "开局引擎",
+    desc: "每次大坍缩后保留 1 级 ZPE 引擎（不必从 0 开始攒）",
+    cost: 3,
+    effect: { kind: "keep", target: "zpeEngineStart" },
+  },
+  {
+    id: "keepVoidEternity",
+    group: "emauto",
+    name: "虚空永存",
+    desc: "永恒时**不再清空虚空升级**（被动，无需开关）",
+    cost: 5,
+    effect: { kind: "keep", target: "voidUpgrades" },
+  },
 ];
 
 export const DREAM_BY_ID = Object.fromEntries(DREAM_UPGRADES.map((d) => [d.id, d]));
@@ -2685,6 +2736,13 @@ export const ZONE_OF = {
   //   （报告：`缺乘区登记：offlineCap` + `动态不对：dream-btn-offlineCap(未登记)`）
   //   它消耗梦想点、由梦想系统提供 ⇒ 与上面四条同属 dream 乘区（虹色）✓
   offlineCap: "dream",
+  // ★ 2026：emauto 组（全部并入「梦想」乘区色）✓
+  autoInfinities: "dream",
+  autoIpDouble: "dream",
+  autoZpeEngine: "dream",
+  keepDeEternity: "dream",
+  engineAtStart: "dream",
+  keepVoidEternity: "dream",
   // ── 静态按钮用的 id（2025 补登记）──
   //
   // ⚠️ 判据仍然是**只看"加成作用的位置"**（与上面 50 个 id 同一套规矩），不是看它属于哪个页面。

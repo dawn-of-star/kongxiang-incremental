@@ -208,6 +208,8 @@ export function newState() {
     dreamPoints: D(0),
     // ★★★ 2026：七巧板（几何=kernel `src/tangram.js`；游戏侧=`src/tangram-game.js`）✓
     // ★★★ 2026：自动无限（默认**开**；买下即生效）✓
+    /** ★ 2026：自动化总开关（**只存 true** ⇒ 缺省 = 关 = 手动开）✓ */
+    autoToggles: {},
     autoCrunch: { isActive: false, mode: "xHighest", amount: "1", time: 60, xHighest: "2", dynamic: false, lastAtMs: 0 },
     /** 本永恒**单次**收益最高纪录（× 最高模式的判据）✓ */
     maxIpThisEternity: 0,
