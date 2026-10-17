@@ -777,14 +777,18 @@ console.log();
   //      且**好感度 ≤25 时仍恒 1**（"没练就完全没加成"不许被破坏）✓
   check("★ em2：neko 全局加成翻倍（只翻加成部分，≤25 仍恒 1）", () => {
     const base = NEKO.tiers.reduce((a, t) => a * t.pow, 1);           // 三档叠乘
-    const wantEm2 = 1 + NEKO_BONUS_DOUBLE * (base - 1);
+    // ★ 2026（用户裁定）：em7 把 neko 加成**再翻倍** ⇒ [80,7] 那一档是 ×4 的加成部分 ✓
+    const wantEm2 = 1 + NEKO_BONUS_DOUBLE * (base - 1);        // 只有 em2
+    const wantEm2Em7 = 1 + NEKO_BONUS_DOUBLE * NEKO_BONUS_DOUBLE * (base - 1);   // em2 + em7
     const rows = [];
     for (const [aff, ec] of [[-50, 0], [25, 2], [26, 2], [80, 0], [80, 2], [80, 7]]) {
       const s = { ...newState(), nekoAffinity: aff, eternityCount: ec };
       rows.push({ aff, ec, e: nekoGlobalExponent(s) });
     }
     const noBonus = rows.filter((r) => r.aff <= 25).every((r) => r.e === 1);
-    const em2On = rows.filter((r) => r.aff === 80 && r.ec >= 2).every((r) => Math.abs(r.e - wantEm2) < 1e-12);
+    const em2On = rows.filter((r) => r.aff === 80 && r.ec >= 2 && r.ec < 7).every((r) => Math.abs(r.e - wantEm2
+    // ★ 2026：em7 达成（≥7 次）时，加成部分再翻一倍 ✓
+    && rows.filter((r) => r.aff === 80 && r.ec >= 7).every((r) => Math.abs(r.e - wantEm2Em7) < 1e-9)) < 1e-12);
     const em2Off = rows.filter((r) => r.aff === 80 && r.ec < 2).every((r) => Math.abs(r.e - base) < 1e-12);
     return {
       ok: noBonus && em2On && em2Off,

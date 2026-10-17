@@ -1277,19 +1277,11 @@ export const ETERNITY_MILESTONES = [
     id: "em7",
     need: 7,
     /**
-     * ★★★ 2025/2026：**退回 pending 状态**（IC 被整块删除）。
-     *
-     * · 2025：实装成 `effect: { kind: "autoInfinityChallenge" }`（按最快无限速度自动过 IC 关）
-     * · **2026：用户裁定删除「无限挑战」整个系统** ⇒ em7 的唯一内容没了 ⇒ 它**没有任何效果**
-     *
-     * ⚠️ 为什么保留而不删（用户裁定 **B 方案**）：删掉会动里程碑编号与存档达成状态，
-     *   而**永恒里程碑属于用户自己开发的范围** ⇒ 先标 pending + 写明原因，等他给新效果 ✓
-     * ⚠️ 将来重做时：原来依赖的 `state.fastestInfinitySec` **已随 IC 删除** ⇒ 需另找时间源；
-     *   且**不要复活** `icAutoAdvance` / `INFINITY_CHALLENGES`（整块删除）✗
+     * ★★★ 2026（用户裁定）：「修改为 **N.E.K.O 提供的加成再翻倍**」✓
+     *   —— 与 em2 同 kind；实发走 `em7BonusMult()`（唯一入口）✓
      */
-    pending: true,
-    pendingWhy: "IC 已删除；这一条需要新效果（待用户定）",
-    desc: "（待定：原为「自动完成无限挑战」，IC 已删除）" },
+    effect: { kind: "nekoBonusDouble" },
+    desc: "N.E.K.O 好感度提供的全局加成**再翻倍**" },
   {
     id: "em8",
     need: 8,
@@ -2844,7 +2836,7 @@ export function nekoGlobalExponent(state) {
   let e = 1;
   for (const t of NEKO.tiers) if (a > t.need) e *= t.pow;
   // ★ em2：翻倍**加成部分**（`e − 1`）⇒ 未达成时倍率为 1、达成为 2 ✓
-  const mult = em2BonusMult(state);
+  const mult = em2BonusMult(state) * em7BonusMult(state);   // ★ 2026：em7 再翻倍 ✓
   return 1 + mult * (e - 1);
 }
 
@@ -2857,6 +2849,14 @@ export function nekoGlobalExponent(state) {
  */
 export function em2BonusMult(state) {
   return hasEternityMilestone(state, "em2") ? NEKO_BONUS_DOUBLE : 1;
+}
+
+/**
+ * ★★★ 2026（用户：「永恒里程碑 7，修改为 neko 提供的加成再翻倍」）——
+ *   em7 与 em2 同一套写法：**只判里程碑是否达成**，UI 与公式都读这里 ⇒ 显示 == 实发 ✓
+ */
+export function em7BonusMult(state) {
+  return hasEternityMilestone(state, "em7") ? NEKO_BONUS_DOUBLE : 1;
 }
 
 /**
