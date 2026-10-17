@@ -1285,9 +1285,9 @@ export const ETERNITY_MILESTONES = [
   {
     id: "em8",
     need: 8,
-    desc: "解锁永恒自动化页面",
-    pending: true,
-    pendingWhy: "永恒自动化页面尚未实现（设计稿第 44 行）" },
+    // 2026 user ruling: em8 unlocks the TANGRAM system (no longer pending).
+    effect: { kind: "unlockTangram" },
+    desc: "解锁七巧板系统（摆块盖住三条轴换加成 + 拼装挑战）" },
 ];
 
 /**
