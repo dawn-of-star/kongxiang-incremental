@@ -578,36 +578,11 @@ let zoneGuard = "未跑";
   if (btnZoneGuard.startsWith("❌")) process.exitCode = 1;
 
   // ══════════════════════════════════════════════════════════
-  // ★ 2025 新增：**无限挑战（IC）必须挂在「无限的坍缩里程碑」子页里**
-  // ══════════════════════════════════════════════════════════
-  // 用户指定：「无限挑战也挪到无限的坍缩里程碑这边」。
-  //   稿子原文：「无限挑战…**作为无限页面的子页面存在**」。
-  //   原来它挂在 `zpe-engine-content` 的父节点 —— 也就是**虚空科技的 ZPE 引擎面板** ✗
-  //   现在锚点是 `panel-infdeep` 里的 `#ic-host`。
-  //   本断言查两件事：① 宿主真的被填充；② 它**不在** ZPE 面板里（防回归）。
-  {
-    const host = byId.get("ic-host");
-    const badge = byId.get("ic-badge");
-    const list = byId.get("ic-list");
-    const filled = !!badge && !!list && (host?._children?.length ?? 0) > 0;
-    // 位置检查：用 **HTML 的索引区间**（shim 不维护父链 ⇒ 不能用 parentElement ✗；
-    //   也不能用"正则全文找"——`panel-zpe` 在 `ic-host` 之前，那样必然误命中 ✗ 我第一版就是这么错的）
-    //   规则：`#ic-host` 必须落在 `id="panel-infdeep"` 到**下一个** `class="tab-panel"` 之间。
-    const hostIdx = html.indexOf('id="ic-host"');
-    const start = html.indexOf('id="panel-infdeep"');
-    const nextPanel = html.indexOf('class="tab-panel"', start + 1);
-    const inInfdeep = start >= 0 && hostIdx > start && (nextPanel < 0 || hostIdx < nextPanel);
-    // 反向：它绝不能落在 zpe 面板区间里
-    const zStart = html.indexOf('id="panel-zpe"');
-    const zNext = html.indexOf('class="tab-panel"', zStart + 1);
-    const inZpe = zStart >= 0 && hostIdx > zStart && (zNext < 0 || hostIdx < zNext);
-    const icPlaceGuard = (filled && inInfdeep && !inZpe)
-      ? `✅ #ic-host 在 panel-infdeep 内且已填充（子节点 ${host?._children?.length ?? 0} 个）`
-      : `❌ 填充=${filled}（badge=${!!badge} list=${!!list}）｜在 infdeep=${inInfdeep}｜误在 ZPE 面板=${inZpe}`;
-    console.log(`  无限挑战挂载    ${icPlaceGuard}`);
-    console.log();
-    if (icPlaceGuard.startsWith("❌")) process.exitCode = 1;
-  }
+  // ⚠️ 2026 **已删除**：原来这里断言「无限挑战（IC）必须挂在 `panel-infdeep` 里的 `#ic-host`」
+  //   **IC 整个系统被用户删除** ⇒ `#ic-host` / `ic-badge` / `ic-list` 全都不存在了
+  //   ⇒ 这条断言连同它的"位置检查"一起移除 ✓
+  //   （它当年抓的是"IC 被错误地挂在 ZPE 面板里"这一类回归 —— 现在没有 IC 可挂）
+  // ⚠️ 如果将来重建类似"子页面宿主"的东西，**不要照抄这段历史断言** ✗
 
   // ══════════════════════════════════════════════════════════
   // ★ 2025 新增：**原左列 5 张卡必须并进标签页的「主控台」面板**
@@ -1415,11 +1390,13 @@ let zoneGuard = "未跑";
         const { newState: nsNk, pushLog: pushNk, setLogSink: setSinkNk } =
           await import(new URL("../src/state.js", import.meta.url).href);
 
-        // ① kind 的固定枚举（§9）+ **最易错的那条**：无限挑战 ≠ crunch
+        // ① kind 的固定枚举（§9）
+        //   ★ 2026：用例「开始无限挑战 1／3（熵需求 ×5）」**已移除** ——
+        //     IC 整个系统被用户删除，`/无限挑战/` 那条分类规则也删了
+        //     ⇒ 那类日志不会再出现，留着这条用例只会测一个**不存在的输入** ✗
         const KIND_CASES = [
           ["🌌 大坍缩！物质触及 1.80e308 上限", "crunch"],
           ["💠 打破无限！物质上限解除", "crunch"],
-          ["开始无限挑战 1／3（熵需求 ×5）", "system"],
           ["⚛ 捕获第 1 对量子", "quantum"],
           ["⚡ 购买虚空升级「v1」", "buy"],
           ["🏆 达成虚空里程碑：x", "milestone"],
@@ -1465,7 +1442,7 @@ let zoneGuard = "未跑";
         const okNk = kindBad.length === 0 && shapeOk && snapOk && degradeOk && sinkOk;
         console.log(`  N.E.K.O 接入层   ${okNk
           ? `✅ 无宿主时全 no-op（available=false、sendLog/publishSnapshot 返回 false 且不抛）✓`
-            + `｜日志形状 {t,kind,text,data} ✓｜kind 枚举 7/7 ✓（含"无限挑战≠crunch"）`
+            + `｜日志形状 {t,kind,text,data} ✓｜kind 枚举 ${KIND_CASES.length}/${KIND_CASES.length} ✓`
             + `｜快照 schema=1、未注入速率给 null、不编 darkMatter ✓｜pushLog 出口已挂桥 ✓`
           : `❌ kind 错 ${kindBad.length} 条${kindBad.length ? "(" + kindBad.map(([t, w]) => `${kindN(t)}≠${w}`).join(",") + ")" : ""}`
             + `｜四元组=${shapeOk}｜快照=${snapOk}｜降级=${degradeOk}(threw=${threw ? threw.message : "无"})`

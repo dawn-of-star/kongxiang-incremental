@@ -152,7 +152,9 @@ ck("常数与 AD 逐项一致",
   //   原来写成 `/tick[\s\S]{0,4000}doEternity/`，那会从文件里**第一个** `tick` 开始扫，
   //   于是只要文件后文**任何位置**（含注释）出现 `doEternity` 就判红 ✗
   //   （2025 我在 `tickBody` 里加了 `icAutoAdvance`，这条守卫当场**误报**
-  //     "engine.js 里似乎有自动永恒" —— 而实际那一处是 `em7` 的自动**挑战**，不是永恒）
+  //     "engine.js 里似乎有自动永恒" —— 而实际那一处是 `em7` 的自动**挑战**，不是永恒
+  //     ★ 2026：那个 `icAutoAdvance` **已随 IC 删除** ⇒ 误报的来源没了，
+  //       但**判据不能改回去**：「只在 tickBody 体内找」本身是对的 ✓）
   //   ⇒ 改成：先定位 `tickBody` 的函数体，再在**体内**查
   const bodyStart = engineSrc.indexOf("function tickBody(");
   let body = "";

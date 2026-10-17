@@ -39,8 +39,9 @@ import { BASE, COLLAPSE, DE_MILESTONES, DE_UPGRADES, REPEATABLE, VOID_UPGRADES, 
   epMultPriceAt, epMultAffordableIn, epMultFactor, eternityPointGain, ETERNITY, ETERNITY_UPGRADES,
   // ★★★ 2025：可重复梦想升级（「离线时长扩展」= 离线时间上限）断言要用
   DREAM_UPGRADES, DREAM_BY_ID, dreamUpgradeLevelOf, dreamUpgradeCostAt, offlineCapSeconds,
-  // ★★★ 2025：永恒里程碑 em2（neko 加成翻倍）/ em7（自动完成 IC）断言要用
-  NEKO, NEKO_BONUS_DOUBLE, nekoGlobalExponent, INFINITY_CHALLENGES,
+  // ★★★ 2025：永恒里程碑 em2（neko 加成翻倍）断言要用
+  //   ⚠️ 2026：`INFINITY_CHALLENGES` 已随 IC 删除 ⇒ 不再导入 ✓
+  NEKO, NEKO_BONUS_DOUBLE, nekoGlobalExponent,
   // ★★★ 2025：两个新修复（ipDouble 封顶平台 / ZPE 引擎 2000 级后增幅）断言要用
   //   ⚠️ `ipDoublePriceAt` 上面已经导过了 ⇒ 这里**不要**再列一次（会 `already been declared` ✗）
   IP_DOUBLE_AD, zpeEngineStepMult, zpeEngineCostMult, zpeEngineCost,
@@ -57,8 +58,7 @@ import { breakInfinity, buyDeUpgrade, buyDreamUpgrade, buyRepeatable, buyTrap, b
   buyInfinityUpgrade,
   // ★★★ 2025：永恒增幅的「买满 == 逐级」与「实得 EP」断言要它们
   buyEpMult, doEternity,
-  // ★★★ 2025：em7「按最快无限速度自动完成无限挑战」断言要它 ✓
-  icAutoAdvance,
+  // ⚠️ 2026：`icAutoAdvance` **已随 IC 删除**（em7 退回 pending）⇒ 不再导入 ✓
   // ★★★ 2025：ZPE 引擎 2000 级后的价格增幅断言要它们 ✓
   buyZpeEngineLevel, buyIpDoubleMax } from "../src/engine.js";
 // ★★★ 2025：em7 的详情文案要 `sci`（统一科学计数法）✓

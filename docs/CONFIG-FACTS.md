@@ -31,8 +31,7 @@
 | ETERNITY_MILESTONES 占位中 | **1** | em8 |
 | DREAM_UPGRADES（梦想升级） | **5** | 其中可重复 1 条 |
 | REPEATABLE（可重复升级） | **3** |  |
-| INFINITY_CHALLENGES.max（IC 关数） | **3** | 熵需求每关 ×5 |
-| INFINITY_CHALLENGES.ipJumpOrders | **10** | 每关无限点跃升阶数 |
+| ETERNITY_MILESTONES 里 pending 的 | **em8** | ⭐ 2026：`em7` 因 IC 删除而退回 pending（见其注释） |
 | ZONES（乘区） | **13** |  |
 | ZONE_OF（id 乘区登记） | **58** | 由 dom-smoke 的「乘区登记」断言守 |
 | NEKO.tiers（好感度档位） | **3** | >25 ⇒ ×1.002｜>50 ⇒ ×1.005｜>75 ⇒ ×1.015 |

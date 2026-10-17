@@ -45,8 +45,9 @@ const facts = () => [
   ["DREAM_UPGRADES（梦想升级）", c.DREAM_UPGRADES.length,
     "其中可重复 " + c.DREAM_UPGRADES.filter((x) => x.repeatable).length + " 条"],
   ["REPEATABLE（可重复升级）", Object.keys(c.REPEATABLE).length, ""],
-  ["INFINITY_CHALLENGES.max（IC 关数）", c.INFINITY_CHALLENGES.max, "熵需求每关 ×" + c.INFINITY_CHALLENGES.entMult],
-  ["INFINITY_CHALLENGES.ipJumpOrders", c.INFINITY_CHALLENGES.ipJumpOrders, "每关无限点跃升阶数"],
+  // ⚠️ 2026：`INFINITY_CHALLENGES` / `icIpJumpOrders` **已随 IC 删除** ⇒ 这两行移除 ✓
+  ["ETERNITY_MILESTONES 里 pending 的", c.ETERNITY_MILESTONES.filter((m) => m.pending).map((m) => m.id).join(", ") || "（无）",
+    "⭐ 2026：`em7` 因 IC 删除而退回 pending（见其注释）"],
   ["ZONES（乘区）", Object.keys(c.ZONES).length, ""],
   ["ZONE_OF（id 乘区登记）", Object.keys(c.ZONE_OF).length, "由 dom-smoke 的「乘区登记」断言守"],
   ["NEKO.tiers（好感度档位）", c.NEKO.tiers.length,
