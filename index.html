@@ -901,22 +901,18 @@
               <!-- ★★★ 2026（用户：「外面拉进来一个巧板在这里拼的感觉」）——
      viewBox 覆盖**整个画布**（板坐标 −3..7 ⇒ 含正方形外的可摆区域），
      正方形只占中间一块；外面留白就是"可以拖出去停"的地方 ✓ -->
-        <svg class="tangram-svg" viewBox="-100 -100 300 300" aria-hidden="true">
+        <svg class="tangram-svg" viewBox="0 -100 200 200" aria-hidden="true">
                           <!-- 2026: dashed guide grid for the area BEYOND the 4x4 square.
                Visual guide only -- no coverage, no bonus. Origin stays bottom-left. -->
-          <g id="tg-guide-grid" pointer-events="none">
-            <line class="tg-guide" x1="-75" y1="-75" x2="-75" y2="175"></line>
-            <line class="tg-guide" x1="-75" y1="-75" x2="175" y2="-75"></line>
-            <line class="tg-guide" x1="-50" y1="-75" x2="-50" y2="175"></line>
-            <line class="tg-guide" x1="-75" y1="-50" x2="175" y2="-50"></line>
-            <line class="tg-guide" x1="-25" y1="-75" x2="-25" y2="175"></line>
-            <line class="tg-guide" x1="-75" y1="-25" x2="175" y2="-25"></line>
-            <line class="tg-guide" x1="125" y1="-75" x2="125" y2="175"></line>
-            <line class="tg-guide" x1="-75" y1="125" x2="175" y2="125"></line>
-            <line class="tg-guide" x1="150" y1="-75" x2="150" y2="175"></line>
-            <line class="tg-guide" x1="-75" y1="150" x2="175" y2="150"></line>
-            <line class="tg-guide" x1="175" y1="-75" x2="175" y2="175"></line>
-            <line class="tg-guide" x1="-75" y1="175" x2="175" y2="175"></line>
+                    <g id="tg-guide-grid" pointer-events="none">
+            <line class="tg-guide" x1="125" y1="100" x2="125" y2="-100"></line>
+            <line class="tg-guide" x1="0" y1="-25" x2="200" y2="-25"></line>
+            <line class="tg-guide" x1="150" y1="100" x2="150" y2="-100"></line>
+            <line class="tg-guide" x1="0" y1="-50" x2="200" y2="-50"></line>
+            <line class="tg-guide" x1="175" y1="100" x2="175" y2="-100"></line>
+            <line class="tg-guide" x1="0" y1="-75" x2="200" y2="-75"></line>
+            <line class="tg-guide" x1="200" y1="100" x2="200" y2="-100"></line>
+            <line class="tg-guide" x1="0" y1="-100" x2="200" y2="-100"></line>
           </g>
 <rect class="tg-frame" x="0" y="0" width="100" height="100"></rect>
                 <!-- 三条轴：左边缘 / 下边缘 / 左下→右上 主对角线 -->

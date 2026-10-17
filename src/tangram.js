@@ -165,8 +165,8 @@ export function placedVertices(placed, pieces = TANGRAM_PIECES) {
  *     块拖到框外 ⇒ 它与那三条线的交集自然变成 0（或被裁掉一部分）⇒ 覆盖率公式**一字不改** ✓
  *   ⚠️ 仍保留一个**画布上限**（不真的无限远）：否则可以把块拖到看不见的地方 ⇒ 体验变差 ✗
  */
-export const CANVAS_MIN = -3;
-export const CANVAS_MAX = 7;
+export const CANVAS_MIN = 0;    // 2026: 画布左下角 = 正方形左下角 (0,0)
+export const CANVAS_MAX = 8;    // 2026: 8x8 画布（正方形 0..4 贴在左下）
 
 /**
  * 一个摆位**是否合法**：① 整块在**画布**内（`-3..7`，**不再是 0..4 的方框**）② 不与已放下的块重叠 ✓
