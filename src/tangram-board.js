@@ -61,7 +61,7 @@ function ensureLayers(svg) {
  *   只出现一次的才是边界 => 首尾相接成闭合折线 ✓
  *   => 一条干净外框，不再是三角网格（那是实现细节，不该出现在界面上 ✗）
  */
-function unionOutlinePath(cells, toSvgFn) {
+export function unionOutlinePath(cells, toSvgFn) {
   const keyOf = (q) => q[0].toFixed(3) + ',' + q[1].toFixed(3);
   const count = new Map();
   const pts = new Map();
@@ -113,26 +113,10 @@ export function paintTangramBoard(state) {
   const svg = svgRoot();
   if (!svg || !ensureLayers(svg)) return;
 
-  // ① 目标轮廓（单 path，按指纹缓存 ⇒ 只在换题时重建）
-  // ⚠️ 2026（用户：「为什么会有这个玩意」）—— **不画目标轮廓**（半透明的一大块，看不出是题目 ✗）
-  // 2026（用户：「记得做轮廓类提示」）：目标轮廓画回来，但用浅填充+细描边（不是黑块）
-  const tgt = tangramChallengeTarget(state);
-  if (tgt && targetKeyCache !== tgt.key) {
-    // ★ 只画并集外轮廓（不再逐个小三角 ✗）
-    const d = unionOutlinePath(cellsFromFingerprint(tgt.key), toSvg);
-    let path = layerTarget.querySelector("path");
-    if (!path) {
-      path = document.createElementNS(SVG_NS, "path");
-      layerTarget.appendChild(path);
-    }
-    path.setAttribute("d", d);
-    path.setAttribute("class", "tg-target-path");
-    path.setAttribute("fill", "#ffffff14");
-    path.setAttribute("stroke", "#ffffff33");
-    path.setAttribute("stroke-width", "0.12");
-    targetKeyCache = tgt.key;
-  }
-
+  // ★★★ 2026（用户：「这个白色的为什么会在这？为什么会有这个实现？」）——
+  //   **棋盘上不画目标图案**：棋盘是给「三条轴覆盖率」用的（你摆块、盖线、拿加成），
+  //   而拼装挑战的"题目"只作为**小预览**出现在挑战卡片里 ✓
+  //   （原来把题目铺在主棋盘上 = 把两个机制混在一起，还糊住了覆盖率视野 ✗）
   // ② 玩家板块（每帧重建 —— 只有 ≤7 个多边形，成本可忽略 ✓）
   layerPieces.textContent = "";
   for (const p of TANGRAM_PIECES) {

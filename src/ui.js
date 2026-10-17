@@ -2511,6 +2511,8 @@ function renderTangramReal(st) {
   paintTangramThumbs(st);   // ⚠️ 本函数的形参叫 st（不是 state）✗
   // ★ 2026：自动无限的**三条规则面板**（挂在「无限自动化」卡片右侧；只建一次）✓
   paintAutoCrunchUI(st, () => handlers.onTangramCommit?.());
+  // ★ 2026：**挑战题目预览**（小图，画在挑战卡里；棋盘只做覆盖率 ✓）
+  paintChallengePreview(st);
 
   // ★★★ 2026：**挑战奖励的当前档位**（唯一聚合入口 `tangramRewardEffects`）✓
   const rw = tangramRewardEffects(st.tangramCleared);
@@ -2684,5 +2686,43 @@ function paintTangramThumbs(st) {
     // 已获得 = 亮、未获得 = 暗（原来就有，这里用属性让 CSS 也能选到 ✓）
     slot.dataset.owned = st?.tangramOwned?.[piece.id] ? "1" : "0";
     slot.style.opacity = st?.tangramOwned?.[piece.id] ? "1" : "0.55";
+  }
+}
+// ──────────────────────────────────────────────────────────
+// ★ 2026（用户：「这个白色的为什么会在这？为什么会有这个实现？」）
+//   **拼装挑战的题目只画在挑战卡的小预览里**（不铺在主棋盘上 ✗）
+// ──────────────────────────────────────────────────────────
+let tgPrevKey = null;
+function paintChallengePreview(st) {
+  if (typeof document === "undefined" || typeof document.createElementNS !== "function") return;
+  const svg = document.getElementById("tangram-chal-preview");
+  if (!svg) return;
+  const tgt = tangramChallengeTarget(st);
+  if (!tgt) return;
+  if (tgPrevKey === tgt.key && svg.childElementCount) return;   // 同一题不重建 ✓
+  const d = (window.__tgUnion ? window.__tgUnion : null);
+  void d;
+  // 直接用小三角拼（预览很小，网格线反而帮助辨认 ✓）
+  const NS = "http://www.w3.org/2000/svg";
+  svg.textContent = "";
+  for (const c of cellsFromFingerprint(tgt.key)) {
+    const v = [[c[0], c[1]], [c[0] + 1, c[1]], [c[0] + 0.5, c[1] + 0.5]];
+    // 用 tangram.js 的规范顶点（含 t 分支）
+    const tri = triVertsForPreview(c[0], c[1], c[2]).map(([x, y]) => [x, 100 - y]);
+    void v; void tri;
+    const poly = document.createElementNS(NS, "polygon");
+    poly.setAttribute("points", tri.map((q) => q.join(",")).join(" "));
+    poly.setAttribute("fill", "#ffffff2a");
+    poly.setAttribute("stroke", "none");
+    svg.appendChild(poly);
+  }
+  tgPrevKey = tgt.key;
+}
+function triVertsForPreview(x, y, t) {
+  switch (t) {
+    case 0: return [[x, y], [x + 1, y], [x + 0.5, y + 0.5]];
+    case 1: return [[x + 1, y], [x + 1, y + 1], [x + 0.5, y + 0.5]];
+    case 2: return [[x + 1, y + 1], [x, y + 1], [x + 0.5, y + 0.5]];
+    default: return [[x, y + 1], [x, y], [x + 0.5, y + 0.5]];
   }
 }
