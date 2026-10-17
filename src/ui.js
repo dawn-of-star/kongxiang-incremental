@@ -8,6 +8,8 @@ import {
   tangramPriceFactor, tangramPricesAt,
 } from "./tangram-game.js";
 import { TANGRAM_PIECES, tangramPieceAtStep } from "./tangram.js";
+// ★★★ 2026：梦想页分组 + 右侧开关（增量改造：搬卡片 + 加开关，不重建）✓
+import { arrangeDreamPage, renderDreamPage } from "./dream-ui.js";
 import { infinityUpgradeOwned } from "./config.js";
 import { infinityUpgradeCost } from "./config.js";
 import { BREAK_INFINITY } from "./config.js";
@@ -909,6 +911,8 @@ function renderTangram(state) {
   if (el["tangram-chal-progress"]) el["tangram-chal-progress"].textContent = "0 / 0（图案未定）";
   // ★★★ 2026：用**真数据**覆盖上面的占位（实现在文件末尾）✓
   renderTangramReal(state);
+  // ★★★ 2026：梦想页（分组 + 右侧开关；只改文本/属性）✓
+  renderDreamPage(state);
 }
 
 /**
@@ -2296,6 +2300,8 @@ export function initUI(handlers) {
   buildMilestones();
   buildLegend();
   buildDreamUpgrades();
+  // ★ 2026：建完后**排一次**分组 + 挂开关（只搬卡片，不重建 ⇒ id/handler 全保留）✓
+  arrangeDreamPage();   // ⚠️ 这里没有 state 变量（构建期）⇒ 模块内部用 renderDreamPage 存下的引用 ✓
   buildInfinityUpgrades();
   setupTabs();
   setupFolds();           // ★ 2025：主面板折叠分组（设计稿第 27 行 + 用户裁定的下拉条/记住）
