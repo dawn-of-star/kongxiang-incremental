@@ -1004,3 +1004,23 @@ button { font: inherit; cursor: pointer; }
 /* ★ 2026：托盘槽位里的形状缩略图（左图右名）✓ */
 .tangram-slot { display: flex; align-items: center; gap: 6px; }
 .tangram-slot > svg { flex: 0 0 auto; }
+/* ══════════════════════════════════════════════════════════
+   ★★★ 2026：梦想页的**分组 + 右侧并排开关**
+   ⚠️ 项目的 `.btn` 是 `display:block; width:100%` ⇒ 放在 flex 行里的按钮**必须显式 width:auto**，
+      否则会把卡片挤成 1px 宽的竖条（这个坑踩过三次 ✗）
+   ══════════════════════════════════════════════════════════ */
+.q-card-wrap { display: flex; align-items: stretch; gap: 6px; }
+.q-card-wrap > .q-card { flex: 1 1 auto; min-width: 0; }
+.q-card-wrap > .dream-toggle {
+  flex: 0 0 auto; width: auto; min-width: 46px;
+  align-self: center; font-size: 12px; padding: 6px 10px;
+}
+.dream-toggle.off { opacity: .62; }
+/* 分组：整行标签 + 组内两列 */
+.dream-group-label {
+  grid-column: 1 / -1; margin: 10px 0 4px; padding-bottom: 3px;
+  font-size: 0.82em; font-weight: 700; color: var(--text-dim);
+  border-bottom: 1px solid var(--line-strong);
+}
+.dream-group-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+@media (max-width: 900px) { .dream-group-grid { grid-template-columns: 1fr; } }
