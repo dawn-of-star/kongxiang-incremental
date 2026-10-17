@@ -1042,7 +1042,7 @@ button { font: inherit; cursor: pointer; }
 .tg-acq-row > span.dim { font-size: 11px; white-space: nowrap; }
 
 /* ── 托盘：单列 7 行，行高统一，名字绝不折行 ── */
-.tangram-tray { display: flex !important; flex-direction: column !important; gap: 3px; }
+/* ⚠️ 不要改成 flex-column：0.7.1 的 .tangram-tray 本来就是 2 列 grid ✓（截图里的 2 列就是它）*/`n.tangram-tray { gap: 3px !important; }
 /* ★★★ 2026（用户：「图在上，字在下」）—— 槽位改成**纵向**：缩略图居中在上、名字在下 ✓ */
 .tangram-slot {
   display: flex !important; flex-direction: column !important;
@@ -1064,6 +1064,6 @@ button { font: inherit; cursor: pointer; }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 /* ★ 2026：7 格 = 2 列**等宽**网格（名字放得下才不截断 ✗）*/
-.tangram-tray { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+.tangram-tray { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 3px !important; }
 /* 托盘内所有子项等宽等高、无外边距残留 ✓ */
 .tangram-tray > * { margin: 0 !important; box-sizing: border-box; }
