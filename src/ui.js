@@ -2720,10 +2720,27 @@ function paintChallengePreview(st, force = false) {
   if (tgPrevKey === tgt.key && svg.childElementCount) return;   // 同一题不重建 ✓
   const d = (window.__tgUnion ? window.__tgUnion : null);
   void d;
+  // ★ 2026（用户：「小的……我没眼看」）—— viewBox 必须**贴紧图案的包围盒**，
+  //   否则图案只占角落里一点（原来固定 -2..8，而图案只占 0..4 ✗）
+  const cells = cellsFromFingerprint(tgt.key);
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const c of cells) {
+    for (const [x, y] of triVertsForPreview(c[0], c[1], c[2])) {
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+    }
+  }
+  const w = Math.max(0.5, maxX - minX), h = Math.max(0.5, maxY - minY);
+  const pad = 0.15;
+  // SVG 的 y 向下 ⇒ 用 (100 - y) 的坐标系，所以 viewBox 的 y 也按翻转后的范围算 ✓
+  svg.setAttribute("viewBox", (minX - pad) + " " + (100 - maxY - pad) + " " + (w + 2 * pad) + " " + (h + 2 * pad));
+  svg.setAttribute("width", "200");
+  svg.setAttribute("height", "200");
+
   // 直接用小三角拼（预览很小，网格线反而帮助辨认 ✓）
   const NS = "http://www.w3.org/2000/svg";
   svg.textContent = "";
-  for (const c of cellsFromFingerprint(tgt.key)) {
+  for (const c of cells) {
     const v = [[c[0], c[1]], [c[0] + 1, c[1]], [c[0] + 0.5, c[1] + 0.5]];
     // 用 tangram.js 的规范顶点（含 t 分支）
     const tri = triVertsForPreview(c[0], c[1], c[2]).map(([x, y]) => [x, 100 - y]);
