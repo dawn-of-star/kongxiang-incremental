@@ -62,7 +62,8 @@ export function paintTangramBoard(state) {
 
   // ① 目标轮廓（单 path，按指纹缓存 ⇒ 只在换题时重建）
   // ⚠️ 2026（用户：「为什么会有这个玩意」）—— **不画目标轮廓**（半透明的一大块，看不出是题目 ✗）
-  const tgt = null;
+  // 2026（用户：「记得做轮廓类提示」）：目标轮廓画回来，但用浅填充+细描边（不是黑块）
+  const tgt = tangramChallengeTarget(state);
   if (tgt && targetKeyCache !== tgt.key) {
     const d = cellsFromFingerprint(tgt.key).map((c) => {
       const v = triVerts(c[0], c[1], c[2]).map(([x, y]) => toSvg(x, y));
@@ -75,6 +76,9 @@ export function paintTangramBoard(state) {
     }
     path.setAttribute("d", d);
     path.setAttribute("class", "tg-target-path");
+    path.setAttribute("fill", "#ffffff14");
+    path.setAttribute("stroke", "#ffffff33");
+    path.setAttribute("stroke-width", "0.12");
     targetKeyCache = tgt.key;
   }
 

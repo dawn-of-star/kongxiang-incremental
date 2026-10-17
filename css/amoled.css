@@ -1098,3 +1098,12 @@ button { font: inherit; cursor: pointer; }
 .tangram-side #tg-acq-card { padding: 8px; }
 .tangram-side .tg-acq-row { display: flex; gap: 6px; align-items: center; }
 .tangram-side .tg-acq-row > .btn { width: auto !important; font-size: 13px; padding: 8px 10px; }
+
+/* 2026（用户：「记得做轮廓类提示」）：七巧板棋盘的目标轮廓
+   注意：SVG 的 path/polygon 默认 fill 是黑色 => 必须显式给色，否则就是黑块。 */
+.tg-target-path { fill: rgba(255,255,255,0.08) !important; stroke: rgba(255,255,255,0.20) !important; stroke-width: 0.12 !important; pointer-events: none; }
+.tg-piece-poly { fill: rgba(179,136,255,0.30) !important; stroke: var(--eternity,#b388ff) !important; stroke-width: 0.4 !important; }
+.tg-piece-poly.dragging { fill: rgba(179,136,255,0.48) !important; }
+.tg-axis { stroke: var(--line-strong); stroke-width: 0.3; }
+.tg-cov { stroke: var(--eternity,#b388ff); stroke-width: 1.4; }
+.tg-frame { fill: none; stroke: var(--line-strong); stroke-width: 0.4; }
