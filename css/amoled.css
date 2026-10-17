@@ -1042,18 +1042,18 @@ button { font: inherit; cursor: pointer; }
 .tg-acq-row > span.dim { font-size: 11px; white-space: nowrap; }
 
 /* ── 托盘：单列 7 行，行高统一，名字绝不折行 ── */
-.tangram-tray { display: flex !important; flex-direction: column !important; gap: 4px; }
+.tangram-tray { display: flex !important; flex-direction: column !important; gap: 3px; }
 /* ★★★ 2026（用户：「图在上，字在下」）—— 槽位改成**纵向**：缩略图居中在上、名字在下 ✓ */
 .tangram-slot {
   display: flex !important; flex-direction: column !important;
   align-items: center !important; justify-content: center !important; gap: 2px;
-  min-height: 54px !important; height: 54px !important; padding: 3px 4px !important;
+  min-height: 44px !important; height: 44px !important; padding: 2px 4px !important;
   border: 1px solid var(--line-strong); border-radius: 4px;
   white-space: nowrap !important; overflow: hidden !important; font-size: 11px;
   writing-mode: horizontal-tb !important;   /* ★ 文字仍不许竖排 ✗✗ */
   text-align: center !important;
 }
-.tangram-slot > svg { width: 30px !important; height: 24px !important; flex: 0 0 auto; }
+.tangram-slot > svg { width: 26px !important; height: 20px !important; flex: 0 0 auto; }
 .tangram-slot > span { white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; writing-mode: horizontal-tb !important; max-width: 100%; font-size: 11px; line-height: 1.1; }
 .tangram-slot[data-owned="1"] { border-color: var(--eternity, #b388ff); }
 
@@ -1063,3 +1063,7 @@ button { font: inherit; cursor: pointer; }
   width: auto !important; font-size: 11px; padding: 5px 4px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+/* ★ 2026：7 格 = 2 列网格 ⇒ **第 7 格独占整行**（否则右下留一个空格 ✗）*/
+.tangram-tray > .tangram-slot:last-child:nth-child(odd) { grid-column: 1 / -1; }
+/* 托盘内所有子项等宽等高、无外边距残留 ✓ */
+.tangram-tray > * { margin: 0 !important; box-sizing: border-box; }
