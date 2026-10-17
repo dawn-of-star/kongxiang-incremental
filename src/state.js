@@ -210,7 +210,7 @@ export function newState() {
     // ★★★ 2026：自动无限（默认**开**；买下即生效）✓
     /** ★ 2026：自动化总开关（**只存 true** ⇒ 缺省 = 关 = 手动开）✓ */
     autoToggles: {},
-    autoCrunch: { isActive: false, mode: "xHighest", amount: "1", time: 60, xHighest: "2", dynamic: false, lastAtMs: 0 },
+    autoCrunch: { isActive: false, mode: "xHighest", amount: "1", time: 0.1, xHighest: "2", dynamic: false, lastAtMs: 0 },
     /** 本永恒**单次**收益最高纪录（× 最高模式的判据）✓ */
     maxIpThisEternity: 0,
     tangramOwned: {},          // 已获得（id → true）
@@ -446,6 +446,21 @@ export function deserialize(raw) {
   const bool = (v) => v === true;
 
   const s = fresh;
+
+  // ★★★ 2026（用户：「每次永恒后为什么要重置自动化的开关状态」）——
+  //   根因：这两项只写在 newState()，**deserialize 里没有** ⇒ 存档/读档就丢 ✗
+  s.autoToggles = raw.autoToggles && typeof raw.autoToggles === "object"
+    ? Object.fromEntries(Object.entries(raw.autoToggles).filter(([, v]) => v === true)) : {};
+  s.autoCrunch = {
+    isActive: raw.autoCrunch?.isActive === true,          // 默认关（买下≠生效）
+    mode: ["amount", "time", "xHighest"].includes(raw.autoCrunch?.mode) ? raw.autoCrunch.mode : "xHighest",
+    amount: String(raw.autoCrunch?.amount ?? "1"),
+    time: Math.max(0.1, num(raw.autoCrunch?.time, 0.1)),   // 时间模式默认 0.1 秒
+    xHighest: String(raw.autoCrunch?.xHighest ?? "2"),
+    dynamic: raw.autoCrunch?.dynamic === true,
+    lastAtMs: Math.max(0, num(raw.autoCrunch?.lastAtMs, 0)),
+  };
+  s.maxIpThisEternity = num(raw.maxIpThisEternity, 0);
   s.version = num(raw.version, fresh.version);
   s.startedAt = num(raw.startedAt, fresh.startedAt);
   s.lastSavedAt = num(raw.lastSavedAt, Date.now());
