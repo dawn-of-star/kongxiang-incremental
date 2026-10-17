@@ -17,7 +17,8 @@ import { hasCollapse, transmuterIpMult,
   VOID_UPGRADES, ZPE_EXPONENT, ZPE_MILESTONES, QUANTUM_MILESTONES, DE_SPAN, crunchThreshold,
   infinityPointGain, quantumDeGainBonus, quantumDeMultBonus,
   quantumEntropyMultiplier, dreamUpgradeEffects,
-  zpeEngineCountFreqUnlocked, zpeEngineProdMult, voidBoostMult, icEntropyMult, ipDoubleMult, zpeEngineAddBonus, zpeEngineMultBonus,
+  // ⚠️ 2026：`icEntropyMult` 已随 IC 整块删除 ⇒ 不再导入 ✓
+  zpeEngineCountFreqUnlocked, zpeEngineProdMult, voidBoostMult, ipDoubleMult, zpeEngineAddBonus, zpeEngineMultBonus,
   matterSpanMult, softCapB, qOf, quantumZpeMultBonus, ETERNITY, eternityPointGain, tierMilestonesDone, tierAccelMult, matterTotalExponent, CRUNCH_AT_LABEL,
   // ★ 2025：永恒里程碑（em6 = 熵消耗 ÷1.2；em5 = IP 收益 ×(1+log10 累计EP)）
   hasEternityMilestone, em5IpMult,
@@ -863,8 +864,8 @@ export function conversion(state) {
   if (hasDe(state, "dm2")) {
     threshold = threshold.div(darkEnergyMultiplier(state));
   }
-  // ★ IC：挑战激活时，熵→粒子的**熵需求**被放大（唯一落点 ✓；放在所有阈值修正之后 ✓）
-  threshold = threshold.mul(icEntropyMult(state));
+  // ⚠️ 2026：这里原来有 threshold.mul(icEntropyMult(state))（IC 放大熵需求）——
+  //   **IC 整个系统已删除**（用户裁定）⇒ 那行移除 ✓
   if (hasCollapse(state, "cm3")) threshold = threshold.mul(0.5);   // ③ 100:1 -> 50:1
   // ★★ 2025 em6（永恒里程碑 6）：「熵到粒子的熵消耗再除以 1.2」
   //   放在**所有修正的最后**（与 cm3、IC 同一个位置）—— 顺序不影响乘除结果，

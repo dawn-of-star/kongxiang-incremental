@@ -32,7 +32,8 @@ import {
   quantumPerPair, quantumStepMult, quantumToIPGain, quantumZpeRequirement,
   tierMilestonesDone, DE_SPAN, deGrowthRate, deEngineLevelBonus, matterSpanMult, zpeEngineCost, epMultCostFor, zpeEngineCountFreqUnlocked, matterTotalExponent,
   zpeEngineAffordableIn, zpeEngineLevel, zpeEngineTotalCost, zpeEngineUnlocked,
-  eternityPointGain, canEternity, icIpJumpMult, ipDoubleMult, ipDoubleAffordableIn, ipDoubleCostFor, hasCollapse, INFINITY_CHALLENGES, quantumZpeMultBonus, ETERNITY, COLLAPSE,
+  // ⚠️ 2026：`icIpJumpMult` / `INFINITY_CHALLENGES` 已随 IC 整块删除 ⇒ 不再导入 ✓
+  eternityPointGain, canEternity, ipDoubleMult, ipDoubleAffordableIn, ipDoubleCostFor, hasCollapse, quantumZpeMultBonus, ETERNITY, COLLAPSE,
   // ★★★ 2025：永恒升级「永恒增幅」（第三层设计稿 33~35 行）——
   //   效果唯一入口 `epMultFactor`（`doEternity` 用它放大 EP 收益）
   //   价格唯一入口 `epMultPriceAt` / `epMultAffordableIn`（`buyEpMult` 用）
@@ -329,10 +330,8 @@ function tickBody(state, dt) {
   // ── 10. 自动化 ──
   if (state.voidUpgrades.v9) autoAcquire(state);
   autoAcquireDream(state);   // 独立于 v9，见函数注释
-  // ★★★ 2025 **em7**：按"最快无限速度"自动依次完成无限挑战（设计稿第 43 行）✓
-  //   放在这里（自动化段）与 `autoAcquire` 同一类 —— 它是"玩家不用手点"的东西 ✓
-  //   ⚠️ 用 `dt` 累计（不是 wall clock）⇒ 离线结算也会照常推进 ✓
-  icAutoAdvance(state, dt);
+  // ⚠️ 2026：这里原来有 icAutoAdvance(state, dt)（em7 自动完成无限挑战）——
+  //   **IC 整个系统已删除**（用户裁定）⇒ 那行移除；em7 本身退回 pending ✓
 
 
   // ── 11. 捕获的**登记**在 `phaseQuantumCapture` 里完成（写回留到**下一个 tick 的开头** ✓）──
@@ -848,8 +847,8 @@ function resetForCollapse(state) {
  * 给无限点，重置下层资源。**梦想点永不重置；量子会被重置**（用户明确）。
  */
 export function doBigCrunch(state) {
-  // ★ IC（无限挑战）：条件只有"抵达无限"⇒ 大坍缩即视为通过（第三种设计稿 ✓）
-  icCompleteOnCrunch(state);
+  // ⚠️ 2026：这里原来有 icCompleteOnCrunch(state)（IC 通过判定）——
+  //   **IC 整个系统已删除**（用户裁定）⇒ 那行移除 ✓
 
   if (!canBigCrunch(state)) return null;
 
@@ -863,14 +862,9 @@ export function doBigCrunch(state) {
 
   state.infinityPoints = state.infinityPoints.add(ip);
   state.bigCrunchCount = state.bigCrunchCount.add(1);
-  // ★★★ 2025（**em7** 用）：记录**最快一次无限的耗时** = 历次"本轮时长"的最小值 ✓
-  //   设计稿第 43 行：「无限挑战将**基于最快无限速度**自动依次完成」
-  //   ⚠️ 必须在 `resetForCollapse` / 归零**之前**读 `infinityElapsed`（否则读到 0）✗
-  //   ⚠️ 只算"正数"：本轮时长为 0（异常/首帧）不参与最小值，否则最快值会被钉成 0 ✗
-  if (elapsed > 0) {
-    const f = Number(state.fastestInfinitySec ?? 0) || 0;
-    state.fastestInfinitySec = f > 0 ? Math.min(f, elapsed) : elapsed;
-  }
+  // ⚠️ 2026：这里原来记录 state.fastestInfinitySec（最快一次无限的耗时）——
+  //   它只服务 em7 的 IC 自动化，IC 删除后无人读取 ⇒ 一并移除 ✓
+  //   （`elapsed` 本身仍用于下面的日志/显示，不要删它 ✗）
   resetForCollapse(state);
   // ④ 的计时器与实时累计归零：下一次无限从 0 开始重新累计
   state.infinityElapsed = 0;
@@ -1511,92 +1505,3 @@ export function snapshot(state) {
     conversion: { threshold, output } };
 }
 
-// ══════════════════════════════════════════════════════════
-// 无限挑战（IC）—— 第三种设计稿（用户 2025）
-//   · 条件只有"抵达无限" ⇒ 挑战激活期间完成一次大坍缩即通过
-//   · 熵需求 ×5^(k+1)（由 formulas.conversion 读 icEntropyMult）
-//   · 通过 ⇒ 无限点余额跃升一段（固定常数，只有 7 步 ⇒ 判据安全）
-// ══════════════════════════════════════════════════════════
-export function startInfinityChallenge(state, k) {
-  if (!state.brokenInfinity) return { ok: false, reason: "需先打破无限" };
-  if (k > state.ic.completed) return { ok: false, reason: "必须按顺序完成" };
-  if (state.ic.active != null) return { ok: false, reason: "已在进行中" };
-  // 用户 2025：挑战开始时**先做一次大坍缩**（否则会借当前进度直接爬到 inf ✗）
-  doBigCrunch(state);
-  // ★ 用户 2025：IC 开始时把资源**削弱到 1**（每次挑战都从"一根线"重爬 ✓）
-  state.resources.entropy = D(1);
-  state.resources.particle = D(1);
-  state.resources.matter = D(1);
-  state.resources.traps = D(1);
-  state.zpe = D(1);
-  state.quantum = D(1);
-  state.quantumPairs = D(0);
-  state.darkEnergy = D(1);
-
-
-  state.ic.active = k;
-  pushLog(state, ` 开始无限挑战 ${k + 1}／${INFINITY_CHALLENGES.max}（熵需求 ×${Math.pow(INFINITY_CHALLENGES.entMult, k + 1)}）`);
-  return { ok: true };
-}
-
-export function abandonInfinityChallenge(state) {
-  if (state.ic.active == null) return { ok: false };
-  state.ic.active = null;
-  pushLog(state, " 放弃当前无限挑战");
-  return { ok: true };
-}
-
-/** 大坍缩时判定 IC：通过 ⇒ completed+1、余额跃升一段、回到非挑战态 */
-export function icCompleteOnCrunch(state) {
-  const k = state.ic?.active;
-  if (k == null) return null;
-  const jump = icIpJumpMult();
-  state.infinityPoints = D(state.infinityPoints ?? 0).mul(jump);
-  state.ic.completed = Math.max(state.ic.completed, k + 1);
-  state.ic.active = null;
-  pushLog(state, ` 无限挑战 ${k + 1} 通过 ⇒ 无限点跃升一段（×${sci(Decimal.pow(10, INFINITY_CHALLENGES.ipJumpOrders))}）`);
-  return { completed: state.ic.completed, jump };
-}
-
-/**
- * ★★★ 2025 **em7**（设计稿第 43 行）：**基于「最快无限速度」自动依次完成剩余无限挑战**。
- *
- * ── 原文与口径 ──
- *   设计稿：「无限挑战将基于**最快无限速度**自动依次完成 7 次（无视条件）」
- *   · 用户裁定：关数 **7 → 3**（实际 `INFINITY_CHALLENGES.max = 3`，
- *     设计稿的 7 是它当时的规划）✓
- *   · 用户裁定：触发口径 = 「**每过 N 时间自动过一关**」（忠实"最快速度"）✓
- *
- * ── N 是什么（"最快无限速度"的定义）──
- *   `N = state.fastestInfinitySec`（历次"本轮时长"的最小值，见 `doBigCrunch`）
- *   ⚠️ `N <= 0`（还没有任何一次完整无限）⇒ **不自动完成**（视为未就绪）✓
- *     否则新档/异常状态下会被瞬间穿完 3 关 ✗
- *
- * ── 为什么放在 `tickBody` 里按**累计秒**计，而不是用 `Date.now()` ──
- *   本项目的时间推进全走传入的 `dt`（离线结算也是）⇒ 用累计秒才能与
- *   "离线也算"保持一致；用真实时钟会让离线期间**不**触发 ✗
- *
- * ── 为什么复用 `icCompleteOnCrunch` 而不自己加奖励 ──
- *   奖励（IP 跃升 ×10^10）只有那一个入口 ⇒ 自己算一遍必然脱节 ✗
- *   做法：把 `active` 置为"下一关"，再调它 ⇒ 与手动通关**完全同一条路** ✓
- *   ⚠️ `icCompleteOnCrunch` 会读 `state.ic.active`，所以顺序是"先置后调" ✓
- *
- * @returns {boolean} 本次是否推进了一关（供日志/断言）
- */
-export function icAutoAdvance(state, dtSec) {
-  // 门槛：em7 达成（第 7 次永恒）
-  if (!hasEternityMilestone(state, "em7")) return false;
-  const done = Number(state.ic?.completed ?? 0) || 0;
-  if (done >= INFINITY_CHALLENGES.max) return false;          // 3 关已全过 ✓
-  const N = Number(state.fastestInfinitySec ?? 0) || 0;
-  if (!(N > 0)) return false;                                 // 未就绪（没有最快记录）✓
-  // 累计计时（离线也走这里，因为 `advance()` 也是喂 dt 给 tick 的）✓
-  state.icAutoTimer = (Number(state.icAutoTimer ?? 0) || 0) + Math.max(0, Number(dtSec) || 0);
-  if (state.icAutoTimer < N) return false;
-  state.icAutoTimer -= N;                                     // 保留余数（不丢时间）✓
-  // ★ 与手动通关**同一条路**：把 active 设成"下一关"再交给唯一的通过函数 ✓
-  state.ic.active = done;
-  icCompleteOnCrunch(state);
-  pushLog(state, `⏱ em7：按最快无限速度自动完成无限挑战 ${done + 1}／${INFINITY_CHALLENGES.max}（每 ${sci(new Decimal(N))} 秒一关）`);
-  return true;
-}

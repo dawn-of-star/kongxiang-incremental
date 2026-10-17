@@ -1,5 +1,13 @@
 import { OVERLOAD } from "./config.js";
 import { infinityUpgradeEffect } from "./engine.js";
+// ★★★ 2026：七巧板（游戏侧函数在独立模块 tangram-game.js；几何/价目/奖励在 tangram.js）✓
+import {
+  exchangeTangramPiece, tangramCoverage, moveTangramPlacement, rotateTangramPlacement,
+  flipTangramPlacement, takeTangramBack, resetTangramBoard, autoPlaceTangram,
+  tangramChallengeTarget, tangramChallengeSolved, tangramAdvanceChallenge,
+  tangramPriceFactor, tangramPricesAt,
+} from "./tangram-game.js";
+import { TANGRAM_PIECES, tangramPieceAtStep } from "./tangram.js";
 import { infinityUpgradeOwned } from "./config.js";
 import { infinityUpgradeCost } from "./config.js";
 import { BREAK_INFINITY } from "./config.js";
@@ -899,6 +907,8 @@ function renderTangram(state) {
   }
   if (el["tangram-chal-need"]) el["tangram-chal-need"].textContent = "阈值待定（代办）";
   if (el["tangram-chal-progress"]) el["tangram-chal-progress"].textContent = "0 / 0（图案未定）";
+  // ★★★ 2026：用**真数据**覆盖上面的占位（实现在文件末尾）✓
+  renderTangramReal(state);
 }
 
 /**
@@ -2394,3 +2404,110 @@ export function flashSave() {
 }
 
 export { el, $ };
+
+// ══════════════════════════════════════════════════════════
+// ★★★ 2026：**七巧板面板的真数据 + 交互**（用户：「把其他的搞完」）
+//
+// ⚠️ 就地复用 0.7.1 已有的 id，不新建面板/容器（本轮教训：别动大结构）：
+//   `tangram-hint` / `tangram-progress` / `tangram-cov-{vert,horz,diag}` / `.tangram-slot`（7 格）
+//   交互：点槽位选中 ⇒ 控制条（◀▶▼▲ / R / F / 放下 / 收回）＋ 获取 / 下一题 / 重置棋盘 ✓
+// ══════════════════════════════════════════════════════════
+let tgSel = null;
+let tgBarBuilt = false;
+
+/** 下一块（按面积从小到大）的步号；全齐 ⇒ -1 ✓ */
+function tgNextStep(st) {
+  for (let s = 0; s < 7; s++) {
+    const pc = tangramPieceAtStep(s);
+    if (!pc) return -1;
+    if (!st.tangramOwned?.[pc.id]) return s;
+  }
+  return -1;
+}
+
+function renderTangramReal(st) {
+  const hint = el["tangram-hint"];
+  const prog = el["tangram-progress"];
+  if (!hint && !prog) return;
+
+  const ownedN = TANGRAM_PIECES.filter((x) => st.tangramOwned?.[x.id]).length;
+  const placedN = Object.keys(st.tangramPlaced ?? {}).length;
+  const cov = tangramCoverage(st);
+  const tgt = tangramChallengeTarget(st);
+  const solved = tangramChallengeSolved(st);
+  const step = tgNextStep(st);
+  const pc = step >= 0 ? tangramPieceAtStep(step) : null;
+  const pr = step >= 0 ? tangramPricesAt(step) : null;
+  const factor = tangramPriceFactor(st);
+
+  if (hint) {
+    hint.textContent = pc
+      ? "下一块：" + pc.name
+        + " ｜ 抽 " + sci(Number(pr.draw) * factor) + " EP"
+        + " ｜ 兑 " + sci(Number(pr.exchange) * factor) + " EP"
+        + " ｜ 保底 " + Math.floor(Number(st.tangramPity?.[pc.id] ?? 0)) + "/" + pr.pity
+      : "七块已集齐 —— 到拼装挑战里拼图案吧";
+  }
+  if (prog) {
+    prog.textContent = "已获得 " + ownedN + "/7 ｜ 已放下 " + placedN
+      + (tgt ? (" ｜ 挑战：难度 " + (tgt.d + 1) + " ｜ " + (solved ? "已拼对！" : "未拼对")) : "");
+  }
+  for (const pair of [["vert", cov.vert], ["horz", cov.horz], ["diag", cov.diag]]) {
+    const node = el["tangram-cov-" + pair[0]];
+    if (node) node.textContent = (pair[1] * 100).toFixed(1) + "%";
+  }
+
+  const slots = typeof document !== "undefined"
+    ? document.querySelectorAll("#panel-tangram .tangram-slot")
+    : [];
+  for (let i = 0; i < slots.length && i < TANGRAM_PIECES.length; i++) {
+    const node = slots[i];
+    const piece = TANGRAM_PIECES[i];
+    const own = !!st.tangramOwned?.[piece.id];
+    if (node.dataset.tgBound !== "1") {
+      node.dataset.tgBound = "1";
+      node.style.cursor = "pointer";
+      const pid = piece.id;
+      node.addEventListener("click", () => {
+        if (!st.tangramOwned?.[pid]) return;
+        tgSel = pid;
+        renderTangramReal(st);
+      });
+    }
+    node.classList.toggle("owned", own);
+    node.style.opacity = own ? "1" : "0.5";
+    node.style.outline = tgSel === piece.id ? "1px solid var(--eternity, #b388ff)" : "none";
+  }
+
+  if (!tgBarBuilt && typeof document !== "undefined") {
+    const host = document.querySelector("#panel-tangram .tangram-tray");
+    if (host) {
+      tgBarBuilt = true;
+      const bar = document.createElement("div");
+      bar.style.cssText = "display:flex;flex-wrap:wrap;gap:4px;margin:8px 0";
+      const mk = (label, fn) => {
+        const b = document.createElement("button");
+        b.className = "btn btn-small";
+        b.style.width = "auto";
+        b.textContent = label;
+        b.addEventListener("click", () => { fn(); handlers.onTangramCommit?.(); });
+        bar.appendChild(b);
+      };
+      mk("获取", () => {
+        const s2 = tgNextStep(st);
+        if (s2 >= 0) exchangeTangramPiece(st, s2);
+      });
+      mk("◀", () => { if (tgSel) moveTangramPlacement(st, tgSel, -1, 0); });
+      mk("▶", () => { if (tgSel) moveTangramPlacement(st, tgSel, 1, 0); });
+      mk("▼", () => { if (tgSel) moveTangramPlacement(st, tgSel, 0, -1); });
+      mk("▲", () => { if (tgSel) moveTangramPlacement(st, tgSel, 0, 1); });
+      mk("R 转", () => { if (tgSel) rotateTangramPlacement(st, tgSel, 1); });
+      mk("F 翻", () => { if (tgSel) flipTangramPlacement(st, tgSel); });
+      mk("放下", () => { if (tgSel) autoPlaceTangram(st, tgSel); });
+      mk("收回", () => { if (tgSel) takeTangramBack(st, tgSel); });
+      mk("下一题", () => tangramAdvanceChallenge(st));
+      mk("重置棋盘", () => resetTangramBoard(st));
+      host.appendChild(bar);
+    }
+  }
+}

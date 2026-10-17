@@ -28,10 +28,10 @@
 | QUANTUM_MILESTONES（量子里程碑） | **7** | qm1~qm7 |
 | ZPE_MILESTONES（ZPE 里程碑） | **6** |  |
 | ETERNITY_MILESTONES（永恒里程碑） | **8** | em1~em8 |
-| ETERNITY_MILESTONES 占位中 | **1** | em8 |
+| ETERNITY_MILESTONES 占位中 | **2** | em7, em8 |
 | DREAM_UPGRADES（梦想升级） | **5** | 其中可重复 1 条 |
 | REPEATABLE（可重复升级） | **3** |  |
-| ETERNITY_MILESTONES 里 pending 的 | **em8** | ⭐ 2026：`em7` 因 IC 删除而退回 pending（见其注释） |
+| ETERNITY_MILESTONES 里 pending 的 | **em7, em8** | ⭐ 2026：`em7` 因 IC 删除而退回 pending（见其注释） |
 | ZONES（乘区） | **13** |  |
 | ZONE_OF（id 乘区登记） | **58** | 由 dom-smoke 的「乘区登记」断言守 |
 | NEKO.tiers（好感度档位） | **3** | >25 ⇒ ×1.002｜>50 ⇒ ×1.005｜>75 ⇒ ×1.015 |

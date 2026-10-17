@@ -216,24 +216,27 @@ export function playTimeBonus(state) {
   return 1 + TIME_BONUS.coeff * Math.log10(1 + sec / 60);
 }
 
-export const INFINITY_CHALLENGES = {
-  max: 3,                       // ★ 2025 用户重排：**降为可选挑战**（3 关 ✓ 主线时长改由引擎/深度承重 ✓）
-  entMult: 5,                       // 每完成一次，熵需求再 ×5
-  ipJumpOrders: 10,                  // ★ 重排：每关只是"**加成**"（+10 阶 ✓ 可调 ✓）—— 主线 IP 由深度提供 ✓
-};
-
-/** 当前挑战的熵需求倍率：未激活 ⇒ 1（零回归） */
-export function icEntropyMult(state) {
-  const k = state?.ic?.active;
-  if (k == null) return 1;
-  if (k === 0) return 1;                       // ★ 入门关：熵需求**不削弱**（×1 ✓ 用户 2025）
-  return Math.pow(INFINITY_CHALLENGES.entMult, k);
-}
-
-/** 完成一次挑战 ⇒ 无限点余额跃升一段（返回跃升倍率，供日志用） */
-export function icIpJumpMult() {
-  return new Decimal(10).pow(INFINITY_CHALLENGES.ipJumpOrders);
-}
+/**
+ * ★★★ 2026 **已删除**（用户裁定：「把无限挑战（和相关的）删了」）。
+ *
+ * ── 原样（留档，便于对照 git 历史）──
+ *   `INFINITY_CHALLENGES = { max: 3, entMult: 5, ipJumpOrders: 10 }`
+ *   `icEntropyMult(state)` —— 挑战中熵需求 `×5^k`
+ *   `icIpJumpMult()`       —— 每过一关 IP ×10^10
+ *
+ * ── 为什么删（用户原话）──
+ *   「我发现无限挑战做不做都不影响我永恒了」
+ *   ⇒ 既不影响永恒节奏、也不是必经之路 ⇒ 纯可选的内容负担 ✗
+ *
+ * ── 连带删除（整块，不是半删）──
+ *   ui-ic.js 整文件 · state.ic / icAutoTimer / fastestInfinitySec ·
+ *   engine.js 的 start/abandon/icCompleteOnCrunch/icAutoAdvance ·
+ *   formulas.conversion 里那行阈值放大 · index.html 的 IC 宿主 ·
+ *   neko.js 的 IC 日志分类 · tools/ic-lab.mjs 与 ic-ladder-lab.mjs ·
+ *   **em7 退回 pending**（它的内容就是自动完成 IC）
+ *
+ * ⚠️ 不要从 git 历史复活它 —— 除非用户明确要重建 ✓
+ */
 
 export const VOID_BOOST = { coeff: 0.1 };
 
@@ -1271,21 +1274,19 @@ export const ETERNITY_MILESTONES = [
     id: "em7",
     need: 7,
     /**
-     * ★★★ 2025：**已实装**（原来 `pending: true`，理由是「IC 目前 3 关且需手动，
-     *   "按最快无限速度自动完成"依赖 IC 阶梯定稿」）。
+     * ★★★ 2025/2026：**退回 pending 状态**（IC 被整块删除）。
      *
-     * ⚠️ 那条理由**已经过时**：IC 阶梯不会再扩（用户裁定「维持现状」，`max` 固定 3）✗
-     *   ⇒ 现在落地（用户裁定）：
-     *     · 关数 **7 → 3**（设计稿的 7 是它当时的规划；实际 `INFINITY_CHALLENGES.max = 3`）✓
-     *     · 触发口径 = **「每过 N 时间自动过一关」**（忠实原文"最快无限速度"）✓
-     *     · `N = state.fastestInfinitySec`（历次"本轮时长"的最小值，唯一入口
-     *       `icAutoAdvance`；`N <= 0` ⇒ 未就绪、不自动完成）✓
-     *     · 「无视条件」= 不要求真的进挑战、不检查熵需求 ✓
+     * · 2025：实装成 `effect: { kind: "autoInfinityChallenge" }`（按最快无限速度自动过 IC 关）
+     * · **2026：用户裁定删除「无限挑战」整个系统** ⇒ em7 的唯一内容没了 ⇒ 它**没有任何效果**
      *
-     * 文案里的 `3` **不能写死** —— 由 `INFINITY_CHALLENGES.max` 推（见 `buildDynamicText`）✓
+     * ⚠️ 为什么保留而不删（用户裁定 **B 方案**）：删掉会动里程碑编号与存档达成状态，
+     *   而**永恒里程碑属于用户自己开发的范围** ⇒ 先标 pending + 写明原因，等他给新效果 ✓
+     * ⚠️ 将来重做时：原来依赖的 `state.fastestInfinitySec` **已随 IC 删除** ⇒ 需另找时间源；
+     *   且**不要复活** `icAutoAdvance` / `INFINITY_CHALLENGES`（整块删除）✗
      */
-    effect: { kind: "autoInfinityChallenge" },
-    desc: "无限挑战将基于最快无限速度自动依次完成全部（无视条件）" },
+    pending: true,
+    pendingWhy: "IC 已删除；这一条需要新效果（待用户定）",
+    desc: "（待定：原为「自动完成无限挑战」，IC 已删除）" },
   {
     id: "em8",
     need: 8,
