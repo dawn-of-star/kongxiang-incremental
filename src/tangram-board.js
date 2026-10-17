@@ -48,7 +48,8 @@ function ensureLayers(svg) {
   layerPieces.setAttribute("class", "tg-piece-layer");
   svg.appendChild(layerTarget);
   svg.appendChild(layerPieces);
-  // ⚠️ 2026 修：**不要改 viewBox** —— 原来外扩到 −9.6..9.6 会把棋盘缩成右上角一小块 ✗`n  //   设计稿 §8 定的是 950px 的 svg，viewBox 保持 index.html 的 `-3 -3 106 106` ✓
+  // ⚠️ 2026 修：**不要改 viewBox** —— 原来外扩到 −9.6..9.6 会把棋盘缩成右上角一小块 ✗
+  //   设计稿 §8 定的是 950px 的 svg，viewBox 保持 index.html 的 `-3 -3 106 106` ✓
   svg.style.touchAction = "none";      // 触屏拖拽必须 ✓
   return true;
 }
@@ -60,7 +61,8 @@ export function paintTangramBoard(state) {
   if (!svg || !ensureLayers(svg)) return;
 
   // ① 目标轮廓（单 path，按指纹缓存 ⇒ 只在换题时重建）
-  // ⚠️ 2026（用户：「为什么会有这个玩意」）—— **不画目标轮廓**（半透明的一大块，看不出是题目 ✗）`n  const tgt = null;
+  // ⚠️ 2026（用户：「为什么会有这个玩意」）—— **不画目标轮廓**（半透明的一大块，看不出是题目 ✗）
+  const tgt = null;
   if (tgt && targetKeyCache !== tgt.key) {
     const d = cellsFromFingerprint(tgt.key).map((c) => {
       const v = triVerts(c[0], c[1], c[2]).map(([x, y]) => toSvg(x, y));
