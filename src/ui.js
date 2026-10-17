@@ -8,6 +8,8 @@ import {
   tangramPriceFactor, tangramPricesAt,
 } from "./tangram-game.js";
 import { TANGRAM_PIECES, tangramPieceAtStep } from "./tangram.js";
+// ★ 2026：挑战奖励的**唯一聚合入口**（表在 tangram.js）✓
+import { tangramRewardEffects, TANGRAM_CHALLENGE_REWARDS } from "./tangram.js";
 // ★★★ 2026：梦想页分组 + 右侧开关（增量改造：搬卡片 + 加开关，不重建）✓
 import { arrangeDreamPage, renderDreamPage } from "./dream-ui.js";
 // ★★★ 2026：AD 式锁态（标签常显 + 锁角标 + 悬停条件；解锁永久）✓
@@ -2451,6 +2453,12 @@ function renderTangramReal(st) {
   const pr = step >= 0 ? tangramPricesAt(step) : null;
   const factor = tangramPriceFactor(st);
 
+  if (!document.getElementById("tg-reward-line") && hint?.parentElement) {
+    const d = document.createElement("p");
+    d.className = "note";
+    d.id = "tg-reward-line";
+    hint.parentElement.insertBefore(d, hint.nextSibling);
+  }
   if (hint) {
     hint.textContent = pc
       ? "下一块：" + pc.name
@@ -2459,9 +2467,21 @@ function renderTangramReal(st) {
         + " ｜ 保底 " + Math.floor(Number(st.tangramPity?.[pc.id] ?? 0)) + "/" + pr.pity
       : "七块已集齐 —— 到拼装挑战里拼图案吧";
   }
+  // ★★★ 2026：**挑战奖励**（表在 tangram.js 的 TANGRAM_CHALLENGE_REWARDS）—— 面板里显示当前档位 ✓
   if (prog) {
     prog.textContent = "已获得 " + ownedN + "/7 ｜ 已放下 " + placedN
       + (tgt ? (" ｜ 挑战：难度 " + (tgt.d + 1) + " ｜ " + (solved ? "已拼对！" : "未拼对")) : "");
+  }
+  // ★★★ 2026：**挑战奖励的当前档位**（唯一聚合入口 `tangramRewardEffects`）✓
+  const rw = tangramRewardEffects(st.tangramCleared);
+  const rl = document.getElementById("tg-reward-line");   // ⚠️ 不走 el[] 缓存（它在运行时才建）✓
+  if (rl) {
+    rl.textContent = "挑战奖励：EP 折扣 " + (rw.epDiscount * 100).toFixed(0) + "%"
+      + " ｜ 免费引擎 " + rw.freeZpeEngineLevels + " 级"
+      + " ｜ 暗能量 knee ×" + rw.deKneeMult.toFixed(2)
+      + " ｜ IP 倍增 knee ×" + rw.ipDoubleKneeMult.toFixed(2)
+      + (rw.passiveIpFrac > 0 ? " ｜ 每秒 " + (rw.passiveIpFrac * 100).toFixed(0) + "% 本次无限 IP" : "")
+      + (rw.allClear ? " ｜ 全清 ✓" : "");
   }
   for (const pair of [["vert", cov.vert], ["horz", cov.horz], ["diag", cov.diag]]) {
     const node = el["tangram-cov-" + pair[0]];
