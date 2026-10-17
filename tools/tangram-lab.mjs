@@ -324,7 +324,31 @@ console.log();
     const okFull = rewardConvSlopeMult(full) === 10 && rewardCountFreqMult(full) === 5
       && rewardPityFloor(full) === 120 && rewardDeKneeMult(full) === 4
       && rewardIpDoubleKneeMult(full) === 3 && rewardFreeEngineLevels(full) === 185;
-    ck("⑨f 奖励系数落点：基线全 1/0、全清等于表值（p 中性）", okBase && okFull,
+    // ★★★ 2026：**被动 IP 的门槛 = 第 4 层全清**（用户：「参考 AD TS181 在第 4 层完成时获得」）✓
+  {
+    const { tangramPassiveIpGain } = await import("../src/tangram-passive.js");
+    const D0 = (await import("../dist/break_eternity.esm.js")).default;
+    const g = () => new D0("1e6");
+    const zero = tangramPassiveIpGain({ brokenInfinity: true, tangramCleared: [0, 0, 0, 0, 0, 0] }, 1000, g);
+    const d3 = tangramPassiveIpGain({ brokenInfinity: true, tangramCleared: [6, 6, 6, 0, 0, 0] }, 1000, g);
+    const d4 = tangramPassiveIpGain({ brokenInfinity: true, tangramCleared: [6, 6, 6, 6, 0, 0] }, 1000, g);
+    const half = tangramPassiveIpGain({ brokenInfinity: true, tangramCleared: [6, 6, 6, 6, 0, 0] }, 500, g);
+    ck("⑨g 被动 IP：**第 4 层全清**才给（1%/秒，收益源 = bigCrunchGain）",
+      zero.eq(0) && d3.eq(0) && d4.eq(10000) && half.eq(5000),
+      "基线=" + zero + "｜d3=" + d3 + "｜d4=" + d4 + "｜半秒=" + half);
+  }
+
+  // ★★★ 2026：**六档全清 ⇒ deGainBase 每级 1.10 → 1.14**（em4 是 1.12）✓
+  {
+    const cfg = await import("../src/config.js");
+    const b = cfg.deGainBaseEffectMult({ tangramCleared: [0, 0, 0, 0, 0, 0] });
+    const f = cfg.deGainBaseEffectMult({ tangramCleared: [6, 6, 6, 6, 6, 6] });
+    ck("⑨h 全清 ⇒ 暗能量每级倍率 1.10 → 1.14（只抬倍率，曲线形状不变）",
+      Math.abs(Number(b) - 1.10) < 1e-9 && Math.abs(Number(f) - 1.14) < 1e-9,
+      "基线=" + b + "｜全清=" + f);
+  }
+
+  ck("⑨f 奖励系数落点：基线全 1/0、全清等于表值（p 中性）", okBase && okFull,
       "基线=" + (okBase ? "✓" : "✗") + "｜全清=" + (okFull ? "✓" : "✗")
       + "（conv×" + rewardConvSlopeMult(full) + " cf×" + rewardCountFreqMult(full) + " 保底" + rewardPityFloor(full) + "）");
   }

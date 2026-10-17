@@ -2516,6 +2516,9 @@ function renderTangramReal(st) {
       + " ｜ 免费引擎 " + rw.freeZpeEngineLevels + " 级"
       + " ｜ 暗能量 knee ×" + rw.deKneeMult.toFixed(2)
       + " ｜ IP 倍增 knee ×" + rw.ipDoubleKneeMult.toFixed(2)
+      + " ｜ 转化斜率 ×" + (rw.convSlopeMult ?? 1).toFixed(0)
+      + " ｜ 计数系数 ×" + (rw.countFreqMult ?? 1).toFixed(0)
+      + " ｜ 保底 " + (rw.pityFloor ?? 150)
       + (rw.passiveIpFrac > 0 ? " ｜ 每秒 " + (rw.passiveIpFrac * 100).toFixed(0) + "% 本次无限 IP" : "")
       + (rw.allClear ? " ｜ 全清 ✓" : "");
   }

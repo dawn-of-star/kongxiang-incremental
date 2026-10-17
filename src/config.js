@@ -495,6 +495,8 @@ export function ipDoubleLogCost(level) {
   const n = Math.max(0, Number(level) || 0);
   // ★ 第 1 级（count=0）：固定 1 点（用户裁定）
   if (n <= 0) return 0;                                                // 10^0 = 1 ✓
+  // ⚠️ 2026：ipDouble 的 knee 奖励（d6 全清 ×3）**尚未接** —— 这两个函数没有 state 形参，
+  //   硬塞会 ReferenceError ✗ 要接必须先改签名（会连锁到 6 个以上调用点）⇒ 记入 TODO ✓
   const inc = IP_DOUBLE_AD.purchasesAtIncrease;
   // ★ 第 2 级起：`10^(n−1)` ⇒ n=1→1、n=2→10、n=3→100 …（与用户给的序列一致 ✓）
   if (n < inc) return Math.log10(10) * (n - 1);
@@ -582,6 +584,8 @@ export function engineBonusMult(state) {
  */
 export function ipDoubleAffordableIn(level, poolDecimal) {
   const lv0 = Math.max(0, Number(level) || 0);
+  // ⚠️ 2026：ipDouble 的 knee 奖励（d6 全清 ×3）**尚未接** —— 这两个函数没有 state 形参，
+  //   硬塞会 ReferenceError ✗ 要接必须先改签名（会连锁到 6 个以上调用点）⇒ 记入 TODO ✓
   const inc = IP_DOUBLE_AD.purchasesAtIncrease;
   // ★ `costCap` 已删除（用户裁定）⇒ 这里不再读它 ✓
   const pool = poolDecimal instanceof Decimal ? poolDecimal : new Decimal(poolDecimal ?? 0);
