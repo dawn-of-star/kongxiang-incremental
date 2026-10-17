@@ -333,7 +333,41 @@ console.log();
     const d3 = tangramPassiveIpGain({ brokenInfinity: true, tangramCleared: [6, 6, 6, 0, 0, 0] }, 1000, g);
     const d4 = tangramPassiveIpGain({ brokenInfinity: true, tangramCleared: [6, 6, 6, 6, 0, 0] }, 1000, g);
     const half = tangramPassiveIpGain({ brokenInfinity: true, tangramCleared: [6, 6, 6, 6, 0, 0] }, 500, g);
-    ck("⑨g 被动 IP：**第 4 层全清**才给（1%/秒，收益源 = bigCrunchGain）",
+    // ★★★ 2026（用户：「时空是一个新的重置层，务必注意」）—— **每时空随机出题** 的断言 ✓
+  //   ① 同一进度、不同时空 ⇒ **同档但不同题**（顺序变了）
+  //   ② 时空数相同 ⇒ 结果**可复现**（同一种子同一种顺序 ✓ 这是"随机"能被测试的前提）
+  //   ③ 某档清满 6 个 ⇒ 自动进下一档
+  {
+    const { newState } = await import("../src/state.js");
+    const gm = await import("../src/tangram-game.js");
+    const s = newState();
+    s.spaceCount = 3;
+    const a1 = gm.tangramChallengeTarget(s);
+    const a2 = gm.tangramChallengeTarget(s);
+    s.spaceCount = 4;
+    const b = gm.tangramChallengeTarget(s);
+    s.spaceCount = 3;
+    const a3 = gm.tangramChallengeTarget(s);
+    // ③ 逐档推进
+    s.spaceCount = 1;
+    s.tangramCleared = [6, 1, 0, 0, 0, 0];
+    const adv = gm.tangramChallengeTarget(s);
+    // ④ 时空层未实装时退回永恒次数（仍能工作 ✓）
+    const e1 = newState();
+    e1.eternityCount = 5;
+    const byEternity = gm.tangramChallengeTarget(e1);
+
+    const sameSeedSame = a1.key === a2.key && a1.key === a3.key;
+    const diffSeedDiff = a1.d === b.d && a1.key !== b.key;
+    const advanced = adv.d === 1;
+    const fallbackOk = !!byEternity?.key;
+    ck("⑨i 每时空随机：同时空可复现 / 异时空不同题 / 逐档推进 / 无时空时退回永恒",
+      sameSeedSame && diffSeedDiff && advanced && fallbackOk,
+      "同时空一致=" + sameSeedSame + "｜异时空不同=" + diffSeedDiff
+      + "｜d1 清满⇒难度" + (adv.d + 1) + "｜退回永恒=" + fallbackOk);
+  }
+
+  ck("⑨g 被动 IP：**第 4 层全清**才给（1%/秒，收益源 = bigCrunchGain）",
       zero.eq(0) && d3.eq(0) && d4.eq(10000) && half.eq(5000),
       "基线=" + zero + "｜d3=" + d3 + "｜d4=" + d4 + "｜半秒=" + half);
   }
