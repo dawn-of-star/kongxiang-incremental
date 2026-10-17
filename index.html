@@ -898,7 +898,10 @@
                注意：原点在正方形左下角；SVG 的 y 轴向下 ⇒ 左下 = (0,100) -->
           <div class="tangram-wrap">
             <div class="tangram-board">
-              <svg class="tangram-svg" viewBox="-3 -3 106 106" aria-hidden="true">
+              <!-- ★★★ 2026（用户：「外面拉进来一个巧板在这里拼的感觉」）——
+     viewBox 覆盖**整个画布**（板坐标 −3..7 ⇒ 含正方形外的可摆区域），
+     正方形只占中间一块；外面留白就是"可以拖出去停"的地方 ✓ -->
+        <svg class="tangram-svg" viewBox="-100 -100 300 300" aria-hidden="true">
                 <rect class="tg-frame" x="0" y="0" width="100" height="100"></rect>
                 <!-- 三条轴：左边缘 / 下边缘 / 左下→右上 主对角线 -->
                 <line class="tg-axis" x1="0" y1="100" x2="0" y2="0"></line>
