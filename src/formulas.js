@@ -1,4 +1,6 @@
 import { quantumToIPGain } from "./config.js";
+// ★★★ 2026：七巧板三条轴的加成（设计稿 docs/TANGRAM.md §2 已勘定的落点）✓
+import { tangramCountFreqMult, tangramEngineBonusLevels, tangramConvRateMult } from "./tangram-bonus.js";
 /**
  * formulas.js —— 全部计算（纯函数，不碰 DOM）
  *
@@ -120,6 +122,8 @@ export function countFreqAddTerm(state) {
   }
   // ★ cm2：计数频率每级系数翻倍（0.05 -> 0.10）⇒ 把"超出 1 的部分" ×2
   if (hasCollapse(state, "cm2")) extra = D(1).add(extra.sub(1).mul(2));
+  // ★★★ 2026：**斜轴**（覆盖率 ⇒ 计数频率每级系数 0.05 → 50）✓
+  extra = D(1).add(extra.sub(1).mul(tangramCountFreqMult(state)));
   return extra;
 }
 
@@ -843,6 +847,8 @@ export function conversion(state) {
   // ⚠️ 这里原来有一个 `qe.convUncap` 分支（旧量子升级「解耦」把产出改成乘法）。
   //    那套量子升级系统已整体删除，分支永远是死路，已移除。
   let perLevel = cfg.outputPerLevel;
+  // ★★★ 2026：**横轴**（覆盖率 ⇒ 熵→粒子速率 0.1 → 1e13）—— 直接乘在**斜率**上 ✓
+  perLevel *= tangramConvRateMult(state);
   if (hasVoid(state, "v5")) perLevel += 0.5;
   if (hasCollapse(state, "cm5")) perLevel *= transmuterIpMult(state);   // ⑤ 相变仪随 IP（对数）
   // ★ 「凝聚斜率」：直接加在**斜率**上（不是乘一个倍率）。

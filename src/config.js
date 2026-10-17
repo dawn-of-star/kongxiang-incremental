@@ -80,6 +80,8 @@ export const ZONE_RULES = {
  */
 
 import Decimal from "../dist/break_eternity.esm.js";
+// ★★★ 2026：七巧板三条轴（纵轴落点）✓
+import { tangramEngineBonusLevels } from "./tangram-bonus.js";
 
 // ══════════════════════════════════════════════════════════
 // 基础常数
@@ -4448,7 +4450,11 @@ export function ipDivisorBreakdown(state) {
 
 /** ★ 引擎的**生效等级**（唯一入口 ✓）—— 2026 起没有修饰器，恒等于真实等级 ✓ */
 export function effectiveEngineLevel(state) {
-  return zpeEngineLevel(state).max(0);
+  // ★★★ 2026：**纵轴**（覆盖率 ⇒ 免费 ZPE 引擎等级 10 → 10000）—— 设计稿 §2 已勘定 ✓
+  //   ⚠️ 走 log 插值 + knee 饱和 ⇒ 有极强软上限（`PROGRESSION.md` §4.5）✓
+  const base = zpeEngineLevel(state).max(0);
+  const bonus = typeof state?.tangramPlaced === "object" ? tangramEngineBonusLevels(state) : 0;
+  return base.add(Math.max(0, bonus));
 }
 
 // ══════════════════════════════════════════════════════════
