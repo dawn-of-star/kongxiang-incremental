@@ -21,6 +21,8 @@
 import Decimal from "../dist/break_eternity.esm.js";
 // ★★★ 2026：自动无限（独立模块，tick 里调 maybeAutoCrunch）✓
 import { maybeAutoCrunch, AUTO_CRUNCH, shouldAutoCrunch, autoCrunchThreshold, defaultAutoCrunch, setAutoCrunchActive, setAutoCrunchMode, setAutoCrunchValue } from "./autocrunch.js";
+// ★★★ 2026：七巧板「每秒 1% 本次无限 IP」（AD TS181 同款）✓
+import { applyTangramPassiveIp } from "./tangram-passive.js";
 // ★★★ 2025（用户裁定）：统一的科学计数法 `1.00e308`（`sci()`）
 //   ⚠️ 从 `./format.js` 取，**不能**从 `./ui.js` 取 —— `ui.js` 已 import 本文件，
 //      反向 import 会成循环依赖 ✗（见 format.js 的头注）
@@ -336,6 +338,9 @@ function tickBody(state, dt) {
   //   独立模块 `src/autocrunch.js`；把 `doBigCrunch` 当参数传进去，避免循环 import ✓
   //   ⚠️ 判据成立后再等 0.1s（用户裁定）⇒ 冷却在模块里判 ✓
   maybeAutoCrunch(state, doBigCrunch);
+  // ★★★ 2026：**每秒 1% 本次无限可获得的 IP**（中间难度全清奖励；未解锁 ⇒ 恰好 0 ✓）
+  //   ⚠️ 收益源走 bigCrunchGain（唯一数据源），当参数传进去避免循环 import ✓
+  applyTangramPassiveIp(state, dt, bigCrunchGain);
   // ⚠️ 2026：这里原来有 icAutoAdvance(state, dt)（em7 自动完成无限挑战）——
   //   **IC 整个系统已删除**（用户裁定）⇒ 那行移除；em7 本身退回 pending ✓
 
