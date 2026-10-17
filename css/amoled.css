@@ -1042,7 +1042,8 @@ button { font: inherit; cursor: pointer; }
 .tg-acq-row > span.dim { font-size: 11px; white-space: nowrap; }
 
 /* ── 托盘：单列 7 行，行高统一，名字绝不折行 ── */
-/* ⚠️ 不要改成 flex-column：0.7.1 的 .tangram-tray 本来就是 2 列 grid ✓（截图里的 2 列就是它）*/`n.tangram-tray { gap: 3px !important; }
+/* ⚠️ 不要改成 flex-column：0.7.1 的 .tangram-tray 本来就是 2 列 grid ✓（截图里的 2 列就是它）*/
+.tangram-tray { gap: 3px !important; }
 /* ★★★ 2026（用户：「图在上，字在下」）—— 槽位改成**纵向**：缩略图居中在上、名字在下 ✓ */
 .tangram-slot {
   display: flex !important; flex-direction: column !important;

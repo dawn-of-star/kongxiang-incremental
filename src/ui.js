@@ -720,7 +720,8 @@ function buildZpeMechanisms() {
  * 建「坍缩里程碑」清单（**只建一次**，`render()` 里只切 class）。
  *
  * ⚠️ 结构必须与 `buildVoidUpgrades()` 里的里程碑**逐字一致**：
- *    `div.ms` + `span.dot / .txt / .need`，状态用 `done` / `next` 两个 class。
+ *    `div.ms` + `span.dot / .txt / .need`，状态用 `done` / 
+ext` 两个 class。
  *    第一版我用了 `ms-item` 这个**不存在的 class**，于是它在页面上和别的里程碑长得不一样。
  *    （这里刻意**不调** `applyZone()`：档位里程碑的效果落在好几格上，
  *      按项目规矩"落点不唯一就不上色"。）
@@ -927,9 +928,12 @@ function renderTangram(state) {
  * ★★★ 2025 新实现（`docs/NEKO.md` §7 / 设计稿 §10）：**猫猫卡片**。
  *
  * 守「显示 == 实发」：好感度 / 指数 / 下一档全部走 config 的
- *   `nekoGlobalExponent` / `nekoNextTier` / `NEKO`（**唯一入口**）⇒ 与实发不可能脱节 ✓
+ *   
+ekoGlobalExponent` / 
+ekoNextTier` / `NEKO`（**唯一入口**）⇒ 与实发不可能脱节 ✓
  *
- * ⚠️ 接入 N.E.K.O SDK 是**另一条线**（NEKO.md §3~§9，走 `neko-minigame-sdk`）。
+ * ⚠️ 接入 N.E.K.O SDK 是**另一条线**（NEKO.md §3~§9，走 
+eko-minigame-sdk`）。
  *   本卡片在**未接入**时也完整可用（好感度由游戏内原生机制驱动）——
  *   这正是 NEKO.md §7 明写的定位 ✓
  */
@@ -940,7 +944,8 @@ function renderNeko(state) {
 
   // ★★★ 2025（`docs/NEKO.md` §3~§9）：**宿主接入状态** ——
   //   用户原则「没有 ui 真的很容易误判」⇒ 接没接上必须看得见 ✓
-  //   ⚠️ 判据**调真函数** `nekoHostPresent()`（读宿主注入的 `#neko-minigame-host-launch`），
+  //   ⚠️ 判据**调真函数** 
+ekoHostPresent()`（读宿主注入的 `#neko-minigame-host-launch`），
   //      不是看 `window.lanlan_config`（那是**旧式集成**，soccer/badminton 用的另一条路 ✗）
   if (el["neko-sdk-state"]) {
     const host = nekoHostPresent(globalThis.document);
@@ -976,7 +981,8 @@ function renderNeko(state) {
       : `已用完（每 5 分钟 < ${NEKO.driftMax} 点）—— 等窗口过去`;
   }
   // ★★★ 2025（`NEKO.md` §10）：**道具**（三个）——
-  //   判据全部走 `NEKO_ITEMS` + `nekoDriftRoom`（**同一套来源**，不在这里重写 ✗）
+  //   判据全部走 `NEKO_ITEMS` + 
+ekoDriftRoom`（**同一套来源**，不在这里重写 ✗）
   {
     const room = nekoDriftRoom(state);
     let usable = 0;
@@ -989,7 +995,8 @@ function renderNeko(state) {
         btn.classList.toggle("affordable", can);
         btn.disabled = !can;
       }
-      const cost = el[`neko-item-${it.id}-cost`];
+      const cost = el[
+eko-item-${it.id}-cost`];
       if (cost) {
         cost.textContent = !canRes ? `需要：${it.costText}`
           : room <= 0 ? `窗口额度已用完（每 5 分钟 < ${NEKO.driftMax} 点）`
@@ -1006,12 +1013,14 @@ function renderNeko(state) {
       box.dataset.built = "1";
       for (const t of NEKO.tiers) {
         const d = document.createElement("div");
-        d.id = `neko-tier-${t.need}`;
+        d.id = 
+eko-tier-${t.need}`;
         box.appendChild(d);
       }
     }
     for (const t of NEKO.tiers) {
-      const d = document.getElementById(`neko-tier-${t.need}`);
+      const d = document.getElementById(
+eko-tier-${t.need}`);
       if (!d) continue;
       const on = a > t.need;
       d.className = on ? "on" : "";
@@ -1652,7 +1661,8 @@ export function render(state) {
   renderFloatResets(state);
   // ⚠️⚠️ 我一度在这里写了 `renderEternity` / `renderVoid` / `renderDe` / `renderLog` ——
   //   **这四个函数根本不存在**（这个文件里永恒/虚空/暗能量的渲染是**内联在 render 里**的）✗
-  //   而 `node --check` 只查语法、查不出未定义标识符 ⇒ 差点把页面搞崩。
+  //   而 
+ode --check` 只查语法、查不出未定义标识符 ⇒ 差点把页面搞崩。
   //   教训（本项目第 N 次）：**加代码前先确认被调用的东西存在**，别假设。
 
   // ── 日志 ──
@@ -1769,7 +1779,8 @@ function renderQuantum(state, R) {
   let dLevels = 0;
   for (const d of DREAM_UPGRADES) {
     const lv = dreamUpgradeLevelOf(state, d.id);
-    const cost = dreamUpgradeCostAt(d.id, lv);        // `null` = 已满级 / 一次性已买
+    const cost = dreamUpgradeCostAt(d.id, lv);        // 
+ull` = 已满级 / 一次性已买
     const has = lv > 0;
     const maxed = cost == null;
     if (has) dOwned++;
