@@ -12,6 +12,8 @@ import { TANGRAM_PIECES, tangramPieceAtStep } from "./tangram.js";
 import { tangramRewardEffects, TANGRAM_CHALLENGE_REWARDS } from "./tangram.js";
 // ★★★ 2026：梦想页分组 + 右侧开关（增量改造：搬卡片 + 加开关，不重建）✓
 import { arrangeDreamPage, renderDreamPage } from "./dream-ui.js";
+// ★★★ 2026：七巧板棋盘（画板 + 自由拖拽）—— 独立模块 ✓
+import { paintTangramBoard, bindTangramBoard } from "./tangram-board.js";
 // ★★★ 2026：AD 式锁态（标签常显 + 锁角标 + 悬停条件；解锁永久）✓
 import { updateTabLocks, setupTabLocks } from "./lock-ui.js";
 import { infinityUpgradeOwned } from "./config.js";
@@ -2308,6 +2310,8 @@ export function initUI(handlers) {
   buildDreamUpgrades();
   // ★ 2026：建完后**排一次**分组 + 挂开关（只搬卡片，不重建 ⇒ id/handler 全保留）✓
   arrangeDreamPage();   // ⚠️ 这里没有 state 变量（构建期）⇒ 模块内部用 renderDreamPage 存下的引用 ✓
+  // ★ 2026：七巧板拖拽（自由拖动 + 松手吸附 0.2 格；拖拽中 R/F）✓
+  bindTangramBoard(null, () => {});   // ⚠️ 构建期没有 state（TDZ）⇒ 模块用 paint 时存下的引用 ✓
   buildInfinityUpgrades();
   setupTabs();
   setupTabLocks();        // ★ 2026：锁角标的样式由模块自己注入（不动 css 文件）✓
@@ -2472,6 +2476,9 @@ function renderTangramReal(st) {
     prog.textContent = "已获得 " + ownedN + "/7 ｜ 已放下 " + placedN
       + (tgt ? (" ｜ 挑战：难度 " + (tgt.d + 1) + " ｜ " + (solved ? "已拼对！" : "未拼对")) : "");
   }
+  // ★★★ 2026：画棋盘（目标轮廓 + 板块 + 三轴 dashoffset）✓
+  paintTangramBoard(st);   // ⚠️ 本函数的形参叫 st（不是 state）✗
+
   // ★★★ 2026：**挑战奖励的当前档位**（唯一聚合入口 `tangramRewardEffects`）✓
   const rw = tangramRewardEffects(st.tangramCleared);
   const rl = document.getElementById("tg-reward-line");   // ⚠️ 不走 el[] 缓存（它在运行时才建）✓
