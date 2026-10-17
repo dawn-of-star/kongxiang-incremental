@@ -14,6 +14,8 @@ import { tangramRewardEffects, TANGRAM_CHALLENGE_REWARDS } from "./tangram.js";
 import { arrangeDreamPage, renderDreamPage } from "./dream-ui.js";
 // ★★★ 2026：七巧板棋盘（画板 + 自由拖拽）—— 独立模块 ✓
 import { paintTangramBoard, bindTangramBoard } from "./tangram-board.js";
+// ★ 2026：自动无限的**规则面板**（挂在「无限自动化」卡片右侧）✓
+import { paintAutoCrunchUI } from "./autocrunch-ui.js";
 // ★★★ 2026：AD 式锁态（标签常显 + 锁角标 + 悬停条件；解锁永久）✓
 import { updateTabLocks, setupTabLocks } from "./lock-ui.js";
 import { infinityUpgradeOwned } from "./config.js";

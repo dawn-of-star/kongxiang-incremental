@@ -22,10 +22,10 @@ export const AUTO_CRUNCH = {
   /** 三种模式 × 默认阈值（可改）✓ */
   modes: [
     { id: "amount", name: "按收益", unit: "IP", def: "1" },
-    { id: "time", name: "按时间", unit: "秒", def: 60 },
+    { id: "time", name: "按时间", unit: "秒", def: 0.1 },   // ★ 用户指定：**默认 0.1 秒** ✓
     { id: "xHighest", name: "× 上次最高", unit: "倍", def: "2" },
   ],
-  defaults: { amount: "1", time: 60, xHighest: "2" },
+  defaults: { amount: "1", time: 0.1, xHighest: "2" },   // ★ time 默认 0.1 秒（用户指定）✓
   /** ★ 用户裁定：判据成立后 **0.1 秒**才真正坍缩（= AD 的最小间隔 100ms 上限）✓ */
   fireDelayMs: 100,
   /** 动态阈值系数（买了 IP 倍率升级会抬高 amount 阈值；买了 ipTime 就不抬）✓ */
