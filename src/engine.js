@@ -1229,12 +1229,21 @@ export function applyEternityRetention(state) {
   const count = Math.floor((state.eternityCount ?? 0) / 2);
   if (count <= 0) return [];
   const singles = INFINITY_ORDER.filter((id) => !INFINITY_UPGRADES[id]?.repeatable);
+  // ★★★ 2026 修 bug（用户：「em1 的里程碑生效方向不对啊，为什么从**贵的量子的**无限升级获取
+  //   而不是**便宜的 iu**？」＋「应该是**从便宜的 iu 保存到贵的 iu**」）：
+  //   旧写法 `singles.slice(-count)` 假设 `INFINITY_ORDER` 从便宜到贵 —— **那是假的** ✗
+  //   （它是 UI 格子顺序：`ipFromQuantum` 排第一、量子系排最后）
+  //   ⇒ 实测旧行为：永恒 6 次保留 `rate167(10000) / rate139(1000) / start200(300)` ✗
+  //   ⇒ 现在按**真实价格升序**取最便宜的 N 个 ✓（价格走唯一入口 `infinityUpgradeCost`）
+  const priced = singles
+    .map((id, idx) => ({ id, idx, cost: Number(infinityUpgradeCost(state, id) ?? Infinity) }))
+    .sort((a, b) => (a.cost - b.cost) || (a.idx - b.idx));
   const kept = [];
   // ⚠️ 每次**全新分配**这两个容器：调用点（`doEternity`）刚把 `startBought`/`speedBought` 清成 `{}`，
   //    所以这里不需要判重；直接写即可（幂等：重复调用的结果相同 ✓）
   state.startBought = state.startBought ?? {};
   state.speedBought = state.speedBought ?? {};
-  for (const id of singles.slice(-count)) {
+  for (const { id } of priced.slice(0, count)) {
     // 各条一次性升级的**真实标记字段** —— 口径与 `infinityUpgradeOwned()`（config.js）逐条对应，
     // 改这里必须同步改那里（两处不一致 = "买了却没生效"类 bug 的经典成因 ✗）
     if (id === "thresholdFlat") state.thresholdFlatBought = true;

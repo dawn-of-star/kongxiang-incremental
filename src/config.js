@@ -157,13 +157,10 @@ export const ZPE_EXPONENT = 0.02;
  * 用 ZPE 买的话等级 ∝ log(ZPE)，只给多项式提速。
  */
 /**
- * ★ 第三种设计稿（用户 2025）· **无限挑战（IC）**
- *
- *   · 条件：**只有"抵达无限"**（用户裁定）⇒ 本实现里 = 在挑战激活期间完成一次大坍缩
- *   · 难度：熵→粒子的熵需求 ×5，每完成一次再 ×5（最高 ×78125 = 完成 7 次）
- *   · 奖励：完成后**无限点余额跃升一段**（每段 = 36.89 个数量级）
- *       1e50 → 1e86.89 → … → 1e308.25（第 7 段正好触及永恒门槛）
- *   · 安全：跳跃因子是**固定常数**、只有 7 步 ⇒ 不构成指数链（判据安全）
+ * ⚠️ 2026 **已删除**：这里原本是「★ 第三种设计稿（用户 2025）· **无限挑战（IC）**」的
+ *   设计说明（条件/难度/奖励/安全判据）。
+ *   用户 2026 裁定删除整个 IC 系统 ⇒ 那段说明**已无对应实现** ⇒ 一并移除，
+ *   避免读者以为还有 IC 可调（原实现留档在 git 历史里）✓
  */
 /**
  * ★ 第三种设计稿（用户 2025）· 新 **8 条坍缩里程碑**
@@ -4305,7 +4302,9 @@ export function infinityRateMult(state) {
  */
 export function timeIPPerSecond(state) {
   // ★ 用户 2025 裁定：**无限长河停产**（本函数只留壳 ✓ 效果等同删除 ✗）
-  //   破∞后的 IP 改由**无限挑战（8 关，每关 +38.53 阶）**提供 ✓
+  //   ⚠️ 2026：这里原来写「破∞后的 IP 改由**无限挑战（8 关，每关 +38.53 阶）**提供」——
+  //     **IC 已被用户删除** ⇒ 那句话不再成立 ✗
+  //     现在破∞后的 IP 由 ④ 深度收益 + 量子铸币 + ① 无限增幅 等提供（见 `bigCrunchGain`）✓
   // ⏸ 待定 → 2025 用户解冻 ✓（保留用户定的**上限 1 IP/分钟** ✓）
   const raw = ipDoubleMult(state)
     .div(INFINITY_UPGRADES.ipTime.secondsPerPoint);
@@ -4331,8 +4330,6 @@ export function timeInfinityPointGain(state, seconds) {
     .mul(ipDoubleMult(state));
   return Decimal.min(rawTotal, new Decimal(counted).div(60));   // 1 IP/分钟 ✓
 }
-
-  //   增长改由**无限挑战（IC）**提供（第三层设计稿 ✓）
 
 // ══════════════════════════════════════════════════════════
 // ★ 无限点公式的**除数（div）**—— 保留"调用与影响"的权力（用户 2025 明确要求 ✓）
@@ -4380,32 +4377,20 @@ export function ipDivisorBreakdown(state) {
 }
 
 // ══════════════════════════════════════════════════════════
-// ★ IC 挑战修饰器（用户 2025）
-//   「引擎不清零，但第一个 IC 里引擎的**生效等级恒为 1**」
-//   ⇒ 玩家在 IC#1 内必须靠"几乎没引擎"的状态重爬到无限 ✓
-//   ⇒ 其它关不受影响 ✓ 非挑战态不受影响 ✓（零回归 ✓）
+// ⚠️ 2026 **已删除**：`IC_MODS` 与 `icMod()` ——
+//   它们是「IC 挑战中把引擎**生效等级**压低到 1」的修饰器（用户 2025 选的 β 方案，
+//   落在"第 5 关 = 无引擎修行关"）。
+//   **IC 整个系统被用户删除** ⇒ 再也没有"挑战态" ⇒ 修饰器永远是 null ⇒ 纯死代码 ✗
 //
-//   实现要点：引擎的**等级本身不清零**（照用户的裁定 ✓），只在**读取生效值时**被压到 1 ✓
-//   所以任何"看引擎效果"的地方都必须走 effectiveEngineLevel(state) ✓（唯一入口 ✓）
+//   ⇒ `effectiveEngineLevel()` **保留**（它是"看引擎效果"的唯一入口，多处依赖），
+//     但内部不再查修饰器，直接返回真实等级 ✓
+//   ⚠️ 不要因为"现在它等于 zpeEngineLevel"就把 `effectiveEngineLevel` 删掉 ——
+//     它的价值是**收口**：以后若有类似修饰器，只改这一处 ✓
 // ══════════════════════════════════════════════════════════
-export const IC_MODS = {
-  // 关序号（0 = 第一关）⇒ 修饰器
-  // ★ 用户 2025 选 β：挪到**第 5 关**（那时引擎本已很强 ⇒ 削弱才有意义 ✓）
-  4: { engineLevel: 1, desc: "引擎生效等级恒为 1（无引擎修行关）" } };
 
-/** 本关的修饰器（无则 null ✓） */
-export function icMod(state) {
-  const k = state?.ic?.active;
-  if (k == null) return null;
-  return IC_MODS[k] ?? null;
-}
-
-/** ★ 引擎的**生效等级**（唯一入口 ✓）：挑战修饰器可把它压到 1 ✓ */
+/** ★ 引擎的**生效等级**（唯一入口 ✓）—— 2026 起没有修饰器，恒等于真实等级 ✓ */
 export function effectiveEngineLevel(state) {
-  const raw = zpeEngineLevel(state).max(0);
-  const mod = icMod(state);
-  if (mod && mod.engineLevel != null) return new Decimal(Math.min(raw.toNumber(), mod.engineLevel));
-  return raw;
+  return zpeEngineLevel(state).max(0);
 }
 
 // ══════════════════════════════════════════════════════════

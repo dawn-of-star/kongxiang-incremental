@@ -214,7 +214,9 @@ for (const f of docFiles()) {
     { re: /暗能量里程碑\D{0,12}(\d+)\s*[条个]/g, want: c.DE_MILESTONES.length, name: "暗能量里程碑" },
     { re: /永恒里程碑\D{0,12}(\d+)\s*[条个]/g, want: c.ETERNITY_MILESTONES.length, name: "永恒里程碑" },
     { re: /梦想(?:点)?升级\D{0,12}(\d+)\s*[条个]/g, want: c.DREAM_UPGRADES.length, name: "梦想升级" },
-    { re: /IC\D{0,10}(\d+)\s*关/g, want: c.INFINITY_CHALLENGES.max, name: "无限挑战关数" },
+    // ⚠️ 2026：`IC\D{0,10}(\d+) 关` 这条**已删除** ——
+    //   `INFINITY_CHALLENGES` 随 IC 整块移除 ⇒ 再查它会是 `undefined` 比较 ⇒ **直接崩** ✗
+    //   （实测 `TypeError: Cannot read properties of undefined (reading 'max')`）
   ];
   for (const f of docFiles()) {
     const src = read(f);
