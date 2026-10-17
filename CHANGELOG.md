@@ -7,6 +7,66 @@
 
 ---
 
+### ★★ 删除「无限挑战（IC）」整个系统（用户裁定）
+
+**用户原话**
+```
+「我发现无限挑战做不做都不影响我永恒了……把无限挑战（和相关的）删了」
+```
+
+**删除范围（整块，非半删 —— 本项目最忌讳半删）**
+| 层 | 删掉的东西 |
+|---|---|
+| UI | `src/ui-ic.js` **整个文件**（160 行）｜`index.html` 的 `#ic-host` 块｜浮出菜单里的「· 无限挑战」字样 |
+| 配置 | `INFINITY_CHALLENGES`｜`icEntropyMult()`｜`icIpJumpMult()`｜**`IC_MODS` + `icMod()`**（"挑战中引擎生效等级压到 1"的修饰器） |
+| 引擎 | `startInfinityChallenge` / `abandonInfinityChallenge` / `icCompleteOnCrunch` / `icAutoAdvance`（尾部 90 行）｜`tick` 与 `doBigCrunch` 里各 1 处调用 |
+| 状态 | `state.ic`｜`state.icAutoTimer`｜`state.fastestInfinitySec` |
+| 公式 | `formulas.conversion()` 里 `threshold.mul(icEntropyMult(state))`（IC 放大熵需求） |
+| 其它 | `ui.js` 的 import/缓存 id/`buildIcUI`/`renderIc`/`perfSection("IC 面板")`｜`neko.js` 的 `/无限挑战/` 日志分类｜`tools/ic-lab.mjs` + `tools/ic-ladder-lab.mjs` |
+
+**⚠️ 两个连带决定**
+```
+① em7（永恒里程碑 7）的**唯一内容**就是「按最快无限速度自动完成无限挑战」
+   ⇒ IC 一删，它没有任何效果。
+   我**没有替用户决定删它**（永恒里程碑属用户自己的开发范围）⇒ 问过之后按 **B 方案**：
+   **退回 `pending: true`** + `pendingWhy` + 新的 desc，等用户给新效果 ✓
+   （删掉会动里程碑编号 8→7 与老档达成状态，风险更大）
+
+② `state.fastestInfinitySec` 只服务 em7 的 IC 自动化 ⇒ 一并删除
+   ⚠️ 但**代码里没有任何"梦想页解锁依赖 IC"的判定** —— 实测确认 ⇒
+     删 IC **不会**让任何页面变得不可解锁 ✓
+     （`docs/TODO.md` 里那句"梦想页解锁 = 第一次完成无限挑战"是**过期文档**，已一并更正）
+```
+
+**顺带发现：还有第二块 IC 子系统（差点漏成"半删"）**
+```
+`IC_MODS` + `icMod()` —— 「IC 第 5 关引擎生效等级恒为 1」的修饰器，
+被 `effectiveEngineLevel()` 读取（那是"看引擎效果"的唯一入口，多处依赖）
+⇒ 修饰器删除，但 **`effectiveEngineLevel()` 保留**（它的价值是"收口"，
+   以后若有类似修饰器只改一处）⇒ 现在恒等于真实等级 ✓
+```
+
+**验证**
+```
+· 老存档兼容：`deserialize` **明文忽略** `raw.ic` / `fastestInfinitySec` / `icAutoTimer`
+  （不读、不迁移、不报错）⇒ 老档不会崩 ✓
+· 工具：删 2 个 lab；改 consistency（去 em7-IC 断言）/ dom-smoke（去 IC 挂载守卫与
+  neko 用例、删「缺失的 id」误报）/ docs-audit（去掉 `INFINITY_CHALLENGES.max` 那行，
+  否则 `TypeError: …reading 'max'` 直接崩）/ config-facts（去掉 IC 两行）✓
+· 文档：TODO 的 D3 标删除、梦想页解锁条件更正、菜单文本、neko 枚举计数；
+  DEPRECATED-INVENTORY 把 IC 记入"曾实现过、2026 删除" ✓
+· `npm test` ✅ 47 个脚本全绿｜`config-facts` 34 项一致｜`docs-audit` 一致 ✓
+```
+
+**⚠️ 本次踩到的一个环境问题（必须记）**
+```
+编辑过程中，`src/config.js` / `src/engine.js` / `src/formulas.js` 与两个 lab
+**被外部进程整批还原了 4 次**（时间戳同一秒批量写回：20:29:04 / 20:33:31 / 20:34:55）
+⇒ 症状是"我明明改了、跑测试却是旧代码"。
+⇒ 对策：**每改一处立刻 `node --check` + grep 复验**，最后再做一次**延迟复核**。
+   若你本机有 OneDrive / 编辑器自动还原 / 文件同步在跑，建议先暂停它再改代码 ✗
+```
+
 ## 0.7.1
 
 > **功能批**：第三层设计稿「**永恒之后**」的第一块 —— **暗物质 / 第二台相变仪**，
