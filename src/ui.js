@@ -2525,8 +2525,10 @@ function renderTangramReal(st) {
   // ★★★ 2026（用户：「一开始的抽取系统不是挺好的么？**进度条 + 直接兑换**，在**托盘上方**」）——
   //   获取卡片放在托盘**最上面**（`.tangram-tray` 的第一个子节点）✓ 只建一次，之后每帧只改数字 ✓
   if (!tgAcqBuilt && typeof document !== "undefined") {
-    const tray = document.querySelector("#panel-tangram .tangram-tray");
-    if (tray) {
+    // ★ 2026：插进 **.tangram-side**（三段式容器）⇒ 不会变成托盘网格的单元格 ✗
+    const side = document.querySelector("#panel-tangram .tangram-side")
+      ?? document.querySelector("#panel-tangram .tangram-tray");
+    if (side) {
       tgAcqBuilt = true;
       const card = document.createElement("div");
       card.id = "tg-acq-card";
@@ -2540,7 +2542,7 @@ function renderTangramReal(st) {
         '  <span class="dim" id="tg-acq-pity"></span>',
         '</div>',
       ].join("");
-      tray.insertBefore(card, tray.firstChild);
+      side.insertBefore(card, side.firstChild);
       document.getElementById("tg-acq-draw")?.addEventListener("click", () => {
         const s2 = tgNextStep(stRefForAcq);
         if (s2 >= 0) { drawTangramPiece(stRefForAcq, s2); handlers.onTangramCommit?.(); }
@@ -2565,7 +2567,9 @@ function renderTangramReal(st) {
     if (btnD) { btnD.textContent = pc && pr ? "抽（" + sci(Number(pr.draw) * factor) + "）" : "抽"; btnD.disabled = !pc; }
     if (btnE) { btnE.textContent = pc && pr ? "直接兑换（" + sci(Number(pr.exchange) * factor) + "）" : "直接兑换"; btnE.disabled = !pc; }
   }  if (!tgBarBuilt && typeof document !== "undefined") {
-    const host = document.querySelector("#panel-tangram .tangram-tray");
+    // ★ 2026：控制条挂在 **.tangram-side** 的末尾（托盘下方，不前不后 ✓）
+    const host = document.querySelector("#panel-tangram .tangram-side")
+      ?? document.querySelector("#panel-tangram .tangram-tray");
     if (host) {
       tgBarBuilt = true;
       const bar = document.createElement("div");

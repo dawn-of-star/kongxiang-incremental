@@ -1068,3 +1068,33 @@ button { font: inherit; cursor: pointer; }
 .tangram-tray { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 3px !important; }
 /* 托盘内所有子项等宽等高、无外边距残留 ✓ */
 .tangram-tray > * { margin: 0 !important; box-sizing: border-box; }
+
+/* ══════════════════════════════════════════════════════════
+   ★★★ 2026（用户：「你要不重写吧」）—— 右侧列**三段式**：
+     #tg-acq-card（全宽）→ .tangram-tray（2 列网格）→ .tg-controls（4 列按钮）
+   ⚠️ 之前把获取卡与控制条塞进 tray 的网格里 ⇒ 变成单元格、互相压住 ✗
+   ══════════════════════════════════════════════════════════ */
+.tangram-side { display: flex !important; flex-direction: column !important; gap: 6px; min-width: 0; }
+.tangram-side > #tg-acq-card { order: 0; }
+.tangram-side > .tangram-tray { order: 1; }
+.tangram-side > .tg-controls { order: 2; }
+
+.tangram-side .tangram-tray { display: block !important; }
+/* ★ 真正排 7 格的是 .tangram-slots（托盘里还有标题，别把标题也当格子 ✗）*/
+.tangram-side .tangram-slots {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 3px !important;
+}
+.tangram-side .tg-controls {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 4px !important;
+}
+.tangram-side .tg-controls > .btn {
+  width: auto !important; min-width: 0; font-size: 11px; padding: 6px 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tangram-side #tg-acq-card { padding: 8px; }
+.tangram-side .tg-acq-row { display: flex; gap: 6px; align-items: center; }
+.tangram-side .tg-acq-row > .btn { width: auto !important; font-size: 11px; padding: 5px 8px; }
