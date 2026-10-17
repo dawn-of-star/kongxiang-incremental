@@ -198,17 +198,18 @@ export function placementOf(placed, id) {
  *   `rect` = `svg.getBoundingClientRect()` 的形状 `{ left, top, width, height }`
  * @returns {[number, number]} 棋盘坐标（单位 = 格，未取整）
  */
-export function svgToBoard(clientX, clientY, rect, view = { x: -3, y: -3, w: 106, h: 106 }) {
+export function svgToBoard(clientX, clientY, rect, view = { x: 0, y: 0, w: 200, h: 200 }) {   // 2026: canvas 8x8, no y flip
   const sx = view.x + ((clientX - rect.left) / rect.width) * view.w;
   const sy = view.y + ((clientY - rect.top) / rect.height) * view.h;
   // ⚠️ 棋盘占的是 viewBox 的 **0..100**（`-3` 只是外圈留白）⇒ 不能拿 view.x 当原点 ✗
   //   （我第一版写成 `(sx - view.x)/25` ⇒ 全错，被 ⑧ 的 4 个角点当场抓住 ✓）
-  return [sx / 25, (TANGRAM_SIZE * 25 - sy) / 25];
+  // 2026: rotate the canvas 90deg clockwise => NO y flip (square sits top-left) ✓
+  return [sx / 25, sy / 25];
 }
 
 /** 棋盘坐标 → SVG（`ui.js` 画 `polygon` 用；与 `svgToBoard` 互为逆）✓ */
 export function boardToSvg([x, y]) {
-  return [x * 25, 100 - y * 25];
+  return [x * 25, y * 25];   // 2026: canvas rotated 90deg clockwise => no y flip
 }
 
 /**
@@ -550,7 +551,8 @@ export const snapPoint = ([x, y]) => [Math.round(x), Math.round(y)];
 /**
  * 一条线段落进某**凸**多边形的参数区间（`t ∈ [0,1]`，线段由 `A + t(B−A)` 给出）。
  * 做法：把"在凸多边形内"拆成**每条边的半平面约束**，逐个与当前区间求交 ✓
- * @returns {[number, number] | null} `null` = 不相交
+ * @returns {[number, number] | null} 
+ull` = 不相交
  */
 export function lineIntervalInConvex(verts, A, B) {
   const [ax, ay] = A;

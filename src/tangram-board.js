@@ -24,9 +24,11 @@ import { setTangramPlacement, tangramCoverage, tangramChallengeTarget } from "./
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 /** 板坐标 → SVG 坐标（**唯一换算点**）✓ */
-const toSvg = (x, y) => [x * 25, 100 - y * 25];
+// ★ 2026（用户：「包括虚线部分的顺时针旋转 90° 刚刚好」）——
+//   取消 y 翻转 ⇒ 正方形(0..4)落到 **左上**，虚线停车区在**右/下**（不用滚到底才看见 ✓）
+const toSvg = (x, y) => [x * 25, y * 25];
 /** SVG 坐标 → 板坐标 ✓ */
-const toBoard = (sx, sy) => [sx / 25, (100 - sy) / 25];
+const toBoard = (sx, sy) => [sx / 25, sy / 25];
 
 const PAD = 240;                       // viewBox 外扩，让 −3..7 的画布也看得见 ✓
 let layerTarget = null;

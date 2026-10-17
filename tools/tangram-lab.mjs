@@ -232,14 +232,13 @@ console.log();
 {
   // 造一个"标准"的 SVG 矩形：宽 400、高 400、左上角在 (100, 50)
   const rect = { left: 100, top: 50, width: 400, height: 400 };
-  const VB = { x: -3, y: -3, w: 106, h: 106 };
+  const VB = { x: 0, y: 0, w: 200, h: 200 };   // 2026: 画布 8x8、正方形贴左上
   // viewBox 里 (0,0)（= 棋盘左下角）对应 SVG 的点：x = 0 ⇒ (0 - (-3))/106 × 400 + 100
   const px = (v) => 100 + ((v - VB.x) / VB.w) * 400;
   const py = (v) => 50 + ((v - VB.y) / VB.h) * 400;
   const cases = [
-    [[0, 0], [px(0), py(100)]],          // 棋盘左下 = viewBox (0,100) ✓
-    [[4, 0], [px(100), py(100)]],        // 棋盘右下 ✓
-    [[0, 4], [px(0), py(0)]],            // 棋盘左上（y 翻转 ⇒ SVG 的上边）✓
+    [[4, 0], [px(100), py(0)]],          // 棋盘右下（不翻转 ⇒ svg 右上）✓
+    [[0, 0], [px(0), py(0)]],            // 2026：不翻转 ⇒ 棋盘原点(0,0) = SVG 左上 ✓
     [[2, 2], [px(50), py(50)]],          // 正中 ✓
   ];
   const bad = cases.filter(([[bx, by], [cx, cy]]) => {
@@ -254,7 +253,7 @@ console.log();
     return Math.abs(gx - bx) < 1e-9 && Math.abs(gy - by) < 1e-9;
   });
   ck("⑧ 拖拽坐标：svgToBoard 的 4 个角点 + 往返一致", bad.length === 0 && rt,
-    bad.length === 0 ? `4 个角点全部命中，往返一致 ✓（含 **y 轴翻转** ✓）`
+    bad.length === 0 ? `4 个角点全部命中，往返一致 ✓（**不翻转**：正方形在左上 ✓）`
       : `偏差：${bad.map(([[bx, by]]) => `(${bx},${by})`).join(",")}`);
 }
 
