@@ -237,7 +237,7 @@
           <!-- ★ 永恒：先**只保留标签页**（和当初开发无限层一样），内容等设计定了再填。
                颜色用 --eternity（#673ab7 紫）：新层，不是新乘区。 -->
           <!-- ★★★ 2026：永恒也改成**两个子页**（形制与虚空/无限/主控台/暗能量一致）：
-               永恒本体（升级 · 里程碑） ＋ **七巧板**（`em8` 之后的新层，**机制待做**、先建骨架） -->
+               永恒本体（升级 · 里程碑） ＋ **七巧板**（已实装：几何内核 / 108 图案 / 拖拽 / 三轴加成 / 拼装挑战） -->
           <div class="tab-wrap" id="tab-wrap-eternity">
             <button class="tab" id="tab-eternity" data-tab="eternity" style="--zone:var(--eternity)">
               <span class="dot"></span>永恒<span class="tag" id="tab-tag-eternity">锁</span>
@@ -884,7 +884,7 @@
           </p>
         </div>
 
-        <!-- ══ 面板：七巧板（永恒的子页；★★ 机制**尚未实现** —— 本页只是骨架，见 docs/TANGRAM.md）══ -->
+        <!-- ══ 面板：七巧板（永恒的子页；**已实装** —— 见 docs/TANGRAM.md §12 实装清单）══ -->
         <!-- ⚠️ 本面板**不许出现 emoji 字符**（图标只用 HTML 实体）—— dom-smoke 有守卫 ✓ -->
         <div class="tab-panel" id="panel-tangram" hidden>
           <p class="rule">
@@ -905,7 +905,7 @@
                 <line class="tg-axis" x1="0" y1="100" x2="100" y2="100"></line>
                 <line class="tg-axis" x1="0" y1="100" x2="100" y2="0"></line>
                 <!-- 覆盖率高亮：由 JS 用 stroke-dasharray / dashoffset 驱动
-                     现在恒为 0（stroke-dashoffset = 全长）—— 机制未实现，不假装有覆盖 -->
+                     由 JS 按覆盖率驱动：stroke-dashoffset = 全长 × (1 − 覆盖率) ✓ -->
                 <line class="tg-cov" id="tg-cov-vert" x1="0" y1="100" x2="0" y2="0"
                       stroke-dasharray="100 100" stroke-dashoffset="100"></line>
                 <line class="tg-cov" id="tg-cov-horz" x1="0" y1="100" x2="100" y2="100"
@@ -947,18 +947,19 @@
 
           <h2>拼装挑战</h2>
           <div class="detail" style="margin-bottom:12px">
-            <div><span>解锁条件</span><b id="tangram-chal-need">阈值待定（代办）</b></div>
+            <div><span>解锁条件</span><b id="tangram-chal-need">—</b></div>
             <div><span>进度</span><b id="tangram-chal-progress">—</b></div>
           </div>
 
           <p class="note">
-            本页是<b>骨架</b>：拼装（旋转 R / 翻转 F / 吸附）· 概率获取 · 拼装挑战<b>均未实现</b> ——
-            拼装挑战**走阈值逻辑**（与其它层一致），但**图案与阈值均未定** ⇒ 暂列为代办。
-            设计与待定项见 <b>docs/TANGRAM.md</b> §0.2 / §0.3。
+          <p class="note">
+            <b>已实装</b>：七块可<b>自由拖拽</b>（松手吸附 0.2 格，拖拽中 R 旋转 / F 翻转）；
+            概率获取（2% + 保底）与足量兑换；<b>6 档 × 6 关</b>拼装挑战（每次永恒换一批题目顺序）。
+            设计与实装清单见 <b>docs/TANGRAM.md</b> ✓
           </p>
         </div>
 
-        <!-- ══ 面板：永恒（★ 先占位：只保留标签页与解锁条件，内容等设计定了再填）══ -->
+        <!-- ══ 面板：永恒（升级 · 里程碑 · 七巧板；已实装）══ -->
         <div class="tab-panel" id="panel-eternity" hidden>
 
           <!-- ★★★ 2025（用户裁定）：**锁定块已删除**，内容常显（见量子页的说明） ✓ -->
@@ -998,8 +999,7 @@
                  没有对应的开标签 ⇒ 浏览器会把它当成一个空段落丢在正文里。
                  已并进上一段（与之前 v9 那次同一类结构 bug ✗） -->
             <p class="note">
-              <b>奖励暂为占位</b>（暗物质要换新机制）：所以第二次永恒目前不会更快，
-              这只是把"层间重置 + 永恒点累积"的骨架先立起来。
+            永恒后解锁<b>暗物质</b>，并接进<b>全局加成</b>（已实装：a 区加法项 + 第二台相变仪）✓
               永恒后解锁<b>暗物质</b>，并接进<b>全局加成</b>。
             </p>
 
