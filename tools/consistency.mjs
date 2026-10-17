@@ -794,42 +794,10 @@ console.log();
     };
   });
 
-  // em7：**基于"最快无限速度"自动依次完成**无限挑战（关数 = `INFINITY_CHALLENGES.max`）
-  check("★ em7：按最快无限速度自动完成无限挑战（关数 = max，奖励照发）", () => {
-    const N = 10;                                  // 最快无限 = 10 秒
-    const max = INFINITY_CHALLENGES.max;
-    const mk = (ec, fastest) => {
-      const s = { ...newState(), eternityCount: ec, fastestInfinitySec: fastest };
-      s.ic = { active: null, completed: 0 };
-      s.infinityPoints = new Decimal(1);           // ⚠️ 非 0，才能验证"奖励真的在涨"✓
-      return s;
-    };
-    // ① 未达 em7 ⇒ 永不自动完成
-    const a = mk(6, N);
-    for (let i = 0; i < 50; i++) icAutoAdvance(a, 100);
-    // ② em7 但**没有最快记录** ⇒ 未就绪，不自动完成（防新档被瞬间穿完）
-    const b = mk(7, 0);
-    for (let i = 0; i < 50; i++) icAutoAdvance(b, 100);
-    // ③ 正常：每 N 秒一关，最多 max 关；奖励 = ×10^ipJumpOrders 每关
-    const c = mk(7, N);
-    const ipBefore = c.infinityPoints.toString();
-    let fired = 0;
-    for (let i = 0; i < 60; i++) if (icAutoAdvance(c, N)) fired++;
-    const perJump = Decimal.pow(10, INFINITY_CHALLENGES.ipJumpOrders);
-    const wantIp = new Decimal(ipBefore).mul(perJump.pow(max));
-    const rel = c.infinityPoints.div(wantIp).sub(1).abs();
-    const ipOk = rel.lt(new Decimal("1e-9"));
-    const ok = a.ic.completed === 0 && b.ic.completed === 0
-      && fired === max && c.ic.completed === max && ipOk;
-    return {
-      ok,
-      detail: ok
-        ? `未达 em7 ⇒ 0 关 ✓｜无最快记录 ⇒ 0 关 ✓（防新档穿完）`
-          + `｜em7+10s ⇒ 推 600s 过满 ${max} 关、只触发 ${fired} 次 ✓`
-          + `｜IP ${sci(new Decimal(ipBefore))} → ${sci(c.infinityPoints)}（每关 ×10^${INFINITY_CHALLENGES.ipJumpOrders}）✓`
-        : `未达em7=${a.ic.completed}｜无记录=${b.ic.completed}｜触发=${fired}｜完成=${c.ic.completed}/${max}｜IP对=${ipOk}`,
-    };
-  });
+  // ⚠️ 2026：这里原来有「★ em7：按最快无限速度自动完成无限挑战」这条断言 ——
+  //   **IC 整个系统被用户删除** ⇒ 断言连同 `icAutoAdvance` / `INFINITY_CHALLENGES` 一起移除 ✓
+  //   em7 本身退回 `pending`（见 `config.js` 的 `ETERNITY_MILESTONES`）⇒ 暂无行为可断言
+  //   ⚠️ 将来重做 em7 时**不要复活这条断言** —— 它测的是 IC 自动化，那套已经没了 ✗
 
   // ══════════════════════════════════════════════════════════
   // ★★★ 2025：**两个新 bug 修复的回归断言**

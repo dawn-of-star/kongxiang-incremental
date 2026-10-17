@@ -231,7 +231,7 @@
             </button>
             <div class="tab-flyout" id="tab-flyout-infinity">
               <button class="flyout-item" data-tab="infinity" id="flyout-inf-core">无限升级</button>
-              <button class="flyout-item" data-tab="infdeep" id="flyout-inf-deep">坍缩里程碑 · 无限挑战</button>
+              <button class="flyout-item" data-tab="infdeep" id="flyout-inf-deep">坍缩里程碑</button>
             </div>
           </div>
           <!-- ★ 永恒：先**只保留标签页**（和当初开发无限层一样），内容等设计定了再填。
@@ -864,14 +864,14 @@
           </div>
         </div>
 
-        <!-- ══ 面板：无限 · 坍缩里程碑 + 无限挑战（无限的第二个子页 —— 悬停「无限」浮出）══
-             ★★ 2025：无限挑战（IC）**从 ZPE 引擎面板挪到这里**（用户指定，只挪位置、不动机制）：
-                    稿子原文「无限挑战…作为无限页面的子页面存在」。
-                    容器 `ic-host` 由 src/ui-ic.js 的 buildIcUI() 填充。
+        <!-- ══ 面板：无限 · 坍缩里程碑（无限的第二个子页 —— 悬停「无限」浮出）══
+             ★★ 2026：**无限挑战（IC）整块已删除**（用户裁定：「我发现无限挑战做不做都不影响
+                    我永恒了……把无限挑战（和相关的）删了」）
+                    ⇒ `#ic-host` 与 `src/ui-ic.js` 一起没了；本页现在**只剩坍缩里程碑** ✓
              另：坍缩加速整块已删除（用户裁定）；铸币块更早之前已删。 -->
         <div class="tab-panel" id="panel-infdeep" hidden>
           <p class="rule">
-            ∞ 层的<b>深层系统</b>：坍缩里程碑（按大坍缩次数逐条解锁）· 无限挑战（IC）
+            ∞ 层的<b>深层系统</b>：坍缩里程碑（按大坍缩次数逐条解锁）
           </p>
 
           <h2 style="margin-top:14px">坍缩里程碑 <span class="badge" id="tier-ms-badge">0 / 7</span></h2>
@@ -880,9 +880,6 @@
             八条里程碑挂在「大坍缩次数」上，逐条解锁、永久生效（不随大坍缩清零）——
             内容来自用户的第三层设计稿（详见 config.js 的 `COLLAPSE_MILESTONES`）。
           </p>
-
-          <!-- ★ 无限挑战（IC）的宿主：ui-ic.js 往这里追加 -->
-          <div id="ic-host"></div>
         </div>
 
         <!-- ══ 面板：七巧板（永恒的子页；★★ 机制**尚未实现** —— 本页只是骨架，见 docs/TANGRAM.md）══ -->

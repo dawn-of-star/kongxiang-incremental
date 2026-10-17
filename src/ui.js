@@ -27,7 +27,9 @@ export const UI_BUILD = "ui-2025-07-14-a";
 import Decimal from "../dist/break_eternity.esm.js";
 // ⚠️ 注意：`D` 由下面 `./config.js` 的 import 提供（第 39 行）⇒ **不要在这里再定义** ✗
 //   （我加过一个 `const D = ...`，触发 "Identifier 'D' has already been declared"）
-import { buildIcUI, renderIc } from "./ui-ic.js";
+// ⚠️ 2026：`import { buildIcUI, renderIc } from "./ui-ic.js"` **已删除** ——
+//   无限挑战（IC）整个系统被用户删除，`ui-ic.js` 文件本身也已删掉 ✓
+//   （删文件后忘删 import 会让 `check-web-bundle` 报"依赖图缺文件"，那条守卫专抓这个）
 // ★★★ 2025（`docs/NEKO.md`）：宿主探测（猫猫子页显示"接没接上"用）
 import { nekoHostPresent } from "./neko.js";
 // ★★★ 2025：**分段计时**（找"render 里哪一段慢" —— 用户 HUD 显示 render 170ms ✗）
@@ -385,8 +387,8 @@ function cache() {
     "gm-neko",
     // ★★★ 2025：**自动化状态**（已移到梦想子页 ⇒ id 仍是这两个）
     "auto-acquire", "auto-de",
-    // ★ 无限挑战（IC）的宿主：内容由 ui-ic.js 追加（2025 从 ZPE 引擎面板挪到这里）
-    "ic-host",
+    // ⚠️ 2026：`"ic-host"` **已移除** —— 无限挑战（IC）整个系统被用户删除
+    //   ⇒ 这个宿主节点 + `ui-ic.js` 一起没了 ✓（`index.html` 的对应块也已删除）
     // ★★★ 2025：**全页面悬浮重置窗**（用户要求）——
     //   ⚠️ 这几个 id **必须进 cache()**，否则 `el[...]` 是 undefined
     //     ⇒ 「点了没反应」且不会报错（本项目踩过多次：漏登记 id）✗
@@ -1122,8 +1124,8 @@ export function render(state) {
   if ((state.eternityCount ?? 0) > 0) {
     for (const k of PAGE_KEYS) markPageUnlocked(state, k);
   }
-  buildIcUI();      // IC panel: create once
-  perfSection("IC 面板", () => { buildIcUI(); renderIc(state); });
+  // ⚠️ 2026：这里原来有 `buildIcUI()` + `perfSection("IC 面板", …)` ——
+  //   **无限挑战（IC）整个系统被用户删除** ⇒ 两行移除，`ui-ic.js` 也一并删除 ✓
   const R = state.resources;
 
   // ── 资源条 ──

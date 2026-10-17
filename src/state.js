@@ -181,24 +181,12 @@ export function newState() {
     infinityElapsed: 0,
   // ★ 2025: 本轮时长（秒）—— 收手判据按时间；每次大坍缩归零（见 engine.js）
   runElapsed: 0,
-    /**
-     * ★★★ 2025（**em7** 用）：**最快一次无限的耗时（秒）**。
-     *
-     * 定义：历次"本轮时长"（`infinityElapsed`，大坍缩时归零）的**最小值**。
-     *   `0` = 还没有任何一次完整的无限 ⇒ em7 视为未就绪（不能自动完成挑战）✓
-     *
-     * 为什么需要它：设计稿第 43 行说「无限挑战将**基于最快无限速度**自动依次完成」，
-     *   而代码里原本**没有这个读数**（只有"本轮时长"）⇒ 这里补上 ✓
-     *   ⚠️ 不重置：它是**历史记录**，与大坍缩/永恒的归零无关（永恒本来也不重置它）✓
-     */
-    fastestInfinitySec: 0,
-    /**
-     * ★★★ 2025（**em7** 用）：自动完成无限挑战的**累计计时器**（秒）。
-     *
-     * 每累计到 `fastestInfinitySec` 就自动过一关，然后把余数留下（不丢时间）✓
-     * ⚠️ 用"累计秒"而不是 wall clock ⇒ 离线结算（`advance()`）也会照常推进 ✓
-     */
-    icAutoTimer: 0,
+    // ⚠️ 2026 **已删除**：`fastestInfinitySec`（最快一次无限的耗时）与
+    //   `icAutoTimer`（自动完成无限挑战的累计计时）——
+    //   它们**只服务于 em7「自动完成无限挑战」**，而 **IC 整个系统已被用户删除** ✗
+    //   em7 本身退回 `pending`（见 `config.js` 的 `ETERNITY_MILESTONES`）⇒ 暂无读取方 ✓
+    //   ⚠️ 将来重做 em7 时**不要照着旧字段复活** —— 那时需要的时间源要重新设计
+    //      （旧实现的口径是"历次本轮时长的最小值"，依赖 IC 关卡数）✓
     infinityFromQuantumBought: false,
     ipTimeAccrued: 0,
     ipTimeBought: false,
@@ -249,7 +237,9 @@ export function newState() {
     // ── ∞ 层：无限升级（用无限点买，不随大坍缩重置）──
     /** ① 无限增幅：无限点收益 ×2 的等级 */
     ipDoubleLevel: D(0),
-  ic: { active: D(0), completed: 0 },
+    // ⚠️ 2026 **已删除** `ic: { active, completed }` —— 无限挑战（IC）整个系统被用户删除
+    //   （原话：「我发现无限挑战做不做都不影响我永恒了」）。
+    //   ⚠️ 老存档里仍有这两个字段 ⇒ `deserialize` 会**明文忽略**它们（不做迁移、不报错）✓
     /**
      * ★ 无限铸币等级（**设计未冻结：用户保留最终修改权**）。
      *    这是"24 小时档"的节流阀 —— 只卡铸币上限而其它 IP 循环不设限是无效的（模型实测）。
@@ -508,7 +498,9 @@ export function deserialize(raw) {
 
   // ── ∞ 层：无限升级 ──
   s.ipDoubleLevel = dec(raw.ipDoubleLevel);
-  s.ic = raw.ic ?? { active: D(0), completed: 0 };
+  // ⚠️ 2026：`raw.ic` **明文忽略**（IC 已删除）——
+  //   老存档里还有 `ic: { active, completed }`，这里**不读、不迁移、不报错** ✓
+  //   这比"读到一半就崩"安全：未知字段一律忽略是本项目既有的存档策略 ✓
   s.infinityFromQuantumBought = bool(raw.infinityFromQuantumBought);
   s.thresholdFlatBought = bool(raw.thresholdFlatBought);
   s.pairBoostBought = bool(raw.pairBoostBought);
@@ -556,9 +548,8 @@ export function deserialize(raw) {
     ? Object.fromEntries(Object.entries(raw.speedBought).filter(([, v]) => v === true))
     : {};
   s.infinityElapsed = num(raw.infinityElapsed, 0);
-  // ★★★ 2025（em7）：最快一次无限的耗时 —— 旧档没有这个字段 ⇒ 回落 0（= 未就绪）✓
-  s.fastestInfinitySec = Math.max(0, num(raw.fastestInfinitySec, 0));
-  s.icAutoTimer = Math.max(0, num(raw.icAutoTimer, 0));
+  // ⚠️ 2026：`fastestInfinitySec` / `icAutoTimer` **不再读取**（随 IC 删除）——
+  //   老存档里仍有这两个字段 ⇒ **明文忽略**（不迁移、不报错）✓
   s.ipTimeAccrued = num(raw.ipTimeAccrued, 0);
   s.zpeEngineUnlocked = bool(raw.zpeEngineUnlocked);
   s.zpeEngineLevel = dec(raw.zpeEngineLevel);
