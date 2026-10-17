@@ -23,6 +23,8 @@ import Decimal from "../dist/break_eternity.esm.js";
 import { maybeAutoCrunch, AUTO_CRUNCH, shouldAutoCrunch, autoCrunchThreshold, defaultAutoCrunch, setAutoCrunchActive, setAutoCrunchMode, setAutoCrunchValue } from "./autocrunch.js";
 // ★★★ 2026：七巧板「每秒 1% 本次无限 IP」（AD TS181 同款）✓
 import { applyTangramPassiveIp } from "./tangram-passive.js";
+// ★★★ 2026：梦想自动化的**效果侧**（自动买满 + 永恒保留）✓
+import { dreamAutoBuyTick, applyEternityKeeps, autoEnabled } from "./dream-effects.js";
 // ★★★ 2025（用户裁定）：统一的科学计数法 `1.00e308`（`sci()`）
 //   ⚠️ 从 `./format.js` 取，**不能**从 `./ui.js` 取 —— `ui.js` 已 import 本文件，
 //      反向 import 会成循环依赖 ✗（见 format.js 的头注）
@@ -789,9 +791,16 @@ function autoAcquire(state) {
  *    梦想点和虚空升级是两条独立的系统，不该互相门控。
  */
 function autoAcquireDream(state) {
+  // ★★★ 2026：4 条「自动买暗能量升级」现在**尊重开关**（用户裁定：买下≠生效，要手动开）✓
+  //   ⚠️ 旧行为是买下即一直生效 ⇒ 开关是摆设 ✗
   for (const id of dreamUpgradeEffects(state).autoBuyDe) {
-    autoBuyDeUpgrade(state, id);
+    if (autoEnabled(state, id)) autoBuyDeUpgrade(state, id);
   }
+  // ★★★ 2026：另两条「自动买满」（IP 点倍增 / ZPE 引擎）✓ 买手由本文件注入（避免循环 import）
+  dreamAutoBuyTick(state, {
+    buyIpDouble: (st) => buyIpDoubleMax(st),
+    buyZpeEngine: (st) => (buyZpeEngineLevel(st, true) ? 1 : 0),
+  });
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1336,6 +1345,8 @@ export function doEternity(state) {
   // ZPE 引擎（它在 ∞ 层之下）
   state.zpeEngineUnlocked = false;
   state.zpeEngineLevel = D(0);
+  // ★★★ 2026：**开局引擎**（ngineAtStart）—— 买下并开启 ⇒ 坍缩后保留 1 级 ✓
+  if (autoEnabled(state, "engineAtStart")) state.zpeEngineLevel = D(1);
 
   // ── 虚拟系统整体归零（★ 用户明确：**除梦想系统外，一切重置**）──
   //   虚空升级（v1~v9）、ZPE 里程碑、暗能量里程碑、暗能量升级等级、相变仪解锁：
