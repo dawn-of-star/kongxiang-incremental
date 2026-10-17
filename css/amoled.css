@@ -1054,7 +1054,7 @@ button { font: inherit; cursor: pointer; }
   text-align: center !important;
 }
 .tangram-slot > svg { width: 26px !important; height: 20px !important; flex: 0 0 auto; }
-.tangram-slot > span { white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; writing-mode: horizontal-tb !important; max-width: 100%; font-size: 11px; line-height: 1.1; }
+.tangram-slot > span { white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; writing-mode: horizontal-tb !important; max-width: 100%; font-size: 10px; line-height: 1.1; letter-spacing: -0.2px; }
 .tangram-slot[data-owned="1"] { border-color: var(--eternity, #b388ff); }
 
 /* ── 控制条：两行、按钮小而等宽，标签直白 ── */
@@ -1063,7 +1063,7 @@ button { font: inherit; cursor: pointer; }
   width: auto !important; font-size: 11px; padding: 5px 4px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-/* ★ 2026：7 格 = 2 列网格 ⇒ **第 7 格独占整行**（否则右下留一个空格 ✗）*/
-.tangram-tray > .tangram-slot:last-child:nth-child(odd) { grid-column: 1 / -1; }
+/* ★ 2026：7 格 = 2 列**等宽**网格（名字放得下才不截断 ✗）*/
+.tangram-tray { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 /* 托盘内所有子项等宽等高、无外边距残留 ✓ */
 .tangram-tray > * { margin: 0 !important; box-sizing: border-box; }
