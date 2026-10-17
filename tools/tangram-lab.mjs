@@ -308,8 +308,10 @@ console.log();
     const mono = more.epDiscount >= half.epDiscount && half.epDiscount > 0;
     const full = tangramRewardEffects([6, 6, 6, 6, 6, 6]);
     const fullOk = full.allClear === true && full.passiveIpFrac === 0.01
+      // ★ 2026：换成"强力版"奖励表 ⇒ 期望值跟着改（免费引擎 = 表内求和 185；knee 3.0 / 4.0）✓
       && full.freeZpeEngineLevels === TANGRAM_CHALLENGE_REWARDS.freeZpeEngineLevelsByTier.reduce((a, b) => a + b, 0)
-      && full.ipDoubleKneeMult === 1.44 && full.deKneeMult === 1.30;
+      && full.ipDoubleKneeMult === 3.0 && full.deKneeMult === 4.0
+      && full.convSlopeMult === 10 && full.countFreqMult === 5 && full.pityFloor === 120;
     ck("⑨e 奖励：基线恒等 / 单调 / 全清生效（且**无 IP 自反馈项**）", baseOk && mono && fullOk,
       "基线=" + (baseOk ? "全 0 ✓" : "✗") + "｜半程折扣=" + (half.epDiscount * 100).toFixed(0) +
       "% → 更多=" + (more.epDiscount * 100).toFixed(0) + "%｜全清：免费引擎 " + full.freeZpeEngineLevels +

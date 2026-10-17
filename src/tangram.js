@@ -252,18 +252,38 @@ export const TANGRAM_CHALLENGE = {
  * ⚠️ 用户点出的对应关系：**免费 ZPE 引擎等级 ≈ 抬高「最终获得的基础物质」**（同一件事的两种说法）✓
  */
 export const TANGRAM_CHALLENGE_REWARDS = {
-  /** 每档清满 6 个时的 EP 折扣（抽取/兑换价格；按进度线性生效）✓ */
-  epDiscountByTier: [0.05, 0.10, 0.12, 0.15, 0.18, 0.20],
-  /** 清满该档 ⇒ 暗能量基础收益的 **knee 倍率**（曲线右移，不改 p）✓ */
-  deKneeMultByTier: [1, 1, 1.15, 1.15, 1.30, 1.30],
-  /** 清满该档 ⇒ `ipDouble` 软上限的 **knee 倍率**（后期真正提速）✓ */
-  ipDoubleKneeMultByTier: [1, 1, 1, 1, 1.20, 1.44],
-  /** 清满该档 ⇒ **免费 ZPE 引擎等级**（≈ 抬高最终基础物质）✓ */
-  freeZpeEngineLevelsByTier: [0, 0, 1, 2, 3, 4],
+  /**
+   * ★★★ 2026（用户：「想想更强力的加成吧」）—— **强力档的唯一定律**：
+   *   不改 `p`（不把 IP 反馈回 IP）⇒ 只能锚在 **knee 位移 / 指数项 / 结构性** 上 ✓
+   *   （纯乘区在后期会被 knee 压平 ⇒ 等于没给 ✗）
+   *
+   *   每档清满 6 个 ⇒ 该档的结构性奖励（比初稿强 5~10 倍）：
+   *     d1 EP 折扣 10%         d2 折扣 20% + 保底 150→120
+   *     d3 免费引擎 +10 级      d4 熵→粒子斜率 ×10
+   *     d5 计数频率每级系数 ×5   d6 `ipDouble` knee ×3
+   *   d3+d4 全清 ⇒ 每秒 1% 本次无限 IP（AD TS181）｜六档全清 ⇒ deGain 每级 1.14 + e308.25 硬保证 ✓
+   */
+  epDiscountByTier: [0.10, 0.20, 0.35, 0.50, 0.65, 0.80],
+  /** 清满该档 ⇒ 暗能量基础收益的 knee 倍率（曲线右移，不改 p）✓ */
+  deKneeMultByTier: [1, 1, 1.5, 2.0, 3.0, 4.0],
+  /** 清满该档 ⇒ `ipDouble` 软上限的 knee 倍率（后期真正提速）✓ */
+  ipDoubleKneeMultByTier: [1, 1, 1, 1, 2.0, 3.0],
+  /** 清满该档 ⇒ 免费 ZPE 引擎等级（≈ 抬高最终基础物质）✓ */
+  freeZpeEngineLevelsByTier: [0, 0, 10, 25, 50, 100],
+  /** 清满该档 ⇒ 熵→粒子斜率倍率（横轴）✓ */
+  convSlopeMultByTier: [1, 1, 1, 10, 1, 1],
+  /** 清满该档 ⇒ 计数频率每级系数倍率（斜轴）✓ */
+  countFreqMultByTier: [1, 1, 1, 1, 5, 1],
+  /** 清满该档 ⇒ 抽取保底次数（越小越强）✓ */
+  pityFloorByTier: [150, 120, 150, 150, 150, 150],
   /** 每档需要清满几个 */
   perTier: 6,
   /** 结构性奖励（不等价于任何乘区）✓ */
-  structural: { midAllClearPassiveIp: 0.01, allClearGoalLog10: 308.25 },
+  structural: {
+    midAllClearPassiveIp: 0.01,
+    allClearDeGainPerLevel: 1.14,
+    allClearGoalLog10: 308.25,
+  },
 };
 
 /**
@@ -292,11 +312,24 @@ export function tangramRewardEffects(clearedByDifficulty) {
     if (d >= 2 && d <= 3 && k < R.perTier) midAll = false;
     if (k < R.perTier) allClear = false;
   }
+  // ★ 2026：新增三项（斜率 / 计数频率 / 保底）—— 取"已清满的最高档"值 ✓
+  let convSlopeMult = 1;
+  let countFreqMult = 1;
+  let pityFloor = 150;
+  for (let d = 0; d < 6; d++) {
+    if (n(d) < R.perTier) continue;
+    convSlopeMult = Math.max(convSlopeMult, R.convSlopeMultByTier?.[d] ?? 1);
+    countFreqMult = Math.max(countFreqMult, R.countFreqMultByTier?.[d] ?? 1);
+    pityFloor = Math.min(pityFloor, R.pityFloorByTier?.[d] ?? 150);
+  }
   return {
     epDiscount: Math.min(0.9, epDiscount),
     deKneeMult,
     ipDoubleKneeMult,
     freeZpeEngineLevels,
+    convSlopeMult,
+    countFreqMult,
+    pityFloor,
     passiveIpFrac: midAll ? R.structural.midAllClearPassiveIp : 0,
     allClear,
   };
