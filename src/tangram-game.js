@@ -14,7 +14,7 @@
 import Decimal from "../dist/break_eternity.esm.js";
 import {
   TANGRAM_PIECES, TANGRAM_CHALLENGE, TANGRAM_ACQUIRE,
-  tangramPricesAt, tangramPieceAtStep, tangramPatternsPerDifficulty,
+  tangramPricesAt, tangramPieceAtStep, tangramPatternsPerDifficulty, pickChallengePatterns,
   placePieceVerts, placementOf, isPlacementLegal, placedVertices, axisCoverageAll,
   polygonCells, cellsFingerprint, cellsFromFingerprint, placedCells,
 } from "./tangram.js";
@@ -150,8 +150,22 @@ export function tangramCoverage(state) {
 export function tangramChallengeTarget(state) {
   const lib = TANGRAM_PATTERN_LIBRARY.patterns;
   if (!lib.length) return null;
-  const n = Math.max(0, Math.floor(Number(state?.tangramChallenge?.solved ?? 0)));
-  return lib[n % lib.length];
+  // ★★★ 2026（终稿 §10）：「**6 个难度，每难度 6 图案，每次时空随机**」✓
+  //   · 种子 = `eternityCount`（时空层的**代理**：每次永恒换一批顺序）✓
+  //   · 逐档推进：先清 d1 的 6 个 → 再 d2 …（`tangramCleared[d]` = 该档已清数）✓
+  //   · 每档的出题顺序由 `pickChallengePatterns(d, 种子, poolSize)` 洗牌决定 ✓
+  //   ⚠️ 时空层实装后把种子换成「时空次数」即可，其它一行不用改 ✓
+  const per = TANGRAM_CHALLENGE.perDifficulty;
+  const seed = Math.floor(Number(state?.eternityCount ?? 0)) || 0;
+  const cleared = state?.tangramCleared ?? [];
+  for (let d = 0; d < 6; d++) {
+    const n = Math.min(per, Math.max(0, Math.floor(Number(cleared[d] ?? 0))));
+    if (n >= per) continue;                                   // 该档已清满 ⇒ 下一档 ✓
+    const order = pickChallengePatterns(d, seed, tangramPatternsPerDifficulty());
+    const idx = order[n % order.length];
+    return lib[idx] ?? lib[0];
+  }
+  return lib[0];                                             // 六档全清 ⇒ 循环（不崩 ✓）
 }
 /** 拼对了吗：玩家摆位的并集指纹 == 目标指纹（旋转/镜像/平移都算拼对）✓ */
 export function tangramChallengeSolved(state) {
