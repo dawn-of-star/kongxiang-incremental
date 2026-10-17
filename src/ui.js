@@ -7,7 +7,7 @@ import {
   tangramChallengeTarget, tangramChallengeSolved, tangramAdvanceChallenge,
   tangramPriceFactor, tangramPricesAt,
 } from "./tangram-game.js";
-import { TANGRAM_PIECES, tangramPieceAtStep } from "./tangram.js";
+import { TANGRAM_PIECES, tangramPieceAtStep, cellsFromFingerprint } from "./tangram.js";   // ★ 预览要解码目标指纹 ✓
 // ★ 2026：挑战奖励的**唯一聚合入口**（表在 tangram.js）✓
 import { tangramRewardEffects, TANGRAM_CHALLENGE_REWARDS } from "./tangram.js";
 // ★★★ 2026：梦想页分组 + 右侧开关（增量改造：搬卡片 + 加开关，不重建）✓
