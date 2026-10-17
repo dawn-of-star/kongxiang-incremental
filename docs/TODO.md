@@ -1127,3 +1127,17 @@ ip-economy-lab｜quantum-particle-lab｜zpe-engine-lab
 | 8 | 小修 | `.btn { width:100% }` 的三处布局（控制条/抽兑/开关）；日志面板 60 条冻结 | 各自守卫 |
 
 **参考实现（本轮幸存的部分）**：七巧板那套（`src/tangram.js` / `tangram-game.js` / `tangram-pattern-library.js` / `ui.js` 末尾的 `renderTangramReal`）就是"独立模块 + 复用既有 id"的正确范式 ⇒ 重做上面各项时照这个来 ✓
+
+---
+
+## ★ 唯一未接进公式的奖励：`ipDoubleKneeMult`（七巧板 d6 全清 ×3）
+
+**为什么不接**（结构性问题，不是偷懒）：
+- 这个"knee"= `IP_DOUBLE_AD.purchasesAtIncrease`（便宜段能买几级），它同时出现在**两个函数**里：
+  `ipDoubleCostFor(state, k)`（**有 state** ✓）与 `ipDoubleAffordableIn(level, pool)`（**没有 state** ✗）
+- 项目的硬规矩：**探针与总价必须同源**（`consistency.mjs` 有断言守着）⇒ 只改一个就会让"能买几级"和"买下来多少钱"对不上 ✗
+- 要接必须给 `affordableIn` 加 `state` 形参 ⇒ 连锁 **4 个测试调用点**（consistency ×3、UI ×1）
+
+**接法（下次做）**：`affordableIn(level, pool, state = null)`（`state` 放**末位**带默认值 ⇒ 现有调用不破 ✓），两处都用
+`IP_DOUBLE_AD.purchasesAtIncrease * tangramRewardEffects(state?.tangramCleared).ipDoubleKneeMult` ✓
+然后跑 `consistency.mjs` 确认"探针 == 总价"仍成立 ✓

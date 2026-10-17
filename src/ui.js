@@ -2515,7 +2515,7 @@ function renderTangramReal(st) {
     rl.textContent = "挑战奖励：EP 折扣 " + (rw.epDiscount * 100).toFixed(0) + "%"
       + " ｜ 免费引擎 " + rw.freeZpeEngineLevels + " 级"
       + " ｜ 暗能量 knee ×" + rw.deKneeMult.toFixed(2)
-      + " ｜ IP 倍增 knee ×" + rw.ipDoubleKneeMult.toFixed(2)
+      + " ｜ IP 倍增 knee ×" + rw.ipDoubleKneeMult.toFixed(2) + "（仅显示）"
       + " ｜ 转化斜率 ×" + (rw.convSlopeMult ?? 1).toFixed(0)
       + " ｜ 计数系数 ×" + (rw.countFreqMult ?? 1).toFixed(0)
       + " ｜ 保底 " + (rw.pityFloor ?? 150)
