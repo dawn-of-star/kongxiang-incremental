@@ -10,6 +10,8 @@ import {
 import { TANGRAM_PIECES, tangramPieceAtStep } from "./tangram.js";
 // ★★★ 2026：梦想页分组 + 右侧开关（增量改造：搬卡片 + 加开关，不重建）✓
 import { arrangeDreamPage, renderDreamPage } from "./dream-ui.js";
+// ★★★ 2026：AD 式锁态（标签常显 + 锁角标 + 悬停条件；解锁永久）✓
+import { updateTabLocks, setupTabLocks } from "./lock-ui.js";
 import { infinityUpgradeOwned } from "./config.js";
 import { infinityUpgradeCost } from "./config.js";
 import { BREAK_INFINITY } from "./config.js";
@@ -913,6 +915,8 @@ function renderTangram(state) {
   renderTangramReal(state);
   // ★★★ 2026：梦想页（分组 + 右侧开关；只改文本/属性）✓
   renderDreamPage(state);
+  // ★ 2026：AD 式锁态（每帧幂等；只改 class/属性）✓
+  updateTabLocks(state);
 }
 
 /**
@@ -2304,6 +2308,7 @@ export function initUI(handlers) {
   arrangeDreamPage();   // ⚠️ 这里没有 state 变量（构建期）⇒ 模块内部用 renderDreamPage 存下的引用 ✓
   buildInfinityUpgrades();
   setupTabs();
+  setupTabLocks();        // ★ 2026：锁角标的样式由模块自己注入（不动 css 文件）✓
   setupFolds();           // ★ 2025：主面板折叠分组（设计稿第 27 行 + 用户裁定的下拉条/记住）
   setupFloatResets(handlers);   // ★ 2025：全页面悬浮重置窗（四按钮 + 折叠）
   buildDynamicText();     // ★ 2025：三页描述里的数字**从常量来**（原来手写的全过期了 ✗）
