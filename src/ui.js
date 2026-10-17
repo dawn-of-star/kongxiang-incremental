@@ -913,8 +913,31 @@ function renderTangram(state) {
   for (const k of ["tangram-cov-vert", "tangram-cov-horz", "tangram-cov-diag"]) {
     if (el[k]) el[k].textContent = "—";
   }
-  if (el["tangram-chal-need"]) el["tangram-chal-need"].textContent = "阈值待定（代办）";
-  if (el["tangram-chal-progress"]) el["tangram-chal-progress"].textContent = "0 / 0（图案未定）";
+  // ★★★ 2026：**拼装挑战**真数据（难度 / 解法数 / 本档进度 / 是否拼对 / 通关总数）✓
+  {
+    const state2 = state;                      // 本函数里叫 state（不是 st）✓
+    const tgt = tangramChallengeTarget(state2);
+    const solved = tangramChallengeSolved(state2);
+    const cleared = state2.tangramCleared ?? [0, 0, 0, 0, 0, 0];
+    const totalCleared = cleared.reduce((a, b) => a + Math.max(0, Math.floor(Number(b) || 0)), 0);
+    const perTier = 6;
+    const d = Math.max(0, Math.min(5, Math.floor(Number(tgt?.d ?? 0))));
+    if (el["tangram-chal-badge"]) el["tangram-chal-badge"].textContent = totalCleared + " / 36";
+    if (el["tangram-chal-need"]) {
+      el["tangram-chal-need"].textContent = tgt
+        ? "难度 " + (d + 1) + " ｜ 解法 " + tgt.ways + " 种 ｜ 轮廓边段 " + tgt.boundary
+        : "—";
+    }
+    if (el["tangram-chal-progress"]) {
+      el["tangram-chal-progress"].textContent = "第 " + (d + 1) + " 档 " + Math.min(perTier, Math.floor(Number(cleared[d] ?? 0))) + " / " + perTier;
+    }
+    if (el["tangram-chal-solved"]) {
+      el["tangram-chal-solved"].textContent = solved ? "✅ 已拼对 —— 点「下一题」" : "未拼对";
+    }
+    if (el["tg-chal-hint"]) {
+      el["tg-chal-hint"].textContent = solved ? "已拼对，点「下一题」继续 ✓" : "把七块拼成题目形状（可旋转/翻转）";
+    }
+  }
   // ★★★ 2026：用**真数据**覆盖上面的占位（实现在文件末尾）✓
   renderTangramReal(state);
   // ★★★ 2026：梦想页（分组 + 右侧开关；只改文本/属性）✓
@@ -2432,6 +2455,7 @@ export { el, $ };
 let tgSel = null;
 let tgBarBuilt = false;
 let tgAcqBuilt = false;
+let tgChalBound = false;
 let stRefForAcq = null;   // 获取卡片的按钮闭包要用（构建期没有 state ✓）
 
 /** 下一块（按面积从小到大）的步号；全齐 ⇒ -1 ✓ */
@@ -2566,7 +2590,17 @@ function renderTangramReal(st) {
     if (pity) pity.textContent = pc && pr ? "保底 " + fails + "/" + pr.pity : "";
     if (btnD) { btnD.textContent = pc && pr ? "抽（" + sci(Number(pr.draw) * factor) + "）" : "抽"; btnD.disabled = !pc; }
     if (btnE) { btnE.textContent = pc && pr ? "直接兑换（" + sci(Number(pr.exchange) * factor) + "）" : "直接兑换"; btnE.disabled = !pc; }
-  }  if (!tgBarBuilt && typeof document !== "undefined") {
+  }  // ★ 2026：拼装挑战节的两个按钮（挂一次 ✓）
+  if (!tgChalBound && typeof document !== "undefined") {
+    const bNext = document.getElementById(tgChalBound ? "" : "tg-chal-next");
+    const bReset = document.getElementById("tg-chal-reset");
+    if (bNext && bReset) {
+      tgChalBound = true;
+      bNext.addEventListener("click", () => { tangramAdvanceChallenge(st); handlers.onTangramCommit?.(); });
+      bReset.addEventListener("click", () => { resetTangramBoard(st); handlers.onTangramCommit?.(); });
+    }
+  }
+  if (!tgBarBuilt && typeof document !== "undefined") {
     // ★ 2026：控制条挂在 **.tangram-side** 的末尾（托盘下方，不前不后 ✓）
     const host = document.querySelector("#panel-tangram .tangram-side")
       ?? document.querySelector("#panel-tangram .tangram-tray");
