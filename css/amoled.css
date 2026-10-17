@@ -1043,15 +1043,18 @@ button { font: inherit; cursor: pointer; }
 
 /* ── 托盘：单列 7 行，行高统一，名字绝不折行 ── */
 .tangram-tray { display: flex !important; flex-direction: column !important; gap: 4px; }
+/* ★★★ 2026（用户：「图在上，字在下」）—— 槽位改成**纵向**：缩略图居中在上、名字在下 ✓ */
 .tangram-slot {
-  display: flex !important; align-items: center; gap: 6px;
-  min-height: 30px !important; height: 30px !important; padding: 0 6px !important;
+  display: flex !important; flex-direction: column !important;
+  align-items: center !important; justify-content: center !important; gap: 2px;
+  min-height: 54px !important; height: 54px !important; padding: 3px 4px !important;
   border: 1px solid var(--line-strong); border-radius: 4px;
   white-space: nowrap !important; overflow: hidden !important; font-size: 11px;
-  writing-mode: horizontal-tb !important;   /* ★ 绝不允许竖排 ✗✗ */
+  writing-mode: horizontal-tb !important;   /* ★ 文字仍不许竖排 ✗✗ */
+  text-align: center !important;
 }
-.tangram-slot > svg { width: 22px; height: 18px; flex: 0 0 auto; }
-.tangram-slot > span { white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; writing-mode: horizontal-tb !important; }
+.tangram-slot > svg { width: 30px !important; height: 24px !important; flex: 0 0 auto; }
+.tangram-slot > span { white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; writing-mode: horizontal-tb !important; max-width: 100%; font-size: 11px; line-height: 1.1; }
 .tangram-slot[data-owned="1"] { border-color: var(--eternity, #b388ff); }
 
 /* ── 控制条：两行、按钮小而等宽，标签直白 ── */
