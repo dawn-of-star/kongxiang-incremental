@@ -2938,9 +2938,10 @@ export const NEKO_ACTION_RESULT = {
 //
 // ⚠️ 默认值 = **收起**（设计稿的理由是"自动化后玩家不会在意的" ⇒ 默认不占屏幕）
 export const UI_FOLDS = {
-  manual: {
-    id: "manual",
-    title: "手动操作",
+  // ★★★ 2026（用户裁定）：「折叠应**只给日志系统**，而不是其他任何东西」✗
+  log: {
+    id: "log",
+    title: "日志",
     /** 默认是否展开（**未勾"记住"**时永远用这个值） */
     defaultOpen: false,
     /**
@@ -2949,7 +2950,7 @@ export const UI_FOLDS = {
      *   它是**设备偏好**（同一存档在手机/PC 上可以有不同的默认），
      *   而且不该让"折叠了一下"触发存档写入 ⇒ 与 `BASE.saveKey` **分开** ✓
      */
-    rememberKey: "kongxiang.ui.fold.manual",
+    rememberKey: "kongxiang.ui.fold.log",
   },
 };
 

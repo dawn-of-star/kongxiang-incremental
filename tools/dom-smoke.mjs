@@ -605,10 +605,10 @@ let zoneGuard = "未跑";
     const pIdx = html.indexOf('id="panel-console"');
     const pNext = html.indexOf('class="tab-panel"', pIdx + 1);
     const seg = pIdx >= 0 ? html.slice(pIdx, pNext < 0 ? undefined : pNext) : "";
-    const foldIdx = seg.indexOf('id="fold-manual-body"');
+    const foldIdx = -1;   // ★ 2026：折叠已不包手动卡
     const inside = marks.filter((m) => {
       const i = seg.indexOf(`id="${m}"`);
-      return i >= 0 && foldIdx >= 0 && i > foldIdx;      // 必须在折叠组**之内**
+      return i >= 0;   // ★ 2026：只要求仍在主控台内（常显）      // 必须在折叠组**之内**
     });
     // 日志必须**在梦想子页**里（而不是主控台）
     const dIdx = html.indexOf('id="panel-dream"');
@@ -616,10 +616,12 @@ let zoneGuard = "未跑";
     const dreamSeg = dIdx >= 0 ? html.slice(dIdx, dNext < 0 ? undefined : dNext) : "";
     const logInDream = dreamSeg.includes('id="log-panel"') && !seg.includes('id="log-panel"');
     // 折叠组的三件套（下拉条 / 内容 / 记住复选框）都在，且**默认收起**
-    const foldOk = !!byId.get("fold-manual-head") && !!byId.get("fold-manual-body")
-      && !!byId.get("fold-manual-remember")
-      && byId.get("fold-manual-body")?.hidden === true
-      && byId.get("fold-manual-head")?.getAttribute?.("aria-expanded") === "false";
+    // ★ 2026：折叠**只给日志** ⇒ 三件套 fold-log-*，且在梦想页内、默认收起 ✓
+  const foldOk = !!byId.get("fold-log-head") && !!byId.get("fold-log-body")
+      && !!byId.get("fold-log-remember")
+      && byId.get("fold-log-body")?.hidden === true
+      && byId.get("fold-log-head")?.getAttribute?.("aria-expanded") === "false"
+    && dreamSeg.includes('id="fold-log-head"');
     // 默认打开的是主控台
     const active = (byId.get("tab-console")?.className ?? "").includes("active");
     // ★ 2025：**标签栏必须在所有面板之前**。
@@ -633,7 +635,7 @@ let zoneGuard = "未跑";
     console.log(`  主控台          ${guarded
       ? `✅ 4 张手动卡都在**折叠组内**（${inside.length}/${marks.length}）且默认收起 ✓`
         + `｜日志已在**梦想子页** ✓｜下拉条/记住复选框都在 ✓｜默认打开；标签栏在面板之前`
-      : `❌ 面板=${!!consolePanel} 标签=${!!consoleTab} 卡在折叠组内=${inside.length}/${marks.length}`
+      : `❌ 面板=${!!consolePanel} 标签=${!!consoleTab} 手动卡常显=${inside.length}/${marks.length}`
         + ` 日志在梦想页=${logInDream} 折叠组=${foldOk} 默认打开=${active} 标签栏在前=${tabsFirst}`}`);
     console.log();
     if (!guarded) process.exitCode = 1;
@@ -650,16 +652,17 @@ let zoneGuard = "未跑";
   //     ③ 勾了"记住"后 ⇒ 展开态写进 localStorage，重启按它还原 ✓
   {
     const { UI_FOLDS: FOLDS } = await import(new URL("../src/config.js", import.meta.url).href);
-    const f = FOLDS.manual;
+    // ★ 2026（用户裁定）：「折叠只给日志系统」⇒ 折叠探针的对象改成 log ✓
+  const f = FOLDS.log;
     // ⚠️⚠️ **不要**为了测"重启"而再调一次 `initUI`：
     //   ① 它会给同一个节点**再挂一遍监听器**（累积 ⇒ 一次点击触发两次）✗
     //   ② 它还要求**全套 handlers**（我加上后当场 `handlers.onBuyZpeEngine is not a function`）✗
     //   ⇒ 拉一个**全新的模块实例**（`?fresh` 绕开 ESM 缓存），把导出的
     //      `applyFoldPreference` / `setFoldOpen` 拿来对**自己的节点**做纯验证 ✓
     const fresh = await import(new URL("../src/ui.js?fold-probe", import.meta.url).href);
-    const head = byId.get("fold-manual-head");
-    const body = byId.get("fold-manual-body");
-    const box = byId.get("fold-manual-remember");
+    const head = byId.get("fold-log-head");
+    const body = byId.get("fold-log-body");
+    const box = byId.get("fold-log-remember");
 
     const LSKEY = f.rememberKey;
     const LOG = [];

@@ -398,7 +398,7 @@ function cache() {
     // ★ 2025（设计稿第 27 行）：**日志搬到梦想子页**后的徽标
     "log-badge",
     // ★★★ 2025（设计稿第 27 行）：主面板**折叠分组**（下拉条 + "记住"复选框）
-    "fold-manual-head", "fold-manual-body", "fold-manual-remember", "fold-manual-hint",
+    "fold-log-head", "fold-log-body", "fold-log-remember", "fold-log-hint",
     // ★★★ 2025：全局加成槽的**好感度指数**那一格（生效时才显示）
     "gm-neko",
     // ★★★ 2025：**自动化状态**（已移到梦想子页 ⇒ id 仍是这两个）
