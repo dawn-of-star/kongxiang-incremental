@@ -1048,14 +1048,14 @@ button { font: inherit; cursor: pointer; }
 .tangram-slot {
   display: flex !important; flex-direction: column !important;
   align-items: center !important; justify-content: center !important; gap: 2px;
-  min-height: 44px !important; height: 44px !important; padding: 2px 4px !important;
+  min-height: 84px !important; height: 84px !important; padding: 6px 4px !important;   /* ★ 用户：放大约一倍 */
   border: 1px solid var(--line-strong); border-radius: 4px;
   white-space: nowrap !important; overflow: hidden !important; font-size: 11px;
   writing-mode: horizontal-tb !important;   /* ★ 文字仍不许竖排 ✗✗ */
   text-align: center !important;
 }
-.tangram-slot > svg { width: 26px !important; height: 20px !important; flex: 0 0 auto; }
-.tangram-slot > span { white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; writing-mode: horizontal-tb !important; max-width: 100%; font-size: 10px; line-height: 1.1; letter-spacing: -0.2px; }
+.tangram-slot > svg { width: 46px !important; height: 36px !important; flex: 0 0 auto; }
+.tangram-slot > span { white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; writing-mode: horizontal-tb !important; max-width: 100%; font-size: 13px; line-height: 1.15; }
 .tangram-slot[data-owned="1"] { border-color: var(--eternity, #b388ff); }
 
 /* ── 控制条：两行、按钮小而等宽，标签直白 ── */
@@ -1084,17 +1084,17 @@ button { font: inherit; cursor: pointer; }
 .tangram-side .tangram-slots {
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 3px !important;
+  gap: 6px !important;
 }
 .tangram-side .tg-controls {
   display: grid !important;
   grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 4px !important;
+  gap: 6px !important;
 }
 .tangram-side .tg-controls > .btn {
-  width: auto !important; min-width: 0; font-size: 11px; padding: 6px 2px;
+  width: auto !important; min-width: 0; font-size: 13px; padding: 10px 2px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .tangram-side #tg-acq-card { padding: 8px; }
 .tangram-side .tg-acq-row { display: flex; gap: 6px; align-items: center; }
-.tangram-side .tg-acq-row > .btn { width: auto !important; font-size: 11px; padding: 5px 8px; }
+.tangram-side .tg-acq-row > .btn { width: auto !important; font-size: 13px; padding: 8px 10px; }
