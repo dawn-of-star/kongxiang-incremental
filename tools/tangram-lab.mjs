@@ -312,7 +312,24 @@ console.log();
       && full.freeZpeEngineLevels === TANGRAM_CHALLENGE_REWARDS.freeZpeEngineLevelsByTier.reduce((a, b) => a + b, 0)
       && full.ipDoubleKneeMult === 3.0 && full.deKneeMult === 4.0
       && full.convSlopeMult === 10 && full.countFreqMult === 5 && full.pityFloor === 120;
-    ck("⑨e 奖励：基线恒等 / 单调 / 全清生效（且**无 IP 自反馈项**）", baseOk && mono && fullOk,
+    // ★★★ 2026：**奖励系数落点**（接进公式的那一层）—— 基线必须是 1/0，全清必须等于表里的值 ✓
+  {
+    const { rewardConvSlopeMult, rewardCountFreqMult, rewardPityFloor,
+      rewardDeKneeMult, rewardIpDoubleKneeMult, rewardFreeEngineLevels } = await import("../src/tangram-reward.js");
+    const base = { tangramCleared: [0, 0, 0, 0, 0, 0] };
+    const full = { tangramCleared: [6, 6, 6, 6, 6, 6] };
+    const okBase = rewardConvSlopeMult(base) === 1 && rewardCountFreqMult(base) === 1
+      && rewardPityFloor(base) === 150 && rewardDeKneeMult(base) === 1
+      && rewardIpDoubleKneeMult(base) === 1 && rewardFreeEngineLevels(base) === 0;
+    const okFull = rewardConvSlopeMult(full) === 10 && rewardCountFreqMult(full) === 5
+      && rewardPityFloor(full) === 120 && rewardDeKneeMult(full) === 4
+      && rewardIpDoubleKneeMult(full) === 3 && rewardFreeEngineLevels(full) === 185;
+    ck("⑨f 奖励系数落点：基线全 1/0、全清等于表值（p 中性）", okBase && okFull,
+      "基线=" + (okBase ? "✓" : "✗") + "｜全清=" + (okFull ? "✓" : "✗")
+      + "（conv×" + rewardConvSlopeMult(full) + " cf×" + rewardCountFreqMult(full) + " 保底" + rewardPityFloor(full) + "）");
+  }
+
+  ck("⑨e 奖励：基线恒等 / 单调 / 全清生效（且**无 IP 自反馈项**）", baseOk && mono && fullOk,
       "基线=" + (baseOk ? "全 0 ✓" : "✗") + "｜半程折扣=" + (half.epDiscount * 100).toFixed(0) +
       "% → 更多=" + (more.epDiscount * 100).toFixed(0) + "%｜全清：免费引擎 " + full.freeZpeEngineLevels +
       " 级、ipDouble knee ×" + full.ipDoubleKneeMult + "、被动IP " + full.passiveIpFrac);

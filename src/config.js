@@ -2073,6 +2073,8 @@ export function piecewiseSContribution(m) {
   return Math.log(m) / Math.log(worstR);
 }
 
+import { tangramRewardEffects } from "./tangram.js";
+
 export const DE_UPGRADES = {
   dreamAnnihilation: {
     id: "dreamAnnihilation",
@@ -2255,7 +2257,11 @@ export const DE_UPGRADES = {
  */
 export function deGainBaseEffectMult(state) {
   const cfg = DE_UPGRADES.deGainBase;
-  return hasEternityMilestone(state, "em4") ? cfg.em4EffectMult : cfg.effectMult;
+  const base = hasEternityMilestone(state, "em4") ? cfg.em4EffectMult : cfg.effectMult;
+  // ★★★ 2026：拼装挑战**六档全清** ⇒ 每级倍率抬到 1.14（em4 是 1.12）✓
+  //   ⚠️ 只抬"每级倍率"，不改曲线形状 ⇒ 不影响 p ✓
+  const full = tangramRewardEffects(state?.tangramCleared).allClear;
+  return full ? base.max ? base.max(1.14) : Math.max(Number(base), 1.14) : base;
 }
 
 // ══════════════════════════════════════════════════════════
