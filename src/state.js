@@ -218,6 +218,12 @@ export function newState() {
     infinityPoints: D(0),
     /** ★ 补回：删铸币时被连带删掉的梦想点字段 ✗（globalMultiplier 依赖它 ✓） */
     dreamPoints: D(0),
+    // ★★★ 2026：七巧板（几何=kernel `src/tangram.js`；游戏侧=`src/tangram-game.js`）✓
+    tangramOwned: {},          // 已获得（id → true）
+    tangramPity: {},           // 抽取保底（id → 连续失败次数）
+    tangramPlaced: {},         // 摆位（id → {rot, flip, dx, dy}；小数 = 自由拖动）
+    tangramCleared: [0, 0, 0, 0, 0, 0],   // 拼装挑战：每档已清数（奖励唯一输入）
+    tangramChallenge: { solved: 0 },      // 挑战进度
     /** 已大坍缩次数 */
     bigCrunchCount: D(0),
     /**

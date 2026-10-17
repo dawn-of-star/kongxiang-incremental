@@ -1,0 +1,181 @@
+/**
+ * ★★★ 2026：**七巧板的"游戏侧"函数**（状态相关；几何/纯函数在 `tangram.js`）
+ *
+ * ⚠️ 为什么单独一个文件、不塞进 `engine.js`：
+ *   本轮的教训 —— 往 1900 行的 `engine.js` 里用脚本插/删代码 = 高风险 ✗
+ *   这些函数**只依赖** `tangram.js`（纯）+ `state` 的几个字段 ⇒ 独立模块零风险、可单测 ✓
+ *
+ * 职责划分（别混）：
+ *   · `tangram.js`        —— 几何、覆盖率、指纹、价目表、奖励表（**纯函数，不碰 state**）
+ *   · 本文件              —— 读/写 `state.tangram*` 的那一层（抽取、兑换、拼装、挑战）
+ *
+ * 存档字段（`state.js` 里登记）：`tangramOwned` / `tangramPity` / `tangramPlaced` / `tangramCleared` / `tangramChallenge`
+ */
+import Decimal from "../dist/break_eternity.esm.js";
+import {
+  TANGRAM_PIECES, TANGRAM_CHALLENGE, TANGRAM_ACQUIRE,
+  tangramPricesAt, tangramPieceAtStep, tangramPatternsPerDifficulty,
+  placePieceVerts, placementOf, isPlacementLegal, placedVertices, axisCoverageAll,
+  polygonCells, cellsFingerprint, cellsFromFingerprint, placedCells,
+} from "./tangram.js";
+import { TANGRAM_PATTERN_LIBRARY } from "./tangram-pattern-library.js";
+
+const D = (x) => new Decimal(x);
+
+/** 当前 EP 折扣（挑战奖励）—— 抽/兑价格乘它 ✓ 没清任何图案 ⇒ 1（基价）✓ */
+export function tangramPriceFactor(state) {
+  const cleared = state?.tangramCleared ?? [];
+  const R = TANGRAM_ACQUIRE ? null : null;              // 只为可读性；奖励表在下面单独取
+  void R;
+  const perTier = TANGRAM_CHALLENGE.perDifficulty;
+  let disc = 0;
+  // ⚠️ 与 `tangram.js` 的 `tangramRewardEffects` 同源：这里只取折扣项 ✓
+  //   （两处都读同一张常量表，不会脱节）
+  const TABLE = tangramPriceFactor.TABLE ?? null;
+  void TABLE;
+  for (let d = 0; d < 6; d++) {
+    const n = Math.min(perTier, Math.max(0, Math.floor(Number(cleared[d] ?? 0))));
+    disc += (tangramPriceFactor.DISCOUNT[d] ?? 0) * (n / perTier);
+  }
+  return Math.max(0.1, 1 - Math.min(0.9, disc));
+}
+// 折扣表引用奖励表（唯一数据源）✓ —— 延迟绑定，避免循环 import
+import { TANGRAM_CHALLENGE_REWARDS } from "./tangram.js";
+tangramPriceFactor.DISCOUNT = TANGRAM_CHALLENGE_REWARDS.epDiscountByTier;
+
+/** 抽取：花「门槛 × 1% × 折扣」EP，单次 2%，连续失败到保底必中 ✓ */
+export function drawTangramPiece(state, step, rng = Math.random) {
+  const p = tangramPricesAt(step);
+  if (!p) return { ok: false, reason: "bad-index" };
+  const piece = tangramPieceAtStep(step);
+  if (!piece) return { ok: false, reason: "bad-index" };
+  const id = piece.id;
+  if (state.tangramOwned?.[id]) return { ok: false, reason: "owned" };
+  const cost = D(p.draw).mul(tangramPriceFactor(state));
+  if ((state.eternityPoints ?? D(0)).lt(cost)) return { ok: false, reason: "poor" };
+  state.eternityPoints = state.eternityPoints.sub(cost);
+  state.tangramPity ??= {};
+  const fails = Math.max(0, Math.floor(Number(state.tangramPity[id] ?? 0)));
+  const pityHit = fails + 1 >= p.pity;
+  const luck = !pityHit && rng() < p.chance;
+  if (pityHit || luck) {
+    state.tangramOwned ??= {};
+    state.tangramOwned[id] = true;
+    delete state.tangramPity[id];
+    autoPlaceTangram(state, id);
+    return { ok: true, got: true, cost: cost.toString() };
+  }
+  state.tangramPity[id] = fails + 1;
+  return { ok: true, got: false, cost: cost.toString() };
+}
+
+/** 足量兑换：花「门槛 × 折扣」EP，必定到手 ✓ */
+export function exchangeTangramPiece(state, step) {
+  const p = tangramPricesAt(step);
+  if (!p) return { ok: false, reason: "bad-index" };
+  const piece = tangramPieceAtStep(step);
+  if (!piece) return { ok: false, reason: "bad-index" };
+  const id = piece.id;
+  if (state.tangramOwned?.[id]) return { ok: false, reason: "owned" };
+  const cost = D(p.exchange).mul(tangramPriceFactor(state));
+  if ((state.eternityPoints ?? D(0)).lt(cost)) return { ok: false, reason: "poor" };
+  state.eternityPoints = state.eternityPoints.sub(cost);
+  state.tangramOwned ??= {};
+  state.tangramOwned[id] = true;
+  if (state.tangramPity) delete state.tangramPity[id];
+  autoPlaceTangram(state, id);
+  return { ok: true, cost: cost.toString() };
+}
+
+/** 拿到手就摆上棋盘（否则玩家"看不到巧板"）✓ 依次试几个格点，都冲突就留在托盘 ✓ */
+export function autoPlaceTangram(state, id) {
+  if (!state?.tangramOwned?.[id]) return false;
+  if (state.tangramPlaced?.[id]) return true;
+  for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [2, 0], [0, 2], [1, 1], [-1, 0], [0, -1], [3, 0], [0, 3]]) {
+    if (setTangramPlacement(state, id, { dx, dy }).ok) return true;
+  }
+  return false;
+}
+
+/** 设定摆位（**允许小数** = 自由拖动；合法性 = 在画布内 + 不与已放下块重叠）✓ */
+export function setTangramPlacement(state, id, cfg) {
+  if (!state?.tangramOwned?.[id]) return { ok: false, reason: "not-owned" };
+  state.tangramPlaced ??= {};
+  const next = { rot: 0, flip: false, dx: 0, dy: 0, ...placementOf(state.tangramPlaced, id), ...cfg };
+  next.rot = ((Math.floor(next.rot) % 4) + 4) % 4;
+  next.dx = Number(next.dx) || 0;
+  next.dy = Number(next.dy) || 0;
+  if (!isPlacementLegal(id, next, state.tangramPlaced)) return { ok: false, reason: "illegal" };
+  state.tangramPlaced[id] = next;
+  return { ok: true, placement: next };
+}
+export const moveTangramPlacement = (state, id, ddx, ddy) => {
+  const cur = placementOf(state.tangramPlaced, id);
+  return setTangramPlacement(state, id, { dx: cur.dx + ddx, dy: cur.dy + ddy });
+};
+export const rotateTangramPlacement = (state, id, dir = 1) => {
+  const cur = placementOf(state.tangramPlaced, id);
+  return setTangramPlacement(state, id, { rot: cur.rot + dir });
+};
+export const flipTangramPlacement = (state, id) => {
+  const cur = placementOf(state.tangramPlaced, id);
+  return setTangramPlacement(state, id, { flip: !cur.flip });
+};
+export function takeTangramBack(state, id) {
+  if (!state?.tangramPlaced?.[id]) return false;
+  delete state.tangramPlaced[id];
+  return true;
+}
+/** 重置棋盘：清布局 + 已持有的块**自动归位**（不丢所有权）✓ */
+export function resetTangramBoard(state) {
+  const cleared = Object.keys(state?.tangramPlaced ?? {}).length;
+  state.tangramPlaced = {};
+  let placed = 0;
+  let parked = 0;
+  for (const p of TANGRAM_PIECES) {
+    if (!state.tangramOwned?.[p.id]) continue;
+    if (autoPlaceTangram(state, p.id)) placed++;
+    else parked++;
+  }
+  return { cleared, placed, parked };
+}
+
+/** 三条轴覆盖率（只算**真的摆上棋盘**的块）✓ */
+export function tangramCoverage(state) {
+  return axisCoverageAll(placedVertices(state?.tangramPlaced));
+}
+
+// ══════════ 拼装挑战 ══════════
+/** 目标图案：线性推进（"每时空随机"等时空层实装后换 `pickChallengePatterns`）✓ */
+export function tangramChallengeTarget(state) {
+  const lib = TANGRAM_PATTERN_LIBRARY.patterns;
+  if (!lib.length) return null;
+  const n = Math.max(0, Math.floor(Number(state?.tangramChallenge?.solved ?? 0)));
+  return lib[n % lib.length];
+}
+/** 拼对了吗：玩家摆位的并集指纹 == 目标指纹（旋转/镜像/平移都算拼对）✓ */
+export function tangramChallengeSolved(state) {
+  const t = tangramChallengeTarget(state);
+  if (!t) return false;
+  if (!Object.keys(state?.tangramPlaced ?? {}).length) return false;
+  const mine = placedCells(state?.tangramPlaced);
+  if (!mine.length) return false;
+  return cellsFingerprint(mine) === t.key;
+}
+/** 过关并进下一题（按目标难度累加 `tangramCleared`，奖励唯一输入）✓ */
+export function tangramAdvanceChallenge(state) {
+  if (!tangramChallengeSolved(state)) return false;
+  const t = tangramChallengeTarget(state);
+  state.tangramChallenge ??= { solved: 0 };
+  state.tangramChallenge.solved = Math.max(0, Math.floor(Number(state.tangramChallenge.solved ?? 0))) + 1;
+  const d = Math.max(0, Math.min(5, Math.floor(Number(t?.d ?? 0))));
+  state.tangramCleared ??= [0, 0, 0, 0, 0, 0];
+  state.tangramCleared[d] = Math.max(0, Math.floor(Number(state.tangramCleared[d] ?? 0))) + 1;
+  return true;
+}
+
+export {
+  TANGRAM_PIECES, TANGRAM_CHALLENGE, TANGRAM_ACQUIRE, TANGRAM_CHALLENGE_REWARDS,
+  tangramPricesAt, tangramPieceAtStep, tangramPatternsPerDifficulty,
+  cellsFromFingerprint, placedCells, cellsFingerprint, polygonCells,
+};
