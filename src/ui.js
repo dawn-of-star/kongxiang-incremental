@@ -2509,6 +2509,8 @@ function renderTangramReal(st) {
   // ★ 2026（用户：「**主要是巧板托盘**」）—— 给 7 个槽位画**真实形状**缩略图
   //   ⚠️ 只往槽位里塞 SVG，**不动任何布局**（15% 右列 / 2 列网格 / 855px 坐标轴全部原样）✓
   paintTangramThumbs(st);   // ⚠️ 本函数的形参叫 st（不是 state）✗
+  // ★ 2026：自动无限的**三条规则面板**（挂在「无限自动化」卡片右侧；只建一次）✓
+  paintAutoCrunchUI(st, () => handlers.onTangramCommit?.());
 
   // ★★★ 2026：**挑战奖励的当前档位**（唯一聚合入口 `tangramRewardEffects`）✓
   const rw = tangramRewardEffects(st.tangramCleared);

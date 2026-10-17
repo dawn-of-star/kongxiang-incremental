@@ -21,13 +21,14 @@ const MODE_LABEL = { amount: "按收益", time: "按时间", xHighest: "× 最�
 export function paintAutoCrunchUI(state, commit) {
   if (typeof document === "undefined") return;
   // 目标挂载点：梦想页里 autoInfinities 那张卡的 wrap（= 卡片 + 开关 的那一行）
-  const wrap = document.querySelector("#panel-dream .q-card-wrap");
-  let id = null;
-  const buttons = document.querySelectorAll("#panel-dream .q-card-wrap");
-  for (const w of buttons) {
-    if (w.querySelector('[id^="dream-btn-"], .q-card')?.id === "dream-btn-autoInfinities") { id = w; break; }
+  // ★ 挂载点：找到「无限自动化」那张卡所在的 .q-card-wrap（卡片 + 开关 的那一行）
+  let host = null;
+  for (const w of document.querySelectorAll("#panel-dream .q-card-wrap")) {
+    const card = w.querySelector(".q-card");
+    if (card?.id === "dream-btn-autoInfinities") { host = w; break; }
   }
-  const host = id ?? wrap;
+  // 兜底：直接挂在梦想升级列表末尾（至少能看见 ✓）
+  if (!host) host = document.getElementById("dream-upgrade-list");
   if (!host) return;
 
   let box = document.getElementById("tg-ac-rule");
