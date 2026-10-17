@@ -2578,16 +2578,12 @@ function renderTangramReal(st) {
         b.addEventListener("click", () => { fn(); handlers.onTangramCommit?.(); });
         bar.appendChild(b);
       };
-      mk("获取", () => {
-        const s2 = tgNextStep(st);
-        if (s2 >= 0) exchangeTangramPiece(st, s2);
-      });
-      mk("◀", () => { if (tgSel) moveTangramPlacement(st, tgSel, -1, 0); });
-      mk("▶", () => { if (tgSel) moveTangramPlacement(st, tgSel, 1, 0); });
-      mk("▼", () => { if (tgSel) moveTangramPlacement(st, tgSel, 0, -1); });
-      mk("▲", () => { if (tgSel) moveTangramPlacement(st, tgSel, 0, 1); });
-      mk("R 转", () => { if (tgSel) rotateTangramPlacement(st, tgSel, 1); });
-      mk("F 翻", () => { if (tgSel) flipTangramPlacement(st, tgSel); });
+      mk("左移", () => { if (tgSel) moveTangramPlacement(st, tgSel, -1, 0); });
+      mk("右移", () => { if (tgSel) moveTangramPlacement(st, tgSel, 1, 0); });
+      mk("上移", () => { if (tgSel) moveTangramPlacement(st, tgSel, 0, 1); });
+      mk("下移", () => { if (tgSel) moveTangramPlacement(st, tgSel, 0, -1); });
+      mk("旋转", () => { if (tgSel) rotateTangramPlacement(st, tgSel, 1); });
+      mk("翻转", () => { if (tgSel) flipTangramPlacement(st, tgSel); });
       mk("放下", () => { if (tgSel) autoPlaceTangram(st, tgSel); });
       mk("收回", () => { if (tgSel) takeTangramBack(st, tgSel); });
       mk("下一题", () => tangramAdvanceChallenge(st));

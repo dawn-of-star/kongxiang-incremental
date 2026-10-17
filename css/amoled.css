@@ -1024,3 +1024,39 @@ button { font: inherit; cursor: pointer; }
 }
 .dream-group-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 @media (max-width: 900px) { .dream-group-grid { grid-template-columns: 1fr; } }
+/* ══════════════════════════════════════════════════════════
+   ★★★ 2026（用户：「巧板托盘 ui 再归一化优化，更直白且不要这么杂乱」）
+   —— 统一尺寸 / 不折行 / 按钮并排 / 控制条压成两行 ✓
+   ⚠️ 项目 `.btn` 是 block+100% 宽 ⇒ 行内按钮必须显式 width:auto（踩过三次）
+   ══════════════════════════════════════════════════════════ */
+
+/* ── 获取巧板：标题一行、进度条、两个并排按钮、保底计数一行 ── */
+#tg-acq-card .tg-acq-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tg-acq-bar { height: 6px; margin: 4px 0 6px; }
+.tg-acq-row { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; }
+.tg-acq-row > .btn {
+  width: auto !important; flex: 0 1 auto; min-width: 0;
+  font-size: 11px; padding: 5px 8px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.tg-acq-row > span.dim { font-size: 11px; white-space: nowrap; }
+
+/* ── 托盘：单列 7 行，行高统一，名字绝不折行 ── */
+.tangram-tray { display: flex !important; flex-direction: column !important; gap: 4px; }
+.tangram-slot {
+  display: flex !important; align-items: center; gap: 6px;
+  min-height: 30px !important; height: 30px !important; padding: 0 6px !important;
+  border: 1px solid var(--line-strong); border-radius: 4px;
+  white-space: nowrap !important; overflow: hidden !important; font-size: 11px;
+  writing-mode: horizontal-tb !important;   /* ★ 绝不允许竖排 ✗✗ */
+}
+.tangram-slot > svg { width: 22px; height: 18px; flex: 0 0 auto; }
+.tangram-slot > span { white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; writing-mode: horizontal-tb !important; }
+.tangram-slot[data-owned="1"] { border-color: var(--eternity, #b388ff); }
+
+/* ── 控制条：两行、按钮小而等宽，标签直白 ── */
+.tg-controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 8px 0 0; }
+.tg-controls > .btn {
+  width: auto !important; font-size: 11px; padding: 5px 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
