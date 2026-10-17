@@ -55,6 +55,59 @@ function ensureLayers(svg) {
 }
 
 /** 画：目标轮廓（暗，按 key 缓存）+ 玩家板块（亮）✓ 每帧调，成本 O(块数) ✓ */
+/**
+ * 2026（用户：「这块白色三角网格状的为什么会在这？」）——
+ *   **只画并集外轮廓**：把所有小三角的边计数，出现两次的是内部共边 => 丢掉；
+ *   只出现一次的才是边界 => 首尾相接成闭合折线 ✓
+ *   => 一条干净外框，不再是三角网格（那是实现细节，不该出现在界面上 ✗）
+ */
+function unionOutlinePath(cells, toSvgFn) {
+  const keyOf = (q) => q[0].toFixed(3) + ',' + q[1].toFixed(3);
+  const count = new Map();
+  const pts = new Map();
+  const addEdge = (a, b) => {
+    const ka = keyOf(a), kb = keyOf(b);
+    const ek = ka < kb ? ka + '|' + kb : kb + '|' + ka;
+    count.set(ek, (count.get(ek) ?? 0) + 1);
+    pts.set(ka, a); pts.set(kb, b);
+  };
+  for (const c of cells) {
+    const v = triVerts(c[0], c[1], c[2]);
+    addEdge(v[0], v[1]); addEdge(v[1], v[2]); addEdge(v[2], v[0]);
+  }
+  const adj = new Map();
+  for (const [ek, n] of count) {
+    if (n !== 1) continue;
+    const parts = ek.split('|');
+    if (!adj.has(parts[0])) adj.set(parts[0], []);
+    if (!adj.has(parts[1])) adj.set(parts[1], []);
+    adj.get(parts[0]).push(parts[1]);
+    adj.get(parts[1]).push(parts[0]);
+  }
+  const used = new Set();
+  const ekey = (a, b) => (a < b ? a + '|' + b : b + '|' + a);
+  let d = '';
+  for (const start of adj.keys()) {
+    for (const next0 of adj.get(start)) {
+      if (used.has(ekey(start, next0))) continue;
+      const loop = [start];
+      let cur = start, nxt = next0, guard = 0;
+      while (guard++ < 10000) {
+        used.add(ekey(cur, nxt));
+        loop.push(nxt);
+        if (nxt === start) break;
+        const cand = (adj.get(nxt) ?? []).filter((k) => !used.has(ekey(nxt, k)));
+        if (!cand.length) break;
+        cur = nxt; nxt = cand[0];
+      }
+      if (loop.length < 3) continue;
+      const sp = loop.map((k) => toSvgFn(pts.get(k)[0], pts.get(k)[1]));
+      d += 'M' + sp.map((q) => q[0] + ' ' + q[1]).join('L') + 'Z';
+    }
+  }
+  return d;
+}
+
 export function paintTangramBoard(state) {
   if (state) stRef = state;
   const svg = svgRoot();
@@ -65,10 +118,8 @@ export function paintTangramBoard(state) {
   // 2026（用户：「记得做轮廓类提示」）：目标轮廓画回来，但用浅填充+细描边（不是黑块）
   const tgt = tangramChallengeTarget(state);
   if (tgt && targetKeyCache !== tgt.key) {
-    const d = cellsFromFingerprint(tgt.key).map((c) => {
-      const v = triVerts(c[0], c[1], c[2]).map(([x, y]) => toSvg(x, y));
-      return "M" + v[0][0] + " " + v[0][1] + "L" + v[1][0] + " " + v[1][1] + "L" + v[2][0] + " " + v[2][1] + "Z";
-    }).join("");
+    // ★ 只画并集外轮廓（不再逐个小三角 ✗）
+    const d = unionOutlinePath(cellsFromFingerprint(tgt.key), toSvg);
     let path = layerTarget.querySelector("path");
     if (!path) {
       path = document.createElementNS(SVG_NS, "path");
