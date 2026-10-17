@@ -2512,6 +2512,20 @@ function renderTangramReal(st) {
   // ★ 2026：自动无限的**三条规则面板**（挂在「无限自动化」卡片右侧；只建一次）✓
   paintAutoCrunchUI(st, () => handlers.onTangramCommit?.());
   // ★ 2026：**挑战题目预览**（小图，画在挑战卡里；棋盘只做覆盖率 ✓）
+  // ★ 2026（用户：「点一下出预览图就行了」）—— 预览默认隐藏，点「看题目」才展开 ✓
+  if (!tgPrevBound && typeof document !== "undefined") {
+    const btn = document.getElementById("tg-chal-preview-btn");
+    const wrap = document.getElementById("tg-chal-preview-wrap");
+    if (btn && wrap) {
+      tgPrevBound = true;
+      btn.addEventListener("click", () => {
+        const show = wrap.hidden;
+        wrap.hidden = !show;
+        btn.textContent = show ? "收起题目" : "看题目";
+        if (show) paintChallengePreview(st, true);   // 展开时强制画一次 ✓
+      });
+    }
+  }
   paintChallengePreview(st);
 
   // ★★★ 2026：**挑战奖励的当前档位**（唯一聚合入口 `tangramRewardEffects`）✓
@@ -2693,10 +2707,14 @@ function paintTangramThumbs(st) {
 //   **拼装挑战的题目只画在挑战卡的小预览里**（不铺在主棋盘上 ✗）
 // ──────────────────────────────────────────────────────────
 let tgPrevKey = null;
-function paintChallengePreview(st) {
+let tgPrevBound = false;
+function paintChallengePreview(st, force = false) {
   if (typeof document === "undefined" || typeof document.createElementNS !== "function") return;
   const svg = document.getElementById("tangram-chal-preview");
   if (!svg) return;
+  // 默认只在**可见**时画（隐藏时零成本 ✓）
+  const wrap = document.getElementById("tangram-chal-preview-wrap");
+  if (!force && wrap && wrap.hidden) return;
   const tgt = tangramChallengeTarget(st);
   if (!tgt) return;
   if (tgPrevKey === tgt.key && svg.childElementCount) return;   // 同一题不重建 ✓
