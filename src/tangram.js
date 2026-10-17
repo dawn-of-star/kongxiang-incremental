@@ -309,7 +309,8 @@ export function tangramRewardEffects(clearedByDifficulty) {
       ipDoubleKneeMult = Math.max(ipDoubleKneeMult, R.ipDoubleKneeMultByTier[d]);
       freeZpeEngineLevels += R.freeZpeEngineLevelsByTier[d];
     }
-    if (d >= 2 && d <= 3 && k < R.perTier) midAll = false;
+    // ★ 2026（用户：「参考 ad 的时间研究 181 **在第 4 层完成时**获得」）⇒ 门槛 = **第 4 档全清** ✓
+    if (d === 3 && k < R.perTier) midAll = false;
     if (k < R.perTier) allClear = false;
   }
   // ★ 2026：新增三项（斜率 / 计数频率 / 保底）—— 取"已清满的最高档"值 ✓

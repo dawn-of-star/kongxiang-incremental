@@ -1,6 +1,8 @@
 import { quantumToIPGain } from "./config.js";
 // ★★★ 2026：七巧板三条轴的加成（设计稿 docs/TANGRAM.md §2 已勘定的落点）✓
 import { tangramCountFreqMult, tangramEngineBonusLevels, tangramConvRateMult } from "./tangram-bonus.js";
+// ★ 2026：挑战奖励系数（乘一个数，不改形状 ⇒ p 不变 ✓）
+import { rewardConvSlopeMult, rewardCountFreqMult } from "./tangram-reward.js";
 /**
  * formulas.js —— 全部计算（纯函数，不碰 DOM）
  *
@@ -124,6 +126,7 @@ export function countFreqAddTerm(state) {
   if (hasCollapse(state, "cm2")) extra = D(1).add(extra.sub(1).mul(2));
   // ★★★ 2026：**斜轴**（覆盖率 ⇒ 计数频率每级系数 0.05 → 50）✓
   extra = D(1).add(extra.sub(1).mul(tangramCountFreqMult(state)));
+  extra = D(1).add(extra.sub(1).mul(rewardCountFreqMult(state)));   // ★ 2026：d5 全清 ⇒ ×5 ✓
   return extra;
 }
 
@@ -849,6 +852,7 @@ export function conversion(state) {
   let perLevel = cfg.outputPerLevel;
   // ★★★ 2026：**横轴**（覆盖率 ⇒ 熵→粒子速率 0.1 → 1e13）—— 直接乘在**斜率**上 ✓
   perLevel *= tangramConvRateMult(state);
+  perLevel *= rewardConvSlopeMult(state);   // ★ 2026：挑战奖励（d4 全清 ⇒ ×10）✓
   if (hasVoid(state, "v5")) perLevel += 0.5;
   if (hasCollapse(state, "cm5")) perLevel *= transmuterIpMult(state);   // ⑤ 相变仪随 IP（对数）
   // ★ 「凝聚斜率」：直接加在**斜率**上（不是乘一个倍率）。

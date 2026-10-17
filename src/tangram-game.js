@@ -19,6 +19,7 @@ import {
   polygonCells, cellsFingerprint, cellsFromFingerprint, placedCells,
 } from "./tangram.js";
 import { TANGRAM_PATTERN_LIBRARY } from "./tangram-pattern-library.js";
+import { rewardPityFloor } from "./tangram-reward.js";   // ★ 2026：挑战奖励降低保底 ✓
 
 const D = (x) => new Decimal(x);
 
@@ -56,7 +57,9 @@ export function drawTangramPiece(state, step, rng = Math.random) {
   state.eternityPoints = state.eternityPoints.sub(cost);
   state.tangramPity ??= {};
   const fails = Math.max(0, Math.floor(Number(state.tangramPity[id] ?? 0)));
-  const pityHit = fails + 1 >= p.pity;
+  // ★ 2026：保底次数可被挑战奖励降低（d2 全清 ⇒ 120）✓
+  const pity = Math.min(p.pity, rewardPityFloor(state));
+  const pityHit = fails + 1 >= pity;
   const luck = !pityHit && rng() < p.chance;
   if (pityHit || luck) {
     state.tangramOwned ??= {};
