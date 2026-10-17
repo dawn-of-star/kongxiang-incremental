@@ -924,7 +924,7 @@ function renderTangram(state) {
     const totalCleared = cleared.reduce((a, b) => a + Math.max(0, Math.floor(Number(b) || 0)), 0);
     const perTier = 6;
     const d = Math.max(0, Math.min(5, Math.floor(Number(tgt?.d ?? 0))));
-    if (el["tangram-chal-badge"]) el["tangram-chal-badge"].textContent = totalCleared + " / 36";
+    if (document.getElementById("tangram-chal-badge")) document.getElementById("tangram-chal-badge").textContent = totalCleared + " / 36";
     if (el["tangram-chal-need"]) {
       el["tangram-chal-need"].textContent = tgt
         ? "难度 " + (d + 1) + " ｜ 解法 " + tgt.ways + " 种 ｜ 轮廓边段 " + tgt.boundary
@@ -933,11 +933,11 @@ function renderTangram(state) {
     if (el["tangram-chal-progress"]) {
       el["tangram-chal-progress"].textContent = "第 " + (d + 1) + " 档 " + Math.min(perTier, Math.floor(Number(cleared[d] ?? 0))) + " / " + perTier;
     }
-    if (el["tangram-chal-solved"]) {
-      el["tangram-chal-solved"].textContent = solved ? "✅ 已拼对 —— 点「下一题」" : "未拼对";
+    if (document.getElementById("tangram-chal-solved")) {
+      document.getElementById("tangram-chal-solved").textContent = solved ? "✅ 已拼对 —— 点「下一题」" : "未拼对";
     }
-    if (el["tg-chal-hint"]) {
-      el["tg-chal-hint"].textContent = solved ? "已拼对，点「下一题」继续 ✓" : "把七块拼成题目形状（可旋转/翻转）";
+    if (document.getElementById("tg-chal-hint")) {
+      document.getElementById("tg-chal-hint").textContent = solved ? "已拼对，点「下一题」继续 ✓" : "把七块拼成题目形状（可旋转/翻转）";
     }
   }
   // ★★★ 2026：用**真数据**覆盖上面的占位（实现在文件末尾）✓
