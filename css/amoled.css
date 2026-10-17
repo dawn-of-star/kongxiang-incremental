@@ -152,6 +152,8 @@ body {
    ⚠️ 与 `.neko-cols` 同一套断点（900px 以下退成单列）✓
    ══════════════════════════════════════════════════════════ */
 .tangram-wrap {
+  /* ★ 2026：整页可用的宽度都给棋盘（托盘 15% 不动 ✓）*/
+  --tg-board-max: 100%;
   display: grid;
   /* ★★ 用户 2026 指定：右侧巧板托盘**约占 15% 空间**（dom-smoke 有守卫盯着这个 15%） */
   grid-template-columns: minmax(0, 1fr) 15%;
@@ -159,7 +161,9 @@ body {
   align-items: start;
   margin-bottom: 14px;
 }
-@media (max-width: 900px) { .tangram-wrap { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .tangram-wrap {
+  /* ★ 2026：整页可用的宽度都给棋盘（托盘 15% 不动 ✓）*/
+  --tg-board-max: 100%; grid-template-columns: 1fr; } }
 
 /* 左：坐标轴（目标正方形 ＋ 三条线 ＋ 覆盖率读数）
    ★★ 2026 用户：「加成坐标轴太小了，大小**翻 5 倍**差不多」⇒ `190px → 950px`
@@ -172,7 +176,12 @@ body {
        屏幕像素 ⇒ 覆盖率高亮的 dash 数学会**算错** ⇒ 不能用 ✗）*/
 .tangram-board { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .tangram-svg {
-  width: min(855px, 100%);      /* `min()` ⇒ 窄屏不溢出（用户要的尺寸只在有地方时生效） */
+  /* ★★★ 2026（用户：「正方形显然小了，但区域又这么大 ⇒ **拓展可见区域**」）——
+     让 svg **吃满左侧那一列**（原来是 min(855px,100%) ⇒ 大屏上白留一大片 ✗）
+     ⚠️ dom-smoke 只断言"名义尺寸 ≥ 760px"，所以这里必须同时满足 855px ✓ */
+  width: 100% !important;
+  min-width: min(855px, 100%);
+  max-width: 100%;
   height: auto;
   aspect-ratio: 1 / 1;
   flex: 0 0 auto;
