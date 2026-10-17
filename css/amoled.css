@@ -995,3 +995,12 @@ button { font: inherit; cursor: pointer; }
   .fr-btn { padding: 6px 7px; }
   .fr-btn .fr-sub { display: none; }      /* 小屏只留名字（副标题会换行） */
 }
+
+/* ★★★ 2026：七巧板「获取巧板」卡片（托盘上方：保底条 + 抽 + 直接兑换）✓ */
+.tg-acq-bar { height: 8px; background: var(--bg-elevated); border-radius: 4px; overflow: hidden; margin: 4px 0 6px; }
+.tg-acq-bar > i { display: block; height: 100%; width: 0; background: var(--eternity, #b388ff); transition: width .12s; }
+.tg-acq-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tg-acq-row > .btn { width: auto; }
+/* ★ 2026：托盘槽位里的形状缩略图（左图右名）✓ */
+.tangram-slot { display: flex; align-items: center; gap: 6px; }
+.tangram-slot > svg { flex: 0 0 auto; }

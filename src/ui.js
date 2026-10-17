@@ -2431,6 +2431,8 @@ export { el, $ };
 // ══════════════════════════════════════════════════════════
 let tgSel = null;
 let tgBarBuilt = false;
+let tgAcqBuilt = false;
+let stRefForAcq = null;   // 获取卡片的按钮闭包要用（构建期没有 state ✓）
 
 /** 下一块（按面积从小到大）的步号；全齐 ⇒ -1 ✓ */
 function tgNextStep(st) {
@@ -2520,7 +2522,49 @@ function renderTangramReal(st) {
     node.style.outline = tgSel === piece.id ? "1px solid var(--eternity, #b388ff)" : "none";
   }
 
-  if (!tgBarBuilt && typeof document !== "undefined") {
+  // ★★★ 2026（用户：「一开始的抽取系统不是挺好的么？**进度条 + 直接兑换**，在**托盘上方**」）——
+  //   获取卡片放在托盘**最上面**（`.tangram-tray` 的第一个子节点）✓ 只建一次，之后每帧只改数字 ✓
+  if (!tgAcqBuilt && typeof document !== "undefined") {
+    const tray = document.querySelector("#panel-tangram .tangram-tray");
+    if (tray) {
+      tgAcqBuilt = true;
+      const card = document.createElement("div");
+      card.id = "tg-acq-card";
+      card.style.marginBottom = "8px";
+      card.innerHTML = [
+        '<div class="tg-acq-title" style="font-weight:700;margin-bottom:4px">获取巧板 <span class="dim" id="tg-acq-name"></span></div>',
+        '<div class="tg-acq-bar"><i id="tg-acq-fill"></i></div>',
+        '<div class="tg-acq-row">',
+        '  <button class="btn btn-small" id="tg-acq-draw" style="width:auto">抽</button>',
+        '  <button class="btn btn-small" id="tg-acq-ex" style="width:auto">直接兑换</button>',
+        '  <span class="dim" id="tg-acq-pity"></span>',
+        '</div>',
+      ].join("");
+      tray.insertBefore(card, tray.firstChild);
+      document.getElementById("tg-acq-draw")?.addEventListener("click", () => {
+        const s2 = tgNextStep(stRefForAcq);
+        if (s2 >= 0) { drawTangramPiece(stRefForAcq, s2); handlers.onTangramCommit?.(); }
+      });
+      document.getElementById("tg-acq-ex")?.addEventListener("click", () => {
+        const s2 = tgNextStep(stRefForAcq);
+        if (s2 >= 0) { exchangeTangramPiece(stRefForAcq, s2); handlers.onTangramCommit?.(); }
+      });
+    }
+  }
+  if (tgAcqBuilt) {
+    stRefForAcq = st;
+    const nm = document.getElementById("tg-acq-name");
+    const fill = document.getElementById("tg-acq-fill");
+    const pity = document.getElementById("tg-acq-pity");
+    const btnD = document.getElementById("tg-acq-draw");
+    const btnE = document.getElementById("tg-acq-ex");
+    if (nm) nm.textContent = pc ? "｜" + pc.name : "｜七块已集齐";
+    const fails = pc ? Math.max(0, Math.floor(Number(st.tangramPity?.[pc.id] ?? 0))) : 0;
+    if (fill) fill.style.width = pc && pr ? Math.min(100, (fails / pr.pity) * 100) + "%" : "0%";
+    if (pity) pity.textContent = pc && pr ? "保底 " + fails + "/" + pr.pity : "";
+    if (btnD) { btnD.textContent = pc && pr ? "抽（" + sci(Number(pr.draw) * factor) + "）" : "抽"; btnD.disabled = !pc; }
+    if (btnE) { btnE.textContent = pc && pr ? "直接兑换（" + sci(Number(pr.exchange) * factor) + "）" : "直接兑换"; btnE.disabled = !pc; }
+  }  if (!tgBarBuilt && typeof document !== "undefined") {
     const host = document.querySelector("#panel-tangram .tangram-tray");
     if (host) {
       tgBarBuilt = true;
