@@ -28,7 +28,13 @@ export function tangramPassiveIpGain(state, dtSec, gainFn) {
   const dt = Math.max(0, Number(dtSec) || 0);
   if (dt <= 0) return new Decimal(0);
   if (!state?.brokenInfinity) return new Decimal(0);        // 破∞前没有"本次无限收益"⇒ 不给 ✓
-  const g = gainFn(state);
+  // ★★★ 2026 紧急修（用户截图：熵/粒子/物质/暗能量全变 ∞）——
+  //   **正反馈**：被动 IP 加 IP ⇒ `bigCrunchGain ∝ IP^0.301` 跟着涨 ⇒ 被动 IP 更多 ✗✗
+  //   ⇒ 现在用 **破∞那一刻的快照**（`state.passiveIpBase`）作为收益源：
+  //     · 本次无限内**恒定** ⇒ 被动 IP 随时间**线性**增长 ✓ 不会爆炸 ✓
+  //     · 破∞时重新取一次快照 ⇒ 与"本次无限可获得 IP"的语义仍然一致 ✓
+  const snapshot = state?.passiveIpBase;
+  const g = snapshot != null ? new Decimal(snapshot) : gainFn(state);
   if (!g || !g.gt || !g.gt(0)) return new Decimal(0);
   return g.mul(frac).mul(dt / 1000);                        // ⚠️ dt 是**毫秒**（与 tick 一致）
 }

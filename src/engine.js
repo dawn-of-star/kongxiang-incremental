@@ -952,6 +952,10 @@ export function doBigCrunch(state) {
   }
 
   // crunch NaN guard: the DE reset path can leave a poisoned value; restore it here   if (String(state.darkEnergy).includes("NaN") || state.darkEnergy.lt(0)) state.darkEnergy = D(1);
+  // ★ 2026：给"被动 IP"留快照（本次无限的收益基准）⇒ 防止正反馈爆炸 ✗
+
+  try { state.passiveIpBase = bigCrunchGain(state).toString(); } catch { /* 忽略 */ }
+
   return { infinityPoints: ip, depthIP, timeIPAccrued: D(timeAccrued) };
 }
 
