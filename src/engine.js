@@ -1362,6 +1362,12 @@ export function doEternity(state) {
   state.startBought = {};
   state.speedBought = {};
   state.brokenInfinity = false;
+  // ★★★ 2026（用户：「em7 追加：初始获得一次无限次数，打破无限默认解锁」）——
+  //   em7 达成后，每次永恒**保留 1 次无限 + 默认已打破无限** ✓
+  if (hasEternityMilestone(state, "em7")) {
+    state.infinityCount = Math.max(1, Math.floor(Number(state.infinityCount ?? 0)) + 1);
+    state.brokenInfinity = true;
+  }
   state.ipTimeAccrued = 0;
   state.infinityElapsed = 0;
   // 档位 / 量子（铸币与坍缩加速器已删除）
