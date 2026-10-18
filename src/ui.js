@@ -2315,7 +2315,13 @@ function setupFloatResets(handlers) {
   //     一眼看出"该去哪里接" —— 见 index.html 里那段注释）
 }
 
+// ★★★ 2026 修 bug（用户截图：`ReferenceError: handlers is not defined`）——
+//   `handlers` 只是 `initUI()` 的**参数**，模块级函数（如 renderTangramReal）里**看不到**它 ✗
+//   ⇒ 在这里存一份模块级引用，给那些函数用 ✓
+let uiHandlers = null;
+
 export function initUI(handlers) {
+  uiHandlers = handlers;
   cache();
   applyStaticZones();     // ★ 静态按钮的乘区色（唯一数据源 = ZONE_OF）
   buildUpgrades();
@@ -2504,7 +2510,7 @@ function renderTangramReal(st) {
   //   ⚠️ 只往槽位里塞 SVG，**不动任何布局**（15% 右列 / 2 列网格 / 855px 坐标轴全部原样）✓
   paintTangramThumbs(st);   // ⚠️ 本函数的形参叫 st（不是 state）✗
   // ★ 2026：自动无限的**三条规则面板**（挂在「无限自动化」卡片右侧；只建一次）✓
-  paintAutoCrunchUI(st, () => handlers.onTangramCommit?.());
+  paintAutoCrunchUI(st, () => uiHandlers?.onTangramCommit?.());
   // ★ 2026：**挑战题目预览**（小图，画在挑战卡里；棋盘只做覆盖率 ✓）
   // ★ 2026（用户：「点一下出预览图就行了」）—— 预览默认隐藏，点「看题目」才展开 ✓
   if (!tgPrevBound && typeof document !== "undefined") {
@@ -2586,11 +2592,11 @@ function renderTangramReal(st) {
       side.insertBefore(card, side.firstChild);
       document.getElementById("tg-acq-draw")?.addEventListener("click", () => {
         const s2 = tgNextStep(stRefForAcq);
-        if (s2 >= 0) { drawTangramPiece(stRefForAcq, s2); handlers.onTangramCommit?.(); }
+        if (s2 >= 0) { drawTangramPiece(stRefForAcq, s2); uiHandlers?.onTangramCommit?.(); }
       });
       document.getElementById("tg-acq-ex")?.addEventListener("click", () => {
         const s2 = tgNextStep(stRefForAcq);
-        if (s2 >= 0) { exchangeTangramPiece(stRefForAcq, s2); handlers.onTangramCommit?.(); }
+        if (s2 >= 0) { exchangeTangramPiece(stRefForAcq, s2); uiHandlers?.onTangramCommit?.(); }
       });
     }
   }
@@ -2613,8 +2619,8 @@ function renderTangramReal(st) {
     const bReset = document.getElementById("tg-chal-reset");
     if (bNext && bReset) {
       tgChalBound = true;
-      bNext.addEventListener("click", () => { tangramAdvanceChallenge(st); handlers.onTangramCommit?.(); });
-      bReset.addEventListener("click", () => { resetTangramBoard(st); handlers.onTangramCommit?.(); });
+      bNext.addEventListener("click", () => { tangramAdvanceChallenge(st); uiHandlers?.onTangramCommit?.(); });
+      bReset.addEventListener("click", () => { resetTangramBoard(st); uiHandlers?.onTangramCommit?.(); });
     }
   }
   if (!tgBarBuilt && typeof document !== "undefined") {
@@ -2630,7 +2636,7 @@ function renderTangramReal(st) {
         b.className = "btn btn-small";
         b.style.width = "auto";
         b.textContent = label;
-        b.addEventListener("click", () => { fn(); handlers.onTangramCommit?.(); });
+        b.addEventListener("click", () => { fn(); uiHandlers?.onTangramCommit?.(); });
         bar.appendChild(b);
       };
       mk("左移", () => { if (tgSel) moveTangramPlacement(st, tgSel, -1, 0); });
