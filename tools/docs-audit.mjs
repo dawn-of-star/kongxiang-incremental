@@ -80,6 +80,16 @@ const add = (doc, kind, detail) => problems.push({ doc: basename(doc), kind, det
 const ARCHIVED_RE = /已作废|已归档|作废|废弃|仅设计|未动代码|历史价值|记录过|仅清单|已退休|归档/;
 const isArchived = (src) => ARCHIVED_RE.test(src.split(/\r?\n/).slice(0, 24).join("\n"));
 
+/**
+ * ★ **设计草案**（明确声明"未实装 / 设计草案"）只豁免 ③（标识符存在性）。
+ *
+ * 理由：草案里写的是**计划中**的常量名（如 `TIME_SPACE`），代码里当然还没有；
+ * 对它查"引用存在性"必然假阳性。其余检查（路径 / 状态头 / 数字口径）照做 ——
+ * 草案里引用的**现有**路径与数字仍然必须是真实的。
+ */
+const DESIGN_DRAFT_RE = /设计草案|未实装|design draft|not implemented/i;
+const isDesignDraft = (src) => DESIGN_DRAFT_RE.test(src.split(/\r?\n/).slice(0, 24).join("\n"));
+
 // ══════════════════════════════════════════════════════════════
 // ① 引用的仓库内路径必须存在
 // ══════════════════════════════════════════════════════════════
@@ -165,7 +175,7 @@ for (const f of docFiles()) {
   ]);
   for (const f of docFiles()) {
     const src = read(f);
-    if (isArchived(src)) continue;
+    if (isArchived(src) || isDesignDraft(src)) continue;   // 草案里的计划标识符不作数
     const seen = new Set();
     for (const m of src.matchAll(CONST_RE)) {
       const name = m[1];
