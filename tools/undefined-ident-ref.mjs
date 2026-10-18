@@ -38,9 +38,9 @@ const GLOBALS = new Set([
   "isNaN", "isFinite", "parseInt", "parseFloat", "encodeURIComponent", "decodeURIComponent",
   "setTimeout", "clearTimeout", "setInterval", "clearInterval",
   "requestAnimationFrame", "cancelAnimationFrame", "performance", "structuredClone", "fetch",
-  "confirm", "alert", "prompt", "queueMicrotask", "atob", "btoa",
+  "requestAnimationFrame", "cancelAnimationFrame", "performance", "structuredClone", "fetch", "URLSearchParams",
+  "confirm", "alert", "prompt", "queueMicrotask", "atob", "btoa", "TextEncoder", "TextDecoder", "crypto",
 ]);
-
 /** JS 关键字 —— `return (` / `if (` / `for (` 这类会被"名字("的扫描误当成函数调用 */
 const KEYWORDS = new Set([
   "return", "if", "else", "for", "while", "do", "switch", "case", "default", "break", "continue",
