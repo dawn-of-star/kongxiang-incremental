@@ -1,4 +1,4 @@
-import { OVERLOAD } from "./config.js";
+﻿import { OVERLOAD } from "./config.js";
 import { infinityUpgradeEffect } from "./engine.js";
 // ★★★ 2026：七巧板（游戏侧函数在独立模块 tangram-game.js；几何/价目/奖励在 tangram.js）✓
 import {
@@ -59,7 +59,7 @@ import {
   quantumEntropyMultiplier, quantumStepMult, quantumZpeRequirement,
   zpeEngineCost, zpeEngineCountFreqUnlocked, zpeEngineAddBonus, zpeEngineMultBonus,
 // ★★★ 2025 UI 同步：ZPE 引擎「2000 级后价格增幅」要显示"每级 ×多少" ⇒ 唯一入口 ✓
-zpeEngineStepMult, zpeEngineLevel,
+  zpeEngineStepMult, zpeEngineLevel, effectiveEngineLevel,
   zpeEngineProdMult, zpeEngineUnlocked, quantumZpeMultBonus, qOf, zoneOf, TIER_MILESTONES, DE_UPGRADES, DE_MILESTONES, DREAM_UPGRADES, INFINITY_ORDER, INFINITY_UPGRADES, BASE, ETERNITY, eternityPointGain, ipDoubleMult, tierMilestonesDone, matterTotalExponent, MATTER_B_KNEE, MATTER_B_KMAX, COLLAPSE, crunchThreshold, CRUNCH_AT_LABEL, pageUnlocked, markPageUnlocked,
   // ★★★ 2025：跨度层的常量（文案里的上界数字要从它来，**不手写** ✗）
   DE_SPAN,
@@ -1421,7 +1421,9 @@ export function render(state) {
     btnUnlock.disabled = unlocked;
     btnUnlock.textContent = unlocked ? "已解锁 ✓" : "解锁（1 次大坍缩，送 1 级）";
 
-    const lv = zpeEngineLevel(state);
+    // ★★★ 2026（用户：「显示==实发又出问题了」）—— 引擎的实际有效等级是 `effectiveEngineLevel()`（含七巧板加成）✓
+  //   原来这里显示的是 `zpeEngineLevel`（**裸等级**）⇒ 显示 ≠ 实发 ✗
+  const lv = effectiveEngineLevel(state);   // 唯一入口 ✓
     const prod = zpeEngineProdMult(state);
     const addBonus = zpeEngineAddBonus(state);
     const multBonus = zpeEngineMultBonus(state);
