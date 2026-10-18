@@ -36,6 +36,12 @@ export function paintAutoCrunchUI(state, commit) {
   if (!host) return;
 
   let box = document.getElementById("tg-ac-rule");
+  // ★★★ 2026（用户：「刚才的没有生效」）—— 面板是"只建一次"的 ⇒ 旧版留下的 DOM 不会自动带上
+  //   新元素（比如 #tg-ac-hint）✗ ⇒ 检测到结构缺件就**重建**一次 ✓
+  if (box && (!document.getElementById("tg-ac-hint") || !box.querySelector("[data-acmode]"))) {
+    box.remove();
+    box = null;
+  }
   if (!box) {
     box = document.createElement("div");
     box.id = "tg-ac-rule";
