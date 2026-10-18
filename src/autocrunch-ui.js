@@ -39,7 +39,9 @@ export function paintAutoCrunchUI(state, commit) {
   // ★★★ 2026（用户：「刚才的没有生效」）—— 面板是"只建一次"的 ⇒ 旧版留下的 DOM 不会自动带上
   //   新元素（比如 #tg-ac-hint）✗ ⇒ 检测到结构缺件就**重建**一次 ✓
   if (box && (!document.getElementById("tg-ac-hint") || !box.querySelector("[data-acmode]"))) {
-    box.remove();
+    // ⚠️ stub DOM 可能没有 remove() ⇒ 两种写法都兜住 ✓
+    if (typeof box.remove === "function") box.remove();
+    else box.parentNode?.removeChild?.(box);
     box = null;
   }
   if (!box) {
