@@ -13,6 +13,9 @@
  * ⚠️ 本模块的数值就是**唯一数据源**（与 `tangram.js` 自带表同一范式）✓
  */
 import Decimal from "../dist/break_eternity.esm.js";
+// ★ 2026：自动坍缩的"开/关"统一走 `autoEnabled`（已买 + 已开）。
+//   ⚠️ `dream-effects.js` 只 import Decimal ⇒ **不会**形成循环依赖 ✓
+import { autoEnabled } from "./dream-effects.js";
 
 const D = (x) => new Decimal(x);
 
@@ -71,7 +74,14 @@ export function autoCrunchThreshold(state) {
  */
 export function shouldAutoCrunch(state, ctx = {}) {
   const a = state?.autoCrunch;
-  if (!a || a.isActive === false) return false;
+  // ★★★ 2026 修 bug（用户：「梦想（自动化）页面的自动化升级都不正常工作」）：
+  //   `autoInfinities` 原来判 `state.dreamUpgrades.autoInfinities === true`（**买下就生效**），
+  //   完全无视梦想页的开关 `autoToggles.autoInfinities` ⇒ 开关是**摆设** ✗
+  //   而且它还有**第二个开关** `autoCrunch.isActive`（自动坍缩面板上的开/关）⇒ 两个开关互不同步 ✗
+  //   ⇒ 现在统一走 `autoEnabled()`（唯一判定：**已买 + 已开**）✓
+  //     老档的 `autoCrunch.isActive` 由 `state.deserialize` 迁移进 `autoToggles` ✓
+  if (!a) return false;
+  if (!autoEnabled(state, "autoInfinities")) return false;
   if (!state?.brokenInfinity) return false;
   const mode = AUTO_CRUNCH.modes.some((m) => m.id === a.mode) ? a.mode : AUTO_CRUNCH.defaultMode;
   const thr = autoCrunchThreshold(state);
@@ -98,9 +108,10 @@ function bigCrunchGainOf(state) {
  */
 export function maybeAutoCrunch(state, doBigCrunch) {
   const a = state?.autoCrunch;
-  if (!a || a.isActive === false) return false;
-  // ★ **必须先买自动化**（`autoInfinities` 梦想升级）—— 否则开局就自动坍缩 ✗
-  if (state?.dreamUpgrades?.autoInfinities !== true) return false;
+  if (!a) return false;
+  // ★ 2026：统一判据 —— **已买 `autoInfinities` + 梦想页开关已开**（唯一入口 `autoEnabled`）✓
+  //   ⚠️ 不再看 `a.isActive`（那是第二个开关 ⇒ 互不同步）；老档值已在 deserialize 迁移 ✓
+  if (!autoEnabled(state, "autoInfinities")) return false;
   if (!state?.brokenInfinity) return false;
   const nowMs = Number(state?.playTimeMs ?? 0) || 0;
   const lastMs = Number(a.lastAtMs ?? 0) || 0;
@@ -111,11 +122,15 @@ export function maybeAutoCrunch(state, doBigCrunch) {
   return true;
 }
 
-/** 买了自动化（em7 / emauto）才有资格 —— 由调用方判断；这里只提供开关读写 ✓ */
+/**
+ * 开/关 —— ★ 2026：**只写梦想页那个开关** `autoToggles.autoInfinities`
+ *   （唯一开关；引擎只认它。`autoCrunch.isActive` 已弃用，仅老档迁移时读一次）✓
+ */
 export function setAutoCrunchActive(state, on) {
-  state.autoCrunch ??= defaultAutoCrunch();
-  state.autoCrunch.isActive = on === true;
-  return state.autoCrunch.isActive;
+  state.autoToggles ??= {};
+  if (on === true) state.autoToggles.autoInfinities = true;
+  else delete state.autoToggles.autoInfinities;
+  return state.autoToggles.autoInfinities === true;
 }
 export function setAutoCrunchMode(state, mode) {
   if (!AUTO_CRUNCH.modes.some((m) => m.id === mode)) return false;

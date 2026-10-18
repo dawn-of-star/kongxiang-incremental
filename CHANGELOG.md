@@ -7,6 +7,107 @@
 
 ---
 
+### ★★ 修 bug：梦想页**自动化升级的效果全是死的**（用户：「自动化升级都不正常工作怎么办？还不修？」）
+
+**用户是对的 —— 四类自动化里三类从没接上过效果。三个真 bug：**
+
+**① 4 条「自动买暗能量升级」：id 传错 ⇒ 恒不生效**
+```
+原代码：for (const id of dreamUpgradeEffects(state).autoBuyDe) if (autoEnabled(state, id)) …
+`autoBuyDe` 装的是 **DE 升级 id**（phaseShift / vacuumAccel / deGainBase / convOutput），
+而 `autoEnabled` 查的是 `state.dreamUpgrades[id]` + `autoToggles[id]` ——
+那两个 key **永远不存在**（梦想 id 叫 autoPhase / autoVacuum / …）⇒ 恒 false ✗
+开关写的是 autoToggles.autoPhase，引擎读的是 autoToggles.phaseShift ⇒ 也对不上 ✗
+```
+**修法**：遍历 `DREAM_UPGRADES`，用**梦想 id** 判"已买 + 已开"，再用 `effect.deUpgrade` 真正购买 ✓
+
+**② `autoInfinities`：有**两个开关**，梦想页那个是摆设**
+```
+引擎原判据：`state.dreamUpgrades.autoInfinities === true`（**买下就自动坍缩**）
+ ⇒ 梦想页 `autoToggles.autoInfinities` **完全被无视** ✗
+ ⇒ 而自动坍缩面板上还有第二个开关 `autoCrunch.isActive` ⇒ 两个开关互不同步 ✗
+```
+**修法**：统一成**一个开关** = `autoToggles.autoInfinities`（走 `autoEnabled`）✓
+- 自动坍缩面板的「开/关」按钮改成写同一个 toggle（原来写 `isActive`）
+- 老档迁移：`deserialize` 时若 `autoCrunch.isActive === true` 且没有新 toggle ⇒ 置为 true ✓
+  （原来开着自动坍缩的玩家升级后仍然开着）
+
+**③ 三条「永恒保留」（被动）：`applyEternityKeeps()` 从来没被调用**
+```
+keepDeEternity / keepVoidEternity / engineAtStart —— 写好了、engine.js 也 import 了，
+但**一次都没被调用** ⇒ 买了等于没买 ✗
+另外它们的判据错用 `autoEnabled`（要求 autoToggles[id]），而它们是**被动型**、
+梦想页根本不给开关（见 dream-ui 的 AUTOMATION_IDS 只有 7 条）⇒ 恒 false ✗
+```
+**修法**：
+- `doEternity` 开头**拍快照**（darkEnergy / voidUpgrades / zpeMilestones），
+  重置完成后调 `applyEternityKeeps(state, snapshot)` 写回 ✓
+- 三条判据改用 `hasMilestone`（**已买即生效**，与「永恒保留（被动）」的组名一致）✓
+- 删掉 `doEternity` 里那行 ad-hoc 的 `engineAtStart`（`zpeEngineLevel = D(1)`）——
+  统一由 `applyEternityKeeps` 负责（两处实现必然分叉）✗
+
+**验证（三层，全部实测）**
+```
+① `consistency.mjs` 新增 3 条断言：
+   · 4 条 autoBuy：开关开 ⇒ 自动买（phaseShift 63 级 / vacuumAccel 40 / deGainBase 187 / convOutput 126）
+                   开关关 ⇒ 一级都不买 ✓
+   · autoInfinities：开关开 ⇒ 判据 true｜关 ⇒ false（旧字段 isActive 不再参与）✓
+   · 三条永恒保留：买了 ⇒ 暗能量/虚空升级/开局引擎 Lv1 都保留｜**没买 ⇒ 照常清零**（对照组）✓
+② 真实浏览器（同一份模块）：15 条断言全绿，见截图
+③ npm test ✅ 47 个脚本全绿
+```
+
+**⚠️ 断言里踩到的两个"假红/假绿"（都记档了）**
+```
+· 假红①：测试状态给 matter=1e40 ⇒ 量子层激活 ⇒ 捕获量子会 `state.zpe = 0`
+        ⇒ `vacuumAccel`（ZPE 计价）根本轮不到买 ✗ ⇒ 改成 matter=1e10 + `eternityCount=3`（em3 豁免）✓
+· 假绿②：探针里把手写 `1e280` 当永恒门槛，而门槛早已是 **1e308.25**
+        ⇒ `doEternity` 直接 return null、什么都没重置 ⇒ "保留"断言全部**假绿** ✗
+        ⇒ 用 `ETERNITY.goalLog10` 取门槛 + **断言 `doEternity` 不为 null** ✓
+        （是对照组「没买 ⇒ 照常清零」把这个假绿抓出来的）
+```
+
+### ★ 修 bug：**永恒前**梦想升级不刷新（用户报：「主控台下子页面中梦想（自动化）永恒前梦想升级未正常工作」）
+
+**症状（实测复现）**
+```
+传入 state：peakMatter=1e10（< 门槛 1e25）｜dreamPoints=1000
+卡片实际显示：花费 1.00 梦想点（持有 3.00）   ← 1000 点，却写"持有 3.00"
+```
+⇒ 不只是"不刷新"，而是显示**上一份 state 的陈旧数字**；`affordable` 高亮也停在旧值，
+玩家看不出买不买得起、买了也没反馈。
+
+**根因：梦想卡片有**两个渲染器**，其中一个被量子页的门控挡住**
+| 元素 | 原写入点 | 是否受门控 |
+|---|---|---|
+| 价格 / `affordable` / `disabled` | `ui.js` 的 `renderQuantum()` **内部** | ❌ 受 `if (!showContent) return`（`peakMatter ≥ 1e25`）|
+| 等级文字（未购买 / 已购买·未开启） | `dream-ui.js` 的 `renderDreamPage()` | ✅ 不受 |
+
+⇒ 永恒前那段循环**一次都不执行**，"等级会变、价格不动"的诡异现象由此而来 ✓
+（同一类坑本项目踩过：跨度层也曾因为写在 `!showContent` 之后而永不刷新）
+
+**修法：收口成唯一渲染器 + 与页面门控彻底解耦**
+```
+· `dream-ui.js` 的 `renderDreamPage(state)` 接管**全部**：价格 / affordable /
+  `disabled` / 等级 / 可重复升级的 `Lv n / max` / 页头 `dream-badge` ✓
+· 等级与价格走 `dreamUpgradeLevelOf` / `dreamUpgradeCostAt`（唯一入口）✓
+· `ui.js` 里那段 legacy 循环**整块删除**（双写是"显示 ≠ 实发"的老根源）✗
+· 调用点从 `renderTangram()`（**七巧板**，永恒期页面）搬到 `render()` 主流程，
+  **无条件**调用（与 `renderFloatResets` 同一处）⇒ 不再被任何页面牵连 ✓
+```
+
+**验证（三层）**
+```
+① 单测：`consistency` 全绿（梦想升级价格/一次性断言未受影响）
+② DOM 冒烟新增断言（先写断言复现 → 再修）：
+   「梦想升级(永恒前)」peakMatter=1e10 时 11 条卡片 affordable 与价格一致、
+   价格含「持有」、等级文字正确、可重复升级 Lv3 ⇒「Lv 3 / 12」+「花费 16.00（持有 1000）」✓
+   ⚠️ 这条断言同时守住"**价格必须与传入 state 精确一致**"（原 bug 就是不一致）✓
+③ **真实浏览器端到端**：写存档（peakMatter=1e10、1000 梦想点）→ iframe 载入真游戏 →
+   点开「主控台 → 梦想」→ 读卡片：11 条全部 affordable=true、价格「持有 1000」、
+   `dream-badge = 0 / 11` ⇒ ✅ 正常刷新
+```
+
 ### ★★ 删除「无限挑战（IC）」整个系统（用户裁定）
 
 **用户原话**

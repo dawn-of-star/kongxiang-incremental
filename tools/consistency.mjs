@@ -48,7 +48,9 @@ import { BASE, COLLAPSE, DE_MILESTONES, DE_UPGRADES, REPEATABLE, VOID_UPGRADES, 
   ZPE_ENGINE, zpeEngineAffordableIn, zpeEngineTotalCost,
   // ★★★ 2026：性能回归断言要"逐级"版做**对照基准**（闭式快、循环显然正确 ⇒ 必须一致）✓
   zpeEngineTotalCostLoop, zpeEngineAffordableInLoop } from "../src/config.js";
-import { newState } from "../src/state.js";
+import { newState, deLevelOf } from "../src/state.js";
+// ★★★ 2026：梦想自动化的"效果侧"断言要它（`autoInfinities` 是否尊重开关）✓
+import { shouldAutoCrunch } from "../src/autocrunch.js";
 import {
   conversion, darkEnergyRate, deUpgradeCost, entropyRate, globalMultiplier, globalMultiplierParts,
   matterRate, particleRate, repeatableCost, trapCost, zpeRate,
@@ -767,6 +769,117 @@ console.log();
       detail: badRows.length === 0
         ? `等级 0/1/2/3 ⇒ 实得 1/5/25/125 ✓｜且等级**不随永恒重置** ✓`
         : `不一致：${badRows.map((r) => `L${r.lv} 实得${r.got} vs 期望${r.exp}｜保留=${r.keep}`).join("｜")}`,
+    };
+  });
+
+  // ══════════════════════════════════════════════════════════
+  // ★★★ 2026：**梦想页「自动化升级」的效果侧**（用户报：「自动化升级都不正常工作」）
+  // ══════════════════════════════════════════════════════════
+  // 当时三个真 bug：
+  //   ① 4 条「自动买暗能量升级」把 **DE 升级 id** 当梦想 id 去查 `autoEnabled` ⇒ 恒 false ✗
+  //   ② `autoInfinities` 只看 `dreamUpgrades`，**无视梦想页开关** ⇒ 开关是摆设 ✗
+  //   ③ `keepDeEternity` / `keepVoidEternity` / `engineAtStart` 的 `applyEternityKeeps()`
+  //      **从来没被调用**，且判据用 `autoEnabled`（被动型没有开关）⇒ 恒不生效 ✗
+  // 下面三条分别锁住它们 —— 没有断言就等于没修 ✓
+
+  check("★ 梦想自动化①：4 条「自动买暗能量升级」必须按**梦想 id + 开关**生效", () => {
+    const pairs = DREAM_UPGRADES.filter((d) => d.effect?.kind === "autoBuy" && d.effect?.deUpgrade);
+    const rows = [];
+    for (const d of pairs) {
+      const mk = (toggleOn) => {
+        const s = { ...newState(), brokenInfinity: true };
+        s.dreamUpgrades[d.id] = true;
+        s.autoToggles = toggleOn ? { [d.id]: true } : {};
+        // 给足**各币种**资源；但 matter 必须压在 1e25 以下 ——
+        //   ⚠️ 否则量子层会激活，`phaseQuantumCapture` 会把 ZPE 抽干 ⇒
+        //      `vacuumAccel`（ZPE 计价）**根本轮不到买**，断言会假红 ✗（我第一版就踩了）
+        // ⚠️⚠️ 还要给 **em3**（永恒里程碑 3 = 「量子获取时不再重置 ZPE」）：
+        //   否则 tick 里捕获一枚量子就会 `state.zpe = 0`（设计如此）⇒
+        //   `vacuumAccel` 仍然买不到 ⇒ 又是假红 ✗
+        s.eternityCount = 3;                    // ≥ em3 的 need，豁免 ZPE 重置
+        s.dreamPoints = D("1e12");
+        s.resources.matter = D("1e10");        // < COLLAPSE.unlockMatter(1e25)
+        s.resources.particle = D("1e40");
+        s.zpe = D("1e40");
+        s.darkEnergy = D("1e40");
+        s.phaseTransmuterUnlocked = true;
+        return s;
+      };
+      const sOn = mk(true);
+      tick(sOn, 0.05);                                  // 引擎每 tick 调 autoAcquireDream ✓
+      const sOff = mk(false);
+      tick(sOff, 0.05);
+      // `deLevelOf` 返回 Decimal ⇒ 用 `gte(1)` / `lt(1)` 判（不要 Number() 截断）✓
+      const onOk = deLevelOf(sOn, d.effect.deUpgrade).gte(1);
+      const offOk = deLevelOf(sOff, d.effect.deUpgrade).lt(1);
+      rows.push({ id: d.id, de: d.effect.deUpgrade, onOk, offOk, lvOn: deLevelOf(sOn, d.effect.deUpgrade).toString(), lvOff: deLevelOf(sOff, d.effect.deUpgrade).toString(), zpeOn: sOn.zpe.toString(), zpeOff: sOff.zpe.toString() });
+    }
+    const bad = rows.filter((r) => !r.onOk || !r.offOk);
+    return {
+      ok: rows.length === 4 && bad.length === 0,
+      detail: rows.length !== 4
+        ? `期望 4 条 autoBuy(DE)，实际 ${rows.length} 条`
+        : bad.length === 0
+          ? `4 条（${rows.map((r) => r.de).join("/")}）：开关开 ⇒ 自动买 ✓｜关 ⇒ 不买 ✓`
+          : `异常：${bad.map((r) => `${r.id}(${r.de}) 开=${r.onOk} 关=${r.offOk}`).join("｜")}`,
+    };
+  });
+
+  check("★ 梦想自动化②：`autoInfinities` 必须尊重梦想页开关（不能买下就自动坍缩）", () => {
+    const mk = (toggleOn) => {
+      const s = { ...newState(), brokenInfinity: true, infinityPoints: D("1e10") };
+      s.dreamUpgrades.autoInfinities = true;
+      s.autoToggles = toggleOn ? { autoInfinities: true } : {};
+      s.autoCrunch = { ...(s.autoCrunch ?? {}), isActive: false };   // 旧开关关着也不该影响判据
+      s.runElapsed = 999;
+      return s;
+    };
+    const on = shouldAutoCrunch(mk(true));
+    const off = shouldAutoCrunch(mk(false));
+    return {
+      ok: on === true && off === false,
+      detail: on === true && off === false
+        ? `开关开 ⇒ 判据 true ✓｜开关关 ⇒ false ✓（旧字段 isActive 不再参与）`
+        : `开关开=${on}（应 true）｜开关关=${off}（应 false）`,
+    };
+  });
+
+  check("★ 梦想自动化③：三条「永恒保留」（被动）必须在永恒后真的保留", () => {
+    const run = (id) => {
+      const s = { ...newState(), infinityPoints: new Decimal(10).pow(ETERNITY.goalLog10) };
+      s.dreamUpgrades[id] = true;                        // 被动型：买下即生效（无需开关）
+      s.darkEnergy = D("1e30");
+      s.voidUpgrades.v5 = true;
+      s.zpeMilestones.m1 = true;
+      s.zpeEngineLevel = D(7);
+      s.brokenInfinity = true;
+      doEternity(s);
+      return s;
+    };
+    const a = run("keepDeEternity");
+    const b = run("keepVoidEternity");
+    const c = run("engineAtStart");
+    const keepDe = a.darkEnergy.gt(0);
+    const keepVoid = b.voidUpgrades?.v5 === true && b.zpeMilestones?.m1 === true;
+    const engine1 = c.zpeEngineLevel.gte(1);
+    // 对照组：没买 ⇒ 必须**不**保留（否则断言就是假绿）
+    const s0 = { ...newState(), infinityPoints: new Decimal(10).pow(ETERNITY.goalLog10) };
+    s0.darkEnergy = D("1e30");
+    s0.voidUpgrades.v5 = true;
+    s0.zpeEngineLevel = D(7);
+    s0.brokenInfinity = true;
+    doEternity(s0);
+    // ⚠️ `darkEnergy` 重置后的值是 **1**（不是 0）—— `resetForCollapse` 把它设成 D(1)；
+    //   所以判据用"远小于快照值"，不能写 `eq(0)` ✗（我第一版就写错，导致假红）
+    const cleared = s0.darkEnergy.lt(D("1e30")) && s0.voidUpgrades?.v5 !== true
+      && s0.zpeEngineLevel.lt(1);
+    return {
+      ok: keepDe && keepVoid && engine1 && cleared,
+      detail: keepDe && keepVoid && engine1 && cleared
+        ? `keepDeEternity ⇒ 暗能量保留（${a.darkEnergy.toString().slice(0, 8)}）✓｜`
+          + `keepVoidEternity ⇒ 虚空升级+ZPE 里程碑保留 ✓｜engineAtStart ⇒ 开局 Lv${c.zpeEngineLevel.toString()} ✓｜`
+          + `未购买时全部照常清零 ✓`
+        : `暗能量=${keepDe}｜虚空=${keepVoid}｜开局引擎=${engine1}｜未买对照组清零=${cleared}`,
     };
   });
 

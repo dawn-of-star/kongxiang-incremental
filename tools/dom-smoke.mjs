@@ -1289,6 +1289,82 @@ let zoneGuard = "未跑";
       }
 
       // ══════════════════════════════════════════════════════════
+      // ★★★ 2026 新增（用户报：「主控台下子页面中梦想（自动化）**永恒前**梦想升级未正常工作」）
+      // ══════════════════════════════════════════════════════════
+      // 根因：梦想升级的刷新循环原来写在 `renderQuantum()` **里**，而那个函数开头有
+      //   `if (!showContent) return;`（`showContent = collapseUnlocked = peakMatter ≥ 1e25`）
+      //   ⇒ **永恒前**（还没到 1e25）玩家手里已经有梦想点时（首次大坍缩/里程碑发的），
+      //     梦想升级**一次都不刷新**：按钮没有 `affordable`、等级文字永远「未购买」、
+      //     价格不显示「持有」⇒ 看起来"买了没反应 / 点不动" ✗
+      //   （这与 `renderSpanLayer` 当年那次是**同一类 bug** —— 见它那里的注释）
+      // ⇒ 现在抽成 `renderDream(state)`，在 `render()` 里**无条件**调用 ✓
+      // 本断言守的就是"**即使 peakMatter < 1e25，梦想升级也必须刷新**" ✓
+      {
+        const cfgDm = await import(new URL("../src/config.js", import.meta.url).href);
+        const { newState: nsDm } = await import(new URL("../src/state.js", import.meta.url).href);
+        const { render: renderDm } = await import(new URL("../src/ui.js", import.meta.url).href);
+        const { default: DecDm } = await import(new URL("../dist/break_eternity.esm.js", import.meta.url).href);
+        const Dm = (x) => new DecDm(x);
+
+        const s = nsDm();
+        s.peakMatter = Dm(1e10);          // ★ 永恒前：远低于 COLLAPSE.unlockMatter(1e25)
+        s.dreamPoints = Dm(1000);         // 手里有梦想点（首次坍缩/里程碑会发）
+        renderDm(s);
+
+        const rows = cfgDm.DREAM_UPGRADES.map((d) => {
+          const btn = byId.get(`dream-btn-${d.id}`);
+          const cost = cfgDm.dreamUpgradeCostAt(d.id, 0);
+          return {
+            id: d.id,
+            affordable: (btn?.className ?? "").includes("affordable"),
+            want: cost != null && s.dreamPoints.gte(cost),
+            stateTxt: (byId.get(`dream-${d.id}-state`)?.textContent ?? "").trim(),
+            costTxt: (byId.get(`dream-${d.id}-cost`)?.textContent ?? "").trim(),
+          };
+        });
+        const affordBad = rows.filter((r) => r.affordable !== r.want).map((r) => r.id);
+        // ★ 核心不变式：**卡片上的数字必须与"传进去的 state"精确一致**
+        //   （原 bug 的表现就是不一致：传入 1000 点，卡片仍写「持有 3.00」= 上一份 state 的陈旧值）
+        const notRefreshed = rows.filter((r) => !/持有/.test(r.costTxt)).map((r) => r.id);
+        // 一次性的应显示「未购买」；可重复的应显示「Lv 0 / 12」
+        const badState = rows.filter((r) => {
+          const d = cfgDm.DREAM_BY_ID[r.id];
+          return d.repeatable ? !/Lv\s*0/.test(r.stateTxt) : !/未购买/.test(r.stateTxt);
+        }).map((r) => r.id);
+
+        // ② 再验"买过之后等级文字会变"（用布尔字段模拟已买，避免依赖 engine）
+        s.dreamUpgrades.autoPhase = true;
+        renderDm(s);
+        const ownedTxt = (byId.get("dream-autoPhase-state")?.textContent ?? "").trim();
+        const ownedOk = /已购买/.test(ownedTxt);
+
+        // ③ **可重复升级的等级与价格**必须走 `dreamUpgradeLevelOf`/`dreamUpgradeCostAt`
+        //   （买第 2 级时最容易出现"永远显示第 1 级价格"的老 bug）
+        const s2 = nsDm();
+        s2.peakMatter = Dm(1e10);                     // 仍是永恒前
+        s2.dreamPoints = Dm(1000);
+        s2.dreamUpgradeLevels.offlineCap = 3;         // 已买 3 级
+        renderDm(s2);
+        const lvTxt = (byId.get("dream-offlineCap-state")?.textContent ?? "").trim();
+        const cost4 = cfgDm.dreamUpgradeCostAt("offlineCap", 3);   // 第 4 级价格（应 = 2·2³ = 16）
+        const costTxt4 = (byId.get("dream-offlineCap-cost")?.textContent ?? "").trim();
+        const lvOk = /Lv\s*3\s*\/\s*12/.test(lvTxt) && cost4 != null
+          && costTxt4.includes(String(cost4.toString()).includes("e") ? "e" : cost4.toString());
+
+        const okDm = affordBad.length === 0 && notRefreshed.length === 0 && badState.length === 0
+          && ownedOk && lvOk;
+        console.log(`  梦想升级(永恒前)  ${okDm
+          ? `✅ peakMatter<1e25 时也刷新（${rows.length} 条：affordable 与价格一致、价格含「持有」、`
+            + `等级文字正确）✓｜买过之后显示「${ownedTxt}」✓｜可重复升级 Lv3 ⇒ 「${lvTxt}」/「${costTxt4}」✓`
+          : `❌ affordable 不符=${affordBad.join(",") || "无"}`
+            + `｜未刷新(缺「持有」)=${notRefreshed.join(",") || "无"}`
+            + `｜等级文字错=${badState.join(",") || "无"}`
+            + `｜买过后文字=「${ownedTxt}」｜可重复升级 Lv3=「${lvTxt}」/「${costTxt4}」（期望 ${cost4}）`}`);
+        console.log();
+        if (!okDm) process.exitCode = 1;
+      }
+
+      // ══════════════════════════════════════════════════════════
       // ★★★ 2025 新增（用户裁定：「ui 确保在**购买门槛压平后**正确显示就行」）：
       //   **跨度层显示的判据必须与实发同源**
       // ══════════════════════════════════════════════════════════

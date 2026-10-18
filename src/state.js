@@ -451,8 +451,17 @@ export function deserialize(raw) {
   //   根因：这两项只写在 newState()，**deserialize 里没有** ⇒ 存档/读档就丢 ✗
   s.autoToggles = raw.autoToggles && typeof raw.autoToggles === "object"
     ? Object.fromEntries(Object.entries(raw.autoToggles).filter(([, v]) => v === true)) : {};
+  // ★★★ 2026 迁移（修「梦想页开关是摆设」时统一开关）：
+  //   `autoInfinities` 原来有**两个**开关（梦想页 `autoToggles` + 面板 `autoCrunch.isActive`），
+  //   引擎只认后者 ⇒ 梦想页的开关点了没用 ✗
+  //   现在**唯一开关** = `autoToggles.autoInfinities`；这里把老档的 `isActive:true` 迁移过来，
+  //   保证"原来开着自动坍缩的玩家升级后仍然是开的" ✓
+  //   ⚠️ 只在老档**没有** `autoToggles.autoInfinities` 时才迁移（不覆盖玩家新设置）✓
+  if (raw.autoCrunch?.isActive === true && s.autoToggles.autoInfinities !== true) {
+    s.autoToggles.autoInfinities = true;
+  }
   s.autoCrunch = {
-    isActive: raw.autoCrunch?.isActive === true,          // 默认关（买下≠生效）
+    isActive: raw.autoCrunch?.isActive === true,          // 已弃用（保留读写兼容），引擎不再看它
     mode: ["amount", "time", "xHighest"].includes(raw.autoCrunch?.mode) ? raw.autoCrunch.mode : "xHighest",
     amount: String(raw.autoCrunch?.amount ?? "1"),
     time: Math.max(0.1, num(raw.autoCrunch?.time, 0.1)),   // 时间模式默认 0.1 秒

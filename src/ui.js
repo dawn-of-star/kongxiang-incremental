@@ -75,8 +75,9 @@ em2BonusMult,
   nekoGlobalExponent, nekoNextTier, NEKO, nekoDriftRoom, NEKO_ITEMS,
   // ★★★ 2025（设计稿第 24 行）：自动化状态卡要读"哪几条 DE 升级被自动买"
   dreamUpgradeEffects,
-// ★★★ 2025：可重复梦想升级（"离线时长扩展"）的**等级**与**价格**唯一入口 ✓
-dreamUpgradeLevelOf, dreamUpgradeCostAt,
+// ⚠️ 2026：`dreamUpgradeLevelOf` / `dreamUpgradeCostAt` **不再从 ui.js 使用** ——
+//   梦想升级的等级/价格渲染已整体搬到 `dream-ui.js`（唯一渲染器，见那里的长注释）✓
+//   留着 import 只是死引用，会让人误以为本文件还在管梦想升级 ✗
 // ★★★ 2025：悬浮重置窗的永恒可用判定 —— **唯一入口**（不自己比 IP）✓
 //   ⚠️ 它定义在 `config.js`（`engine.js` 只是再导出）⇒ 从这里拿才对 ✓
 canEternity,
@@ -942,8 +943,10 @@ function renderTangram(state) {
   }
   // ★★★ 2026：用**真数据**覆盖上面的占位（实现在文件末尾）✓
   renderTangramReal(state);
-  // ★★★ 2026：梦想页（分组 + 右侧开关；只改文本/属性）✓
-  renderDreamPage(state);
+  // ⚠️ 2026：`renderDreamPage(state)` **从这里搬走了** ——
+  //   梦想页是**主控台**的子页，却挂在七巧板（永恒期）的渲染函数里 ⇒ 语义错、且
+  //   一旦七巧板被门控/拆分，梦想页就会静默失效 ✗
+  //   ⇒ 已移到 `render()` 主流程（与 `renderFloatResets` 同一处，**无条件**调用）✓
   // ★ 2026：AD 式锁态（每帧幂等；只改 class/属性）✓
   updateTabLocks(state);
 }
@@ -1675,6 +1678,14 @@ export function render(state) {
   //   ⚠️ **不放进 perfSection**：它太小（4 个 textContent，且被 `wrapEl` 去重）
   //     ⇒ 单列一段只会让分段表变噪 ✗
   renderFloatResets(state);
+  // ── ★★★ 2026：**梦想页（主控台子页）**的状态刷新 ──
+  //   ⚠️⚠️ 必须在这里、**无条件**调用 —— 原来它挂在 `renderTangram`（七巧板）里，
+  //     而梦想升级的"价格/可购"更早还写在 `renderQuantum` 的 `!showContent` 早退**之后**
+  //     ⇒ **永恒前**（`peakMatter < 1e25`）梦想卡片一次都不刷新，卡片上写的是
+  //        上一份 state 的陈旧数字（用户报：「永恒前梦想升级未正常工作」）✗
+  //   ⇒ 现在唯一渲染器 = `dream-ui.js` 的 `renderDreamPage`，与任何页面进度解耦 ✓
+  //   ⚠️ 它同样很小（只改文本/class/属性）⇒ **不进 perfSection**（避免分段表噪声）✓
+  renderDreamPage(state);
   // ⚠️⚠️ 我一度在这里写了 `renderEternity` / `renderVoid` / `renderDe` / `renderLog` ——
   //   **这四个函数根本不存在**（这个文件里永恒/虚空/暗能量的渲染是**内联在 render 里**的）✗
   //   而 `node --check` 只查语法、查不出未定义标识符 ⇒ 差点把页面搞崩。
@@ -1785,42 +1796,25 @@ function renderQuantum(state, R) {
   //      （用户裁定：「ui 确保在**购买门槛压平后**正确显示就行」⇒ 就是这条）
   //    ⇒ 已抽成 `renderSpanLayer(state)`，在 `render()` 里**无条件**调用 ✓
 
-  // ── 梦想点升级（一次性 + **可重复**）──
-  //   ★★★ 2025：`offlineCap`（离线时长扩展）是本项目第一个**可重复**梦想升级
-  //   ⇒ 这里按 `dreamUpgradeLevelOf` / `dreamUpgradeCostAt`（**唯一入口**）渲染等级与价格，
-  //     不再直接读 `d.cost` / `state.dreamUpgrades[id]` ✗
-  //     否则那条升级会显示成"未购买/已购买"，永远买不了第 2 级 ✗
-  let dOwned = 0;
-  let dLevels = 0;
-  for (const d of DREAM_UPGRADES) {
-    const lv = dreamUpgradeLevelOf(state, d.id);
-    const cost = dreamUpgradeCostAt(d.id, lv);        // `null` = 已满级 / 一次性已买
-    const has = lv > 0;
-    const maxed = cost == null;
-    if (has) dOwned++;
-    dLevels += lv;
-    const b = $(`dream-btn-${d.id}`);
-    if (!b) continue;
-    const canBuy = !maxed && state.dreamPoints.gte(cost);
-    b.classList.toggle("affordable", canBuy);
-    b.classList.toggle("owned", has);
-    b.disabled = maxed;
-    const stEl = $(`dream-${d.id}-state`);
-    if (stEl) {
-      stEl.textContent = d.repeatable
-        ? (d.maxLevel != null ? `Lv ${lv} / ${d.maxLevel}` : `Lv ${lv}`)
-        : (has ? "已购买 ✓" : "未购买");
-    }
-    const c = $(`dream-${d.id}-cost`);
-    if (c) {
-      c.textContent = maxed
-        ? (d.repeatable ? "已满级 ✓" : "已生效")
-        : `花费 ${sci(cost)} 梦想点（持有 ${sci(state.dreamPoints)}）`;
-    }
-  }
-  el["dream-badge"].textContent = `${dOwned} / ${DREAM_UPGRADES.length}`;
-  //   ⚠️ 跨度层**不在这里**渲染 —— 本函数会在 `!showContent` 时提前 return，
-  //      而跨度层是"打破无限之后"才生效的 ⇒ 见 `renderSpanLayer`（在 render() 里无条件调用）✓
+  // ⚠️ 2026 **已删除**：梦想点升级的渲染循环（原在这里）。
+  //
+  //   ── 为什么必须搬走（用户报：「梦想（自动化）**永恒前**梦想升级未正常工作」）──
+  //     本函数开头有 `if (!showContent) return;`（`showContent = peakMatter ≥ 1e25`）
+  //     ⇒ 梦想升级的价格 / 可购高亮 / `disabled` **永恒前一次都不刷新** ✗
+  //     实测：传入 `dreamPoints=1000`、`peakMatter=1e10` 后卡片仍写「持有 3.00」
+  //       （那是**上一份 state** 留下的陈旧文本）
+  //     更糟的是「等级文字」早已搬到 `dream-ui.js`（不受门控）⇒ 出现
+  //       "等级会变、价格不动"的诡异现象，玩家看起来像"买了没反应" ✗
+  //
+  //   ── 现在 ──
+  //     全部收口到 `renderDreamPage(state)`（`dream-ui.js`），
+  //     在 `render()` 里**无条件**调用 ⇒ 与页面进度/门控彻底解耦 ✓
+  //     这里的 `dream-badge` 也一并搬走了（同一个理由：徽标不该只在量子层刷新）✗
+  //
+  //   ⚠️ 别再在 `renderQuantum` 里写任何 `dream-*` 元素 —— **双写**是本项目
+  //      "显示 ≠ 实发" 反复重现的老根源 ✓
+  //
+  //   ⚠️ 跨度层也**不在这里**（同一类坑）：见 `renderSpanLayer`（`render()` 里无条件调用）✓
 }
 
 // ══════════════════════════════════════════════════════════

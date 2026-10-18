@@ -14,7 +14,10 @@
  *
  * ⚠️ 只建一次；每帧只更新文本/禁用态（不重建 DOM ✓）
  */
+import Decimal from "../dist/break_eternity.esm.js";
 import { AUTO_CRUNCH, autoCrunchThreshold, shouldAutoCrunch } from "./autocrunch.js";
+
+const D = (x) => new Decimal(x);
 
 const MODE_LABEL = { amount: "按收益", time: "按时间", xHighest: "× 最高" };
 
@@ -50,6 +53,7 @@ export function paintAutoCrunchUI(state, commit) {
       '<button class="btn btn-small" id="tg-ac-apply" style="width:auto">设定</button>',
       '<button class="btn btn-small" id="tg-ac-on" style="width:auto">关</button>',
       '<span class="dim" id="tg-ac-status" style="flex-basis:100%"></span>',
+      '<span class="dim" id="tg-ac-hint" style="flex-basis:100%;color:var(--eternity,#b388ff)"></span>',
     ].join("");
     host.appendChild(box);
 
@@ -68,18 +72,36 @@ export function paintAutoCrunchUI(state, commit) {
         return;
       }
       if (b.id === "tg-ac-apply") {
-        const v = document.getElementById("tg-ac-value")?.value ?? "";
+        // ★ 2026（用户：「以科学计数法输入没用」）—— 输入必须能接受 `1e5` / `1E5` / `1,000`
+        //   解析走 Decimal（唯一数值源）⇒ 非法值不写入、回显提示 ✓
+        const raw = (document.getElementById("tg-ac-value")?.value ?? "").trim().replace(/,/g, "");
         st.autoCrunch ??= {};
         const m = st.autoCrunch.mode ?? AUTO_CRUNCH.defaultMode;
-        if (m === "time") st.autoCrunch.time = Math.max(0.1, Number(v) || 0.1);
-        else if (m === "amount") st.autoCrunch.amount = String(v || "1");
-        else st.autoCrunch.xHighest = String(v || "2");
+        const hint = document.getElementById("tg-ac-hint");
+        const okDec = (() => {
+          try { const d = D(raw); return d.gt(0) && d.isFinite() ? d.toString() : null; } catch { return null; }
+        })();
+        if (m === "time") {
+          const n = Number(raw);
+          if (Number.isFinite(n) && n > 0) { st.autoCrunch.time = n; if (hint) hint.textContent = "已设为 " + n + " 秒"; }
+          else if (hint) hint.textContent = "时间必须是正数（秒）";
+        } else if (m === "amount") {
+          if (okDec) { st.autoCrunch.amount = okDec; if (hint) hint.textContent = "已设为收益 ≥ " + okDec; }
+          else if (hint) hint.textContent = "收益阈值必须是正数（支持 1e5）";
+        } else {
+          if (okDec) { st.autoCrunch.xHighest = okDec; if (hint) hint.textContent = "已设为 ≥ " + okDec + " × 纪录"; }
+          else if (hint) hint.textContent = "倍数必须是正数（支持 1e5）";
+        }
         commit?.();
         return;
       }
       if (b.id === "tg-ac-on") {
-        st.autoCrunch ??= {};
-        st.autoCrunch.isActive = st.autoCrunch.isActive === false;
+        // ★★★ 2026 修 bug：这个按钮原来写 `autoCrunch.isActive`，而引擎另有一个
+        //   梦想页开关 `autoToggles.autoInfinities` ⇒ **两个开关互不同步**，点哪个都可能没用 ✗
+        //   ⇒ 现在**只写梦想页那一个**（`autoToggles`），引擎只认它（`autoEnabled`）✓
+        st.autoToggles ??= {};
+        if (st.autoToggles.autoInfinities === true) delete st.autoToggles.autoInfinities;
+        else st.autoToggles.autoInfinities = true;
         commit?.();
       }
     });
@@ -98,14 +120,18 @@ export function paintAutoCrunchUI(state, commit) {
     val.value = mode === "time" ? String(a.time ?? 0.1) : String(mode === "amount" ? (a.amount ?? "1") : (a.xHighest ?? "2"));
   }
   const onBtn = document.getElementById("tg-ac-on");
-  if (onBtn) onBtn.textContent = a.isActive === false ? "开" : "关";
+  // ★ 2026：显示的是**梦想页那个开关**（唯一开关）✓
+  if (onBtn) onBtn.textContent = state?.autoToggles?.autoInfinities === true ? "关" : "开";
   const st = document.getElementById("tg-ac-status");
   if (st) {
+    // ★ 2026：判据统一走 `autoEnabled`（已买 + 已开）—— 原来只显示"未购买"，开关关着却不提示 ✗
     const owned = state?.dreamUpgrades?.autoInfinities === true;
+    const on = state?.autoToggles?.autoInfinities === true;
     const thr = autoCrunchThreshold(state);
-    st.textContent = (owned ? "" : "未购买「无限自动化」⇒ 不生效 ｜ ")
+    st.textContent = (!owned ? "未购买「无限自动化」⇒ 不生效 ｜ " : (on ? "" : "已购买但**未开启**（点右下角「开」）｜ "))
       + "阈值 " + (mode === "time" ? thr + " 秒" : mode === "amount" ? "收益 ≥ " + thr : "≥ " + thr + "× 纪录")
       + " ｜ 间隔 " + (AUTO_CRUNCH.fireDelayMs / 1000) + " 秒"
-      + (shouldAutoCrunch(state) ? " ｜ 判据已成立" : "");
+      + (shouldAutoCrunch(state) ? " ｜ 判据已成立" : "")
+      + (mode === "xHighest" ? " ｜ 比的是**本永恒单次收益纪录**（AD 用 IP 余额，在我们的经济里恒不触发 ⇒ 已注明）" : "");
   }
 }

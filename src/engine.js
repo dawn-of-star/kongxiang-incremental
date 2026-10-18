@@ -30,7 +30,7 @@ import { dreamAutoBuyTick, applyEternityKeeps, autoEnabled } from "./dream-effec
 //      反向 import 会成循环依赖 ✗（见 format.js 的头注）
 import { sci } from "./format.js";
 import {
-  BASE, BREAK_INFINITY, CRUNCH_AT_LABEL, DE_UPGRADES, DREAM_BY_ID, INFINITY_UPGRADES, INFINITY_ORDER, QUANTUM, REPEATABLE,
+  BASE, BREAK_INFINITY, CRUNCH_AT_LABEL, DE_UPGRADES, DREAM_BY_ID, DREAM_UPGRADES, INFINITY_UPGRADES, INFINITY_ORDER, QUANTUM, REPEATABLE,
   VOID_UPGRADES, ZPE_ENGINE, crunchThreshold, piecewiseDeCost,
   // ★ 2025：梦想升级的**等级机制**（首个可重复梦想升级 = 离线时长扩展）
   dreamUpgradeLevelOf, dreamUpgradeCostAt, dreamUpgradeEffects, infinityPointGain,
@@ -791,10 +791,26 @@ function autoAcquire(state) {
  *    梦想点和虚空升级是两条独立的系统，不该互相门控。
  */
 function autoAcquireDream(state) {
-  // ★★★ 2026：4 条「自动买暗能量升级」现在**尊重开关**（用户裁定：买下≠生效，要手动开）✓
-  //   ⚠️ 旧行为是买下即一直生效 ⇒ 开关是摆设 ✗
-  for (const id of dreamUpgradeEffects(state).autoBuyDe) {
-    if (autoEnabled(state, id)) autoBuyDeUpgrade(state, id);
+  // ★★★ 2026 修 bug（用户报：「梦想（自动化）页面的自动化升级都不正常工作」）
+  //
+  // ── 原 bug（4 条「自动买暗能量升级」全死）──
+  //   旧写法：`for (const id of dreamUpgradeEffects(state).autoBuyDe) if (autoEnabled(state, id)) …`
+  //   而 `autoBuyDe` 装的是 **DE 升级的 id**（`phaseShift` / `vacuumAccel` / …），
+  //   不是**梦想升级的 id**（`autoPhase` / `autoVacuum` / …）✗
+  //   ⇒ `autoEnabled(state, "phaseShift")` 去查 `state.dreamUpgrades["phaseShift"]` ——
+  //     那个 key **永远不存在** ⇒ 恒 false ⇒ 四条一次都不会自动买 ✗
+  //     （开关写的是 `autoToggles.autoPhase`，引擎读的是 `autoToggles.phaseShift` ⇒ 也对不上）
+  //
+  // ── 现在 ──
+  //   遍历**梦想升级定义**（`DREAM_UPGRADES`），用**梦想 id** 判"已买+已开关"，
+  //   再用 `effect.deUpgrade` 去真正购买 ⇒ 两个 id 各归各位 ✓
+  //   ⚠️ `dreamUpgradeEffects().autoBuyDe` **保留原样**（UI 用它显示"已开启哪几条 DE 升级"，
+  //     那里要的就是 DE 名字）✓ 两处语义不同，不要合并。
+  for (const d of DREAM_UPGRADES) {
+    const e = d.effect;
+    if (e?.kind === "autoBuy" && e.deUpgrade && autoEnabled(state, d.id)) {
+      autoBuyDeUpgrade(state, e.deUpgrade);
+    }
   }
   // ★★★ 2026：另两条「自动买满」（IP 点倍增 / ZPE 引擎）✓ 买手由本文件注入（避免循环 import）
   dreamAutoBuyTick(state, {
@@ -1296,6 +1312,17 @@ export function applyEternityRetention(state) {
 export function doEternity(state) {
   if (!canEternity(state)) return null;
 
+  // ★★★ 2026 修 bug（用户：「梦想（自动化）页面的自动化升级都不正常工作」）
+  //   `keepDeEternity` / `keepVoidEternity` / `engineAtStart` 三条"永恒保留"型升级
+  //   **效果侧从来没接上**：`dream-effects.js` 的 `applyEternityKeeps()` 写好了、
+  //   也 import 了，但**一次都没被调用** ✗ ⇒ 买了等于没买。
+  //   ⇒ 现在：① 先拍**快照**（必须在重置**之前**）② 重置完后写回 ✓
+  const eternityKeepSnapshot = {
+    darkEnergy: state.darkEnergy,
+    voidUpgrades: { ...(state.voidUpgrades ?? {}) },
+    zpeMilestones: { ...(state.zpeMilestones ?? {}) },
+  };
+
   const gained = eternityPointGain(state.infinityPoints).mul(epMultFactor(state));
   const ipBefore = state.infinityPoints;
   state.eternityPoints = (state.eternityPoints ?? D(0)).add(gained);
@@ -1345,8 +1372,8 @@ export function doEternity(state) {
   // ZPE 引擎（它在 ∞ 层之下）
   state.zpeEngineUnlocked = false;
   state.zpeEngineLevel = D(0);
-  // ★★★ 2026：**开局引擎**（ngineAtStart）—— 买下并开启 ⇒ 坍缩后保留 1 级 ✓
-  if (autoEnabled(state, "engineAtStart")) state.zpeEngineLevel = D(1);
+  // ⚠️ 2026：这里原来有一行 ad-hoc 的「开局引擎」实现（zpeEngineLevel = D(1)）——
+  //   已**删除**，统一由下面 applyEternityKeeps() 负责（两处实现必然分叉）✗
 
   // ── 虚拟系统整体归零（★ 用户明确：**除梦想系统外，一切重置**）──
   //   虚空升级（v1~v9）、ZPE 里程碑、暗能量里程碑、暗能量升级等级、相变仪解锁：
@@ -1363,6 +1390,13 @@ export function doEternity(state) {
   state.deAccum = D(0);
   state.zpeAccumulator = D(0);
   state.peakMatter = D(0);
+
+  // ★★★ 2026 修 bug：「永恒保留」三条（keepDeEternity / keepVoidEternity / engineAtStart）
+  //   **效果侧从来没接上** —— applyEternityKeeps() 写好了、也 import 了，但一次都没被调用 ✗
+  //   ⇒ 在**所有重置做完之后**写回快照（快照在函数开头、重置之前拍的）✓
+  //   ⚠️ 位置要求：必须在 `resetForCollapse` / `peakMatter` 归零 / 虚空清零**之后** ✓
+  const keptByDream = applyEternityKeeps(state, eternityKeepSnapshot);
+  if (keptByDream.length) pushLog(state, `💭 梦想升级：永恒后保留 ${keptByDream.join("、")}`);
 
   // ★★ 2025 em1：**在各层都清空之后**，按里程碑把"保留的 ∞ 升级"补回来。
   //   ⚠️ 必须放在 `resetForCollapse` **之后** —— 它内部会读 `startBought` 抬高开局物质

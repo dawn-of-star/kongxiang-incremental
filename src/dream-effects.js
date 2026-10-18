@@ -5,15 +5,18 @@
  *
  * | 升级 | 效果 | 落点 |
  * |---|---|---|
+ * | `autoPhase` / `autoVacuum` / `autoDeGainBase` / `autoConvOutput` | 自动买对应的**暗能量升级** | `engine.autoAcquireDream` → `autoBuyDeUpgrade`（用 `effect.deUpgrade`）|
  * | `autoIpDouble` | 自动买满 IP 点倍增 | `ipDoubleAffordableIn` / `ipDoubleCostF`（同 UI 用的入口）|
  * | `autoZpeEngine` | 自动买满 ZPE 引擎 | `zpeEngineCost`（引擎等级的唯一价格入口）|
- * | `keepDeEternity` | 永恒**不清空**暗能量 | `doEternity` 后重新写回 |
- * | `engineAtStart` | 坍缩后保留 1 级 ZPE 引擎 | 同上 |
+ * | `keepDeEternity` | 永恒**不清空**暗能量 | `applyEternityKeeps`（`doEternity` 重置后写回）|
+ * | `engineAtStart` | 坍缩/永恒后保留 1 级 ZPE 引擎 | 同上 |
  * | `keepVoidEternity` | 永恒**不清空**虚空升级 | 同上 |
  *
+ * ⚠️ **两类判据不同，别混用**（2026 混用过一次，四条自动买全死）：
+ *   · **自动化**（每 tick 干活、梦想页有开关）⇒ `autoEnabled`（已买 **且** `autoToggles[id]`）
+ *   · **被动保留**（梦想页没开关）⇒ `hasMilestone`（**已买即生效**）
  * ⚠️ 全部**只作用于永恒阶段**（用户边界：永恒之前的东西不碰）——
  *   它们不改任何公式，只在"重置/购买"这一层做该做的事 ✓
- * ⚠️ 开关语义（用户裁定）：「买下只是解锁能力，要**手动开**」⇒ 必须 `autoToggles[id] === true` ✓
  */
 import Decimal from "../dist/break_eternity.esm.js";
 
@@ -48,16 +51,22 @@ export function dreamAutoBuyTick(state, buy) {
  */
 export function applyEternityKeeps(state, snapshot) {
   const done = [];
-  if (autoEnabled(state, "keepDeEternity") || hasMilestone(state, "keepDeEternity")) {
+  // ⚠️⚠️ 2026 修 bug：这三条是**被动型**（梦想页不给它们开关 —— 见 `dream-ui.js` 的
+  //   `AUTOMATION_IDS` 只有 7 条，不含 keep*）⇒ 判据必须用 `hasMilestone`（**已买即生效**）✓
+  //   原来全用 `autoEnabled`（要求 `autoToggles[id] === true`）⇒ 那个开关**永远不会被设置**
+  //   ⇒ 三条"永恒保留"恒不生效（买了等于没买）✗
+  //   用户裁定「买下只是解锁能力，要手动开」针对的是**自动化**（每 tick 干活那种），
+  //   不是被动保留 —— 组名就叫「永恒保留（被动）」✓
+  if (hasMilestone(state, "keepDeEternity")) {
     state.darkEnergy = snapshot?.darkEnergy ?? D(0);
     done.push("darkEnergy");
   }
-  if (autoEnabled(state, "keepVoidEternity")) {
+  if (hasMilestone(state, "keepVoidEternity")) {
     state.voidUpgrades = snapshot?.voidUpgrades ?? {};
     state.zpeMilestones = snapshot?.zpeMilestones ?? {};
     done.push("voidUpgrades");
   }
-  if (autoEnabled(state, "engineAtStart")) {
+  if (hasMilestone(state, "engineAtStart")) {
     // 开局给 1 级引擎（不是"买满"，只是别从 0 开始）✓
     state.zpeEngineLevel = D(state.zpeEngineLevel ?? 0).max(D(1));
     done.push("engineAtStart");
