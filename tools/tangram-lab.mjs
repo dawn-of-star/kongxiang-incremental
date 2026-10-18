@@ -148,9 +148,10 @@ console.log();
   const a2 = polygonArea(triF);
   const cNo = axisCoverage([tri], TANGRAM_AXES[1]);
   const cYes = axisCoverage([triF], TANGRAM_AXES[1]);
-  ck("④c 翻转：面积不变，但覆盖率会变（所以翻转有策略意义）",
-    Math.abs(a1 - a2) < 1e-9 && Math.abs(cNo - 0.5) < 1e-9 && cYes === 0,
-    `面积 ${a1}/${a2}｜下边缘覆盖 ${(cNo * 100).toFixed(1)}%（期望 50%） vs ${(cYes * 100).toFixed(1)}%（期望 0%）`);
+  ck("④c 翻转：面积不变（覆盖率随摆法变；横轴现在在上边缘）",
+    // 2026: 横轴已移到**上边缘** ⇒ 压在下边 (y=0) 的三角形盖不到它 ⇒ 两个都是 0
+  Math.abs(a1 - a2) < 1e-9 && cNo === 0 && cYes === 0,
+    `面积 ${a1}/${a2}｜上边缘覆盖 ${(cNo * 100).toFixed(1)}% vs ${(cYes * 100).toFixed(1)}%（横轴已移到上边缘 ⇒ 都盖不到 ✓）`);
 
   // 吸附：小数落点吸到整数格点
   const s1 = snapPoint([1.4, 2.6]);
@@ -164,11 +165,12 @@ console.log();
   ck("④e 覆盖率随板块增加**单调不降**", mono,
     TANGRAM_AXES.map((ax) => `${ax.id} ${(c1[ax.id] * 100).toFixed(0)}%→${(c2[ax.id] * 100).toFixed(0)}%`).join("｜"));
 
-  // 手算定点：只有"大三角 I"时，下边缘 `y=0` 被它的 (0,0)-(4,0) 整条盖住 ⇒ 100%
-  //  而左边缘 `x=0` 只有 (0,0) 一个点 ⇒ 0%（点覆盖长度为 0）✓
-  const onlyA = axisCoverageAll([TANGRAM_PIECES[0].verts]);
-  ck("④f 定点手算：只放大三角 I ⇒ 下边缘 100%、左边缘 0%",
-    Math.abs(onlyA.horz - 1) < 1e-9 && Math.abs(onlyA.vert - 0) < 1e-9,
+// 手算定点（2026：横轴已移到**上边缘**，改用竖边做定点）：
+//   大三角 II = (0,0),(2,2),(0,4) ⇒ 左边 x=0 从 y=0 到 y=4 **整段盖住** ⇒ 纵轴 100%
+//   它的上边缘只有 (0,4) 一个点 ⇒ 横轴 0%（点覆盖长度为 0）✓
+const onlyA = axisCoverageAll([TANGRAM_PIECES[1].verts]);
+ck("④f 定点手算：只放大三角 II ⇒ 左边缘 100%、上边缘 0%",
+  Math.abs(onlyA.vert - 1) < 1e-9 && Math.abs(onlyA.horz - 0) < 1e-9,
     `横=${(onlyA.horz * 100).toFixed(1)}%｜纵=${(onlyA.vert * 100).toFixed(1)}%｜斜=${(onlyA.diag * 100).toFixed(1)}%`);
 }
 
@@ -177,6 +179,7 @@ console.log();
   // 把"大三角 I"沿 y 轴上移 1 ⇒ 下边缘不再被盖住 ⇒ 横轴覆盖率掉到 0
   const moved = placePieceVerts(TANGRAM_PIECES[0], { dy: 1 });
   const cov = axisCoverageAll([moved]);
+  // 2026: 横轴在上边缘 ⇒ 上移 1 后大三角 I 的顶边 y=3 仍不到 y=4 ⇒ 横轴 0；斜轴仍被盖 ⇒ >0 ✓
   const shifted = Math.abs(cov.horz - 0) < 1e-9 && cov.diag > 0;
   ck("⑤ 挪开一块 ⇒ 覆盖率**连续变化**（不是开关）", shifted,
     `上移 1：横=${(cov.horz * 100).toFixed(1)}%｜斜=${(cov.diag * 100).toFixed(1)}%（对角线仍被 (0,1)-(2,3) 段盖住）`);

@@ -113,12 +113,19 @@ const nekoActionApi = {
 
 const nekoBridge = createNekoBridge({
   getState: () => state,
+  // ★ 她下发的动作要落到白名单派发器上 —— `api` 是引擎函数的注入集合（零自写扣款）
+  actionApi: nekoActionApi,
   onStatus: (phase, detail) => {
     // 只在**状态真的变了**时写日志，避免每帧刷屏（宿主探测每帧都会跑）
     if (phase === nekoBridgeLastPhase) return;
     nekoBridgeLastPhase = phase;
-    if (phase === "host-ready-but-unregistered") {
-      pushLog(state, "🐍 检测到 N.E.K.O 宿主，但本游戏**尚未注册** ⇒ 暂不连接（见 docs/NEKO.md §8）");
+    if (phase === "connected") {
+      const caps = nekoBridge.capabilities;
+      pushLog(state, `🐍 已接入 N.E.K.O 宿主（能力：${caps.join(", ") || "无"}）`);
+    } else if (phase === "runtime-start-failed") {
+      pushLog(state, `🐍 N.E.K.O runtime.start 失败：${detail?.message ?? String(detail)}`);
+    } else if (phase === "snapshot-rejected") {
+      pushLog(state, `🐍 快照被宿主拒绝（契约不符？）：${detail?.message ?? String(detail)}`);
     } else if (phase === "error") {
       pushLog(state, `🐍 N.E.K.O 接入错误：${detail?.message ?? String(detail)}`);
     }
@@ -534,6 +541,13 @@ window.__game = {
   },
   /** 白名单清单（给控制台/文档看） */
   nekoActionList: () => Object.keys(NEKO_ACTIONS),
+  /**
+   * ★ SDK 握手状态（给端到端测试 / 控制台排查用）。
+   * 返回的是**只读快照**（桥内部每次 status 都复制一份），不含 client 引用。
+   */
+  nekoStatus: () => nekoBridge.status,
+  /** 主动请她看一眼（会起一个 LLM turn；没有 dialogue 能力时返回 null） */
+  nekoAsk: (prompt) => nekoBridge.requestAssist(prompt),
   /** ★ 2025：**性能监视器**（`__game.perf(true)` 打开 / `__game.perf()` 切换 / `F8`） */
   perf: (force) => {
     const on = perfToggle(force);

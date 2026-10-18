@@ -291,6 +291,182 @@ export function nekoHostPresent(doc = globalThis.document) {
   return typeof globalThis.nekoMiniGameSameOriginHostReady !== "undefined";
 }
 
+// ══════════════════════════════════════════════════════════
+// SDK 接入清单（manifest）
+// ══════════════════════════════════════════════════════════
+
+/**
+ * 身份常量 —— **必须与宿主模板里 `#neko-minigame-host-launch` 的注册 JSON 逐字一致**。
+ *
+ * 宿主握手时会比对 `manifest.id` / `manifest.version` 与注册项；差任何一个字符
+ * 都会得到 `code: 'game_unregistered'`（见 docs/NEKO.md §1.5.3 ③）。
+ * `routeGameType` 只影响端点路径（`/api/game/<routeGameType>/*`），可以在注册项里
+ * 单独给（默认等于 `gameId`）。
+ */
+export const NEKO_GAME_ID = "kongxiang-incremental";
+export const NEKO_GAME_VERSION = "0.7.1";
+export const NEKO_PROTOCOL_VERSION = "1";
+
+/**
+ * `states.snapshot` 的契约。
+ *
+ * ⚠️ 这是 **SDK 支持的 schema 子集**（不是完整 JSON Schema）：
+ *    支持 `type` / `properties` / `required` / `additionalProperties` / `items` /
+ *    `enum` / `minimum` / `maximum` / `maxLength` / `maxItems`；
+ *    **不支持** `$ref` / `oneOf` / `anyOf` / 正则 `pattern`。
+ *    硬上限：单契约 ≤256 节点、深度 ≤12（`connect()` 自己再校验一遍）。
+ * ⚠️ `rates` / `multipliers` **不在 required 里**：没有注入时调用方会**整个字段省略**
+ *    （而不是编 0）—— 见 `nekoSnapshotForHost()`。
+ */
+const NEKO_SNAPSHOT_STATE_SCHEMA = {
+  type: "object",
+  properties: {
+    schema: { type: "integer", minimum: 1 },
+    t: { type: "number" },
+    resources: {
+      type: "object",
+      properties: {
+        entropy: { type: "number" },
+        particle: { type: "number" },
+        matter: { type: "number" },
+        zpe: { type: "number" },
+        darkEnergy: { type: "number" },
+        quantum: { type: "number" },
+        infinityPoints: { type: "number" },
+        eternityPoints: { type: "number" },
+        dreamPoints: { type: "number" },
+      },
+      required: ["entropy", "particle", "matter", "zpe", "darkEnergy", "quantum",
+                 "infinityPoints", "eternityPoints", "dreamPoints"],
+      additionalProperties: false,
+    },
+    rates: { type: "object", additionalProperties: true },
+    multipliers: { type: "object", additionalProperties: true },
+    progress: {
+      type: "object",
+      properties: {
+        phaseTransmuterUnlocked: { type: "boolean" },
+        brokenInfinity: { type: "boolean" },
+        bigCrunchCount: { type: "number" },
+        quantumPairs: { type: "number" },
+        zpeMilestones: { type: "array", items: { type: "string", maxLength: 64 }, maxItems: 64 },
+        deMilestones: { type: "array", items: { type: "string", maxLength: 64 }, maxItems: 64 },
+        tierMilestones: { type: "array", items: { type: "string", maxLength: 64 }, maxItems: 64 },
+        zpeEngine: {
+          type: "object",
+          properties: {
+            unlocked: { type: "boolean" },
+            level: { type: "number" },
+          },
+          required: ["unlocked", "level"],
+          additionalProperties: false,
+        },
+        eternityCount: { type: "number" },
+      },
+      required: ["phaseTransmuterUnlocked", "brokenInfinity", "bigCrunchCount", "quantumPairs",
+                 "zpeMilestones", "deMilestones", "tierMilestones", "zpeEngine", "eternityCount"],
+      additionalProperties: false,
+    },
+    log: {
+      type: "array",
+      maxItems: 40,
+      items: {
+        type: "object",
+        properties: {
+          t: { type: "number" },
+          kind: { type: "string", enum: ["crunch", "buy", "milestone", "quantum", "system"] },
+          text: { type: "string", maxLength: 400 },
+        },
+        required: ["t", "kind", "text"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["schema", "t", "resources", "progress", "log"],
+  additionalProperties: false,
+};
+
+/**
+ * `controls.action` 的契约 —— **猫娘能调用的游戏内动作**。
+ *
+ * 方向是 **宿主 → 游戏**（她下指令，我们执行），来源是 `dialogue.request()` 的
+ * 响应里夹带的 `control` 对象（见 docs/NEKO.md §1.5.3 ⑨ 与 SDK README §Contracts）。
+ *
+ * ⚠️ 刻意用**一个** `action` 键 + `type` 枚举，而不是七个键：
+ *    ① 每加一个动作不用改契约（只改枚举）；
+ *    ② 我们的 `dispatchNekoActions()` 本来就是"批处理 + 未知动作不抛"的形状；
+ *    ③ 节点数/字符串预算更省（契约有硬上限）。
+ * ⚠️ `setAuto` 目前在 `NEKO_ACTION_SPECS` 里是**故意拒绝**的（需要玩家授权开关），
+ *    留在枚举里是为了让对面知道"这个动作存在但当前不可用"，而不是得到 `unknown_action`。
+ */
+const NEKO_CONTROL_SCHEMA = {
+  type: "object",
+  properties: {
+    type: {
+      type: "string",
+      enum: ["buyRepeatable", "buyVoidUpgrade", "buyDeUpgrade", "buyInfinityUpgrade",
+             "doBigCrunch", "doEternity", "setAuto"],
+    },
+    id: { type: "string", minLength: 1, maxLength: 64 },
+    max: { type: "boolean" },
+    reason: { type: "string", maxLength: 200 },
+  },
+  required: ["type"],
+  additionalProperties: false,
+};
+
+/** `events['control-result']` —— 每条指令的**回执**（她下完指令要知道成没成）。 */
+const NEKO_CONTROL_RESULT_SCHEMA = {
+  type: "object",
+  properties: {
+    actionType: { type: "string", maxLength: 40 },
+    status: { type: "string", enum: ["ok", "rejected", "unknown_action"] },
+    reason: { type: "string", maxLength: 200 },
+  },
+  required: ["actionType", "status"],
+  additionalProperties: false,
+};
+
+/**
+ * 交给 `NekoMiniGame.connect()` 的清单。
+ *
+ * - `requiredCapabilities` 只放**真的没有就跑不起来**的：`runtime`（生命周期）与
+ *   `logging`（SDK 唯一强制项）。
+ * - `dialogue` / `speech-output` / `context-read` / `memory` / `voice-input` 一律 optional：
+ *   没授予也能玩，只是对应功能降级（调用点用 `client.capabilities.has()` 自检）。
+ */
+export const NEKO_MANIFEST = Object.freeze({
+  id: NEKO_GAME_ID,
+  version: NEKO_GAME_VERSION,
+  protocolVersion: NEKO_PROTOCOL_VERSION,
+  requiredCapabilities: Object.freeze(["runtime", "logging"]),
+  optionalCapabilities: Object.freeze([
+    "dialogue", "speech-output", "context-read", "memory", "voice-input",
+  ]),
+  contracts: Object.freeze({
+    states: Object.freeze({ snapshot: NEKO_SNAPSHOT_STATE_SCHEMA }),
+    events: Object.freeze({ "control-result": NEKO_CONTROL_RESULT_SCHEMA }),
+    controls: Object.freeze({ action: NEKO_CONTROL_SCHEMA }),
+  }),
+});
+
+/**
+ * 把 `nekoSnapshot()` 投影成**契约允许**的形状。
+ *
+ * 两处必要修剪（都是"契约 vs 语义"的取舍）：
+ *   ① `rates` / `multipliers` 为 `null` 时**整个字段省略** —— 契约子集没有 `anyOf`，
+ *      而它们**不该被编成 0**（0 是"真的没产出"的意思）；
+ *   ② `log[].data` 不发给宿主 —— 它可能含任意结构（引擎内部字段），
+ *      契约里只声明 `t/kind/text`，砍掉比放宽校验更安全。
+ */
+export function nekoSnapshotForHost(state, nowMs = Date.now()) {
+  const snap = nekoSnapshot(state, nowMs);
+  if (snap.rates == null) delete snap.rates;
+  if (snap.multipliers == null) delete snap.multipliers;
+  snap.log = snap.log.map((e) => ({ t: e.t, kind: e.kind, text: e.text }));
+  return snap;
+}
+
 /**
  * 造一个**宿主桥**。没有宿主时全部方法都是安全的 no-op。
  *
@@ -299,12 +475,50 @@ export function nekoHostPresent(doc = globalThis.document) {
  * @param {(phase:string, detail?:object) => void} [opts.onStatus] 连接状态变化（UI 用）
  * @returns 桥对象（`available` 为 false 时方法仍可安全调用 ✓）
  */
-export function createNekoBridge({ getState, onStatus } = {}) {
-  const status = { available: false, connected: false, capabilities: [], lastError: null };
+export function createNekoBridge({ getState, onStatus, actionApi } = {}) {
+  const status = { available: false, connected: false, capabilities: [], declared: null, lastError: null };
   const report = (phase, detail) => {
     status.lastError = phase === "error" ? (detail?.message ?? String(detail)) : status.lastError;
     try { onStatus?.(phase, detail); } catch { /* UI 回调不该影响游戏 */ }
   };
+
+  /**
+   * 处理**一条**宿主下发的 control（`controls.on("action")` 的 handler）。
+   *
+   * 三条纪律：
+   *   ① **不直接调引擎** —— 一律转交 `dispatchNekoActions()`（阶段守卫 + 未知动作不抛 + 限流）；
+   *   ② **必须回执** —— 通过 `events.emit("control-result")` 告诉宿主成没成，
+   *      否则她不知道结果，会反复下同一条指令（docs/NEKO.md §1.5.3 ⑨）；
+   *   ③ **回执失败不影响执行** —— 指令已经生效了，回执只是通知。
+   */
+  function handleControl(client, envelope) {
+    const payload = envelope?.payload ?? {};
+    const type = String(payload?.type ?? "");
+    let result = { type, status: "unknown_action" };
+    try {
+      const api = actionApi ?? {};
+      const dispatched = dispatchNekoActions(
+        getState?.() ?? {},
+        [{ type, payload: { id: payload?.id, max: payload?.max === true } }],
+        api,
+      );
+      result = dispatched?.results?.[0] ?? result;
+    } catch (err) {
+      result = { type, status: "rejected", reason: err?.message ?? String(err) };
+    }
+
+    const receipt = { actionType: type || "(unknown)", status: result.status };
+    if (typeof result.reason === "string" && result.reason) {
+      receipt.reason = result.reason.slice(0, 200);
+    }
+    try {
+      const sent = client?.events?.emit?.("control-result", receipt);
+      if (sent && typeof sent.catch === "function") sent.catch(() => {});
+    } catch { /* 回执只是通知，失败不影响已生效的指令 */ }
+
+    try { bridge.publishSnapshot(); } catch { /* 同上 */ }
+    return result;
+  }
 
   const bridge = {
     /** 宿主在不在（**查询是纯读**，没有副作用） */
@@ -315,10 +529,16 @@ export function createNekoBridge({ getState, onStatus } = {}) {
     /**
      * 尝试连接宿主。**没有宿主就立刻返回 false**（不抛、不重试、不阻塞游戏）✓
      *
-     * ⚠️ 现在**只做到"探测 + 就绪等待"** —— 真正的 `connect()` 需要：
-     *   ① 宿主的注册表里有我们的 `id`/`version`（§8 问题 1，**等对面回话**）
-     *   ② `window.createNekoMiniGameSameOriginHost` 的精确签名（**我还没逐字核**）
-     *   ⇒ 两者都到位后，只需在这里接上（本层其余部分**不用改**）✓
+     * 握手四步（每一步失败都只上报，游戏照常单机玩）：
+     *   ① 等 `window.nekoMiniGameSameOriginHostReady`（宿主 bootstrap 暴露的 Promise）
+     *   ② `factory({ gameType, gameVersion, sessionId })` ⇒ transport（**同步抛**表示未注册）
+     *   ③ `NekoMiniGame.connect(NEKO_MANIFEST, { transport })` ⇒ client（**校验 id/version**）
+     *   ④ `client.runtime.start()` —— 不 start 的话 `runtime.state` 会停在 degraded/inactive
+     *
+     * ⚠️ 第 ② 步用 `gameType = NEKO_GAME_ID`（= 注册表键 = `registration.gameId`），
+     *    **不是** `routeGameType` —— 传错会得到 `game_unregistered`。
+     * ⚠️ 第 ④ 步**不阻塞** `connect()` 的返回值：start 失败只上报，不把已建立的手握回滚
+     *    （否则一次 runtime 抖动会让整局游戏掉线）。
      */
     async connect() {
       if (status.connected) return true;
@@ -329,18 +549,87 @@ export function createNekoBridge({ getState, onStatus } = {}) {
       }
       status.available = true;
       report("detected");
+
       try {
         const ready = globalThis.nekoMiniGameSameOriginHostReady;
-        if (ready && typeof ready.then === "function") await ready;
-        // ★ 到这里说明宿主侧 bootstrap 已就绪。
-        //   ⚠️ 但**注册与 transport 工厂签名未确认** ⇒ 本层在此**停住**，
-        //     只上报"已探测到宿主"，不去猜 API（猜错的代价是握手失败 + 对面以为我们坏了）✗
-        report("host-ready-but-unregistered");
-        return false;
+        const factory = (ready && typeof ready.then === "function") ? await ready : ready;
+        if (typeof factory !== "function") {
+          report("host-ready-but-no-factory");
+          return false;
+        }
+
+        const sdk = globalThis.NekoMiniGame;
+        if (!sdk || typeof sdk.connect !== "function") {
+          report("sdk-missing");
+          return false;
+        }
+
+        const pageParams = new URLSearchParams(globalThis.location?.search ?? "");
+        const sessionId = String(pageParams.get("session_id") ?? "").trim();
+
+        const transport = factory({
+          gameType: NEKO_GAME_ID,
+          gameVersion: NEKO_GAME_VERSION,
+          ...(sessionId ? { sessionId } : {}),
+        });
+
+        const client = await sdk.connect(NEKO_MANIFEST, { transport, connectTimeoutMs: 15000 });
+
+        bridge.__client = client;
+        status.connected = true;
+        status.capabilities = Array.isArray(client?.capabilities?.granted)
+          ? [...client.capabilities.granted] : [];
+        // 宿主实际接受的契约（用于端到端断言：controls 里有 action 才说明我们的控制契约生效）
+        status.declared = {
+          states: [...(client?.state?.declared ?? [])],
+          events: [...(client?.events?.declared ?? [])],
+          controls: [...(client?.controls?.declared ?? [])],
+        };
+
+        // ★ 宿主 → 游戏：她下发的动作落到 `dispatchNekoActions()`（白名单 + 守卫 + 限流）
+        if (typeof client?.controls?.on === "function") {
+          client.controls.on("action", (envelope) => handleControl(client, envelope));
+        }
+
+        report("connected", { host: client?.host ?? null });
+
+        if (typeof client?.runtime?.start === "function") {
+          Promise.resolve(client.runtime.start({ schema: NEKO_SNAPSHOT_SCHEMA }))
+            .catch((err) => report("runtime-start-failed", err));
+        }
+        return true;
       } catch (err) {
+        status.connected = false;
         report("error", err);
         return false;
       }
+    },
+
+    /**
+     * 请她**看一眼并给建议**（会起一个 LLM turn）。
+     *
+     * 她的回复里若带 `control` 对象，SDK 会校验后自动投递到 `controls.on("action")` ——
+     * 也就是说**"她帮玩家操作"不需要我们解析回复**，只要这里把上下文递上去。
+     * 没有 `dialogue` 能力时返回 `null`（不抛）。
+     */
+    async requestAssist(prompt) {
+      if (!status.connected) return null;
+      const client = bridge.__client;
+      if (!client?.capabilities?.has?.("dialogue")) {
+        report("dialogue-unavailable");
+        return null;
+      }
+      try {
+        return await client.dialogue.request(prompt ? { prompt } : {});
+      } catch (err) {
+        report("error", err);
+        return null;
+      }
+    },
+
+    /** 当前能力（只读；没有宿主时为空） */
+    get capabilities() {
+      return [...status.capabilities];
     },
 
     /** 推一条日志给宿主（无宿主 ⇒ 丢弃，**不报错**） */
@@ -357,7 +646,12 @@ export function createNekoBridge({ getState, onStatus } = {}) {
     publishSnapshot() {
       if (!status.connected) return false;
       try {
-        bridge.__client?.state?.update?.("snapshot", nekoSnapshot(getState?.() ?? {}));
+        const snap = nekoSnapshotForHost(getState?.() ?? {});
+        const sent = bridge.__client?.state?.update?.("snapshot", snap);
+        // 契约不符/会话过期时 SDK 会 reject —— 不能让它变成 unhandled rejection
+        if (sent && typeof sent.catch === "function") {
+          sent.catch((err) => report("snapshot-rejected", err));
+        }
         return true;
       } catch (err) { report("error", err); return false; }
     },
