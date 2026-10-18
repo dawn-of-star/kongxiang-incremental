@@ -834,8 +834,8 @@ console.log();
       s.runElapsed = 999;
       return s;
     };
-    const on = shouldAutoCrunch(mk(true));
-    const off = shouldAutoCrunch(mk(false));
+  const on = shouldAutoCrunch(mk(true), { gain: D("3e10") });   // 2026: xHighest 比"收益 vs 持有IP" ⇒ 给足收益 ✓
+  const off = shouldAutoCrunch(mk(false), { gain: D("3e10") });
     return {
       ok: on === true && off === false,
       detail: on === true && off === false

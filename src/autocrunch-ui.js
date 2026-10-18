@@ -16,6 +16,7 @@
  */
 import Decimal from "../dist/break_eternity.esm.js";
 import { AUTO_CRUNCH, autoCrunchThreshold, shouldAutoCrunch } from "./autocrunch.js";
+import { bigCrunchGain } from "./formulas.js";   // ★ 2026：×最高 判据要用"本次收益" ✓
 
 const D = (x) => new Decimal(x);
 
@@ -131,7 +132,7 @@ export function paintAutoCrunchUI(state, commit) {
     st.textContent = (!owned ? "未购买「无限自动化」⇒ 不生效 ｜ " : (on ? "" : "已购买但**未开启**（点右下角「开」）｜ "))
       + "阈值 " + (mode === "time" ? thr + " 秒" : mode === "amount" ? "收益 ≥ " + thr : "≥ " + thr + "× 纪录")
       + " ｜ 间隔 " + (AUTO_CRUNCH.fireDelayMs / 1000) + " 秒"
-      + (shouldAutoCrunch(state) ? " ｜ 判据已成立" : "")
-      + (mode === "xHighest" ? " ｜ 比的是**本永恒单次收益纪录**（AD 用 IP 余额，在我们的经济里恒不触发 ⇒ 已注明）" : "");
+      + (shouldAutoCrunch(state, { gain: state?.brokenInfinity ? bigCrunchGain(state) : 0 }) ? " ｜ 判据已成立" : "")
+      + (mode === "xHighest" ? " ｜ 判据：本次收益 ≥ 当前持有 IP × 倍数" : "");
   }
 }

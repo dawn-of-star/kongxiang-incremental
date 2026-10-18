@@ -339,7 +339,7 @@ function tickBody(state, dt) {
   // ★★★ 2026：**自动无限**（AD 的 Big Crunch autobuyer）——
   //   独立模块 `src/autocrunch.js`；把 `doBigCrunch` 当参数传进去，避免循环 import ✓
   //   ⚠️ 判据成立后再等 0.1s（用户裁定）⇒ 冷却在模块里判 ✓
-  maybeAutoCrunch(state, doBigCrunch);
+  maybeAutoCrunch(state, doBigCrunch, bigCrunchGain);   // ★ 2026：×最高 用**本次收益** ✓
   // ★★★ 2026：**每秒 1% 本次无限可获得的 IP**（中间难度全清奖励；未解锁 ⇒ 恰好 0 ✓）
   //   ⚠️ 收益源走 bigCrunchGain（唯一数据源），当参数传进去避免循环 import ✓
   applyTangramPassiveIp(state, dt, bigCrunchGain);

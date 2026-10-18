@@ -88,10 +88,16 @@ export function shouldAutoCrunch(state, ctx = {}) {
   if (mode === "time") {
     return Number(ctx.runElapsed ?? state?.runElapsed ?? 0) >= Number(thr);
   }
-  const gain = D(ctx.gain ?? bigCrunchGainOf(state));
+  const gain = D(ctx.gain ?? state?.infinityPoints ?? 0);
   if (mode === "xHighest") {
-    const rec = D(state?.maxIpThisEternity ?? 0);
-    return gain.gte(rec.mul(D(thr)));
+    // ★★★ 2026（用户纠正）**AD 的 X_HIGHEST 是什么**：
+    //   「本次无限时，如果能**超越目前持有 IP 的一定倍值**，就无限一次」
+    //   ⇒ 判据 = **本次坍缩收益** ≥ **当前持有 IP** × N ✓
+    //   （我先前写成"比本永恒单次收益纪录" ✗ 那是错的）
+    //   ⚠️ 因为 ZPE 引擎的存在，这个条件**天生会成立** ✓（收益随引擎等级增长 ✓）
+    const held = D(state?.infinityPoints ?? 0);
+    if (held.lte(0)) return true;                 // 一分没有 ⇒ 立刻坍（AD 同义）✓
+    return gain.gte(held.mul(D(thr)));
   }
   return gain.gte(D(thr));
 }
@@ -106,7 +112,7 @@ function bigCrunchGainOf(state) {
  * **每 tick 调一次**：判据成立 + 冷却已过 ⇒ 坍缩 ✓
  * @returns {boolean} 是否真的坍缩了
  */
-export function maybeAutoCrunch(state, doBigCrunch) {
+export function maybeAutoCrunch(state, doBigCrunch, gainFn) {
   const a = state?.autoCrunch;
   if (!a) return false;
   // ★ 2026：统一判据 —— **已买 `autoInfinities` + 梦想页开关已开**（唯一入口 `autoEnabled`）✓
@@ -116,7 +122,8 @@ export function maybeAutoCrunch(state, doBigCrunch) {
   const nowMs = Number(state?.playTimeMs ?? 0) || 0;
   const lastMs = Number(a.lastAtMs ?? 0) || 0;
   if (nowMs - lastMs < AUTO_CRUNCH.fireDelayMs) return false;     // ★ 0.1s 冷却 ✓
-  if (!shouldAutoCrunch(state)) return false;
+  const gain = typeof gainFn === "function" ? gainFn(state) : state?.infinityPoints;
+  if (!shouldAutoCrunch(state, { gain })) return false;
   a.lastAtMs = nowMs;
   doBigCrunch(state);
   return true;
