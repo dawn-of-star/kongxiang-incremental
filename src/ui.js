@@ -2470,6 +2470,21 @@ function tgNextStep(st) {
   return -1;
 }
 
+/**
+ * ★★★ 2026（用户：「基础物质又崩溃不显示了」）—— **容错包装**：
+ *   任何一个子面板抛异常，都不许把整帧渲染打断 ✗（否则物质/读数全部停住 ✓）
+ *   ⇒ 逐个 try/catch + 只在控制台报一次（带模块名，方便定位 ✓）
+ */
+const _safeSeen = new Set();
+function safePaint(name, fn) {
+  try { fn(); } catch (e) {
+    if (!_safeSeen.has(name)) {
+      _safeSeen.add(name);
+      console.error(`[paint:${name}] 渲染失败（本帧其余部分照常）`, e);
+    }
+  }
+}
+
 function renderTangramReal(st) {
   const hint = el["tangram-hint"];
   const prog = el["tangram-progress"];
@@ -2505,12 +2520,12 @@ function renderTangramReal(st) {
       + (tgt ? (" ｜ 挑战：难度 " + (tgt.d + 1) + " ｜ " + (solved ? "已拼对！" : "未拼对")) : "");
   }
   // ★★★ 2026：画棋盘（目标轮廓 + 板块 + 三轴 dashoffset）✓
-  paintTangramBoard(st);
+safePaint("tangram-board", () => paintTangramBoard(st));
   // ★ 2026（用户：「**主要是巧板托盘**」）—— 给 7 个槽位画**真实形状**缩略图
   //   ⚠️ 只往槽位里塞 SVG，**不动任何布局**（15% 右列 / 2 列网格 / 855px 坐标轴全部原样）✓
-  paintTangramThumbs(st);   // ⚠️ 本函数的形参叫 st（不是 state）✗
+safePaint("tangram-thumbs", () => paintTangramThumbs(st));   // ⚠️ 本函数的形参叫 st（不是 state）✗
   // ★ 2026：自动无限的**三条规则面板**（挂在「无限自动化」卡片右侧；只建一次）✓
-  paintAutoCrunchUI(st, () => uiHandlers?.onTangramCommit?.());
+safePaint("autocrunch-ui", () => paintAutoCrunchUI(st, () => uiHandlers?.onTangramCommit?.()));
   // ★ 2026：**挑战题目预览**（小图，画在挑战卡里；棋盘只做覆盖率 ✓）
   // ★ 2026（用户：「点一下出预览图就行了」）—— 预览默认隐藏，点「看题目」才展开 ✓
   if (!tgPrevBound && typeof document !== "undefined") {
@@ -2526,7 +2541,7 @@ function renderTangramReal(st) {
       });
     }
   }
-  paintChallengePreview(st);
+safePaint("tangram-preview", () => paintChallengePreview(st));
 
   // ★★★ 2026：**挑战奖励的当前档位**（唯一聚合入口 `tangramRewardEffects`）✓
   const rw = tangramRewardEffects(st.tangramCleared);
