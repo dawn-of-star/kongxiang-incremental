@@ -2511,8 +2511,8 @@ function renderTangramReal(st) {
   if (hint) {
     hint.textContent = pc
       ? "下一块：" + pc.name
-        + " ｜ 抽 " + sci(Number(pr.draw) * factor) + " EP"
-        + " ｜ 兑 " + sci(Number(pr.exchange) * factor) + " EP"
+        + " ｜ 抽 " + sci(D(pr.draw).mul(factor)) + " EP"
+        + " ｜ 兑 " + sci(D(pr.exchange).mul(factor)) + " EP"
         + " ｜ 保底 " + Math.floor(Number(st.tangramPity?.[pc.id] ?? 0)) + "/" + pr.pity
       : "七块已集齐 —— 到拼装挑战里拼图案吧";
   }
@@ -2628,8 +2628,8 @@ safePaint("tangram-preview", () => paintChallengePreview(st));
     const fails = pc ? Math.max(0, Math.floor(Number(st.tangramPity?.[pc.id] ?? 0))) : 0;
     if (fill) fill.style.width = pc && pr ? Math.min(100, (fails / pr.pity) * 100) + "%" : "0%";
     if (pity) pity.textContent = pc && pr ? "保底 " + fails + "/" + pr.pity : "";
-    if (btnD) { btnD.textContent = pc && pr ? "抽（" + sci(Number(pr.draw) * factor) + "）" : "抽"; btnD.disabled = !pc; }
-    if (btnE) { btnE.textContent = pc && pr ? "直接兑换（" + sci(Number(pr.exchange) * factor) + "）" : "直接兑换"; btnE.disabled = !pc; }
+    if (btnD) { btnD.textContent = pc && pr ? "抽（" + sci(D(pr.draw).mul(factor)) + "）" : "抽"; btnD.disabled = !pc; }
+    if (btnE) { btnE.textContent = pc && pr ? "直接兑换（" + sci(D(pr.exchange).mul(factor)) + "）" : "直接兑换"; btnE.disabled = !pc; }
   }  // ★ 2026：拼装挑战节的两个按钮（挂一次 ✓）
   if (!tgChalBound && typeof document !== "undefined") {
     const bNext = document.getElementById(tgChalBound ? "" : "tg-chal-next");
