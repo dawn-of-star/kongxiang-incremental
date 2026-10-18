@@ -22,7 +22,11 @@ const D = (x) => new Decimal(x);
 
 const MODE_LABEL = { amount: "按收益", time: "按时间", xHighest: "× 最高" };
 
+let cur = null;        // ★ 当前 state（每次 paint 更新；点击处理一律用它）
+let lastApplyAt = 0;   // ★ 刚点过「设定」的时间戳：这段时间内不要用 state 回写输入框 ✗
+
 export function paintAutoCrunchUI(state, commit) {
+  if (state) cur = state;
   if (typeof document === "undefined") return;
   // 目标挂载点：梦想页里 autoInfinities 那张卡的 wrap（= 卡片 + 开关 的那一行）
   // ★ 挂载点：找到「无限自动化」那张卡所在的 .q-card-wrap（卡片 + 开关 的那一行）
@@ -101,6 +105,7 @@ export function paintAutoCrunchUI(state, commit) {
           if (okDec) { st.autoCrunch.xHighest = okDec; if (hint) hint.textContent = "已设为 ≥ " + okDec + " × 纪录"; }
           else if (hint) hint.textContent = "倍数必须是正数（支持 1e5）";
         }
+        lastApplyAt = Date.now();   // ★ 刚设定的 1.5 秒内不要被 state 回写覆盖 ✗
         commit?.();
         return;
       }
@@ -125,7 +130,8 @@ export function paintAutoCrunchUI(state, commit) {
     b.style.opacity = on ? "1" : "0.65";
   }
   const val = document.getElementById("tg-ac-value");
-  if (val && document.activeElement !== val) {
+  // ★ 2026（用户：设定成 1e5 又跳回 2）—— 刚点过「设定」时**不要**用 state 覆盖输入框 ✗
+  if (val && document.activeElement !== val && Date.now() - lastApplyAt > 1500) {
     val.value = mode === "time" ? String(a.time ?? 0.1) : String(mode === "amount" ? (a.amount ?? "1") : (a.xHighest ?? "2"));
   }
   const onBtn = document.getElementById("tg-ac-on");
@@ -141,6 +147,7 @@ export function paintAutoCrunchUI(state, commit) {
       + "阈值 " + (mode === "time" ? thr + " 秒" : mode === "amount" ? "收益 ≥ " + thr : "≥ " + thr + "× 纪录")
       + " ｜ 间隔 " + (AUTO_CRUNCH.fireDelayMs / 1000) + " 秒"
       + (shouldAutoCrunch(state, { gain: state?.brokenInfinity ? bigCrunchGain(state) : 0 }) ? " ｜ 判据已成立" : "")
-      + (mode === "xHighest" ? " ｜ 判据：本次收益 ≥ 当前持有 IP × 倍数" : "");
+      + (mode === "xHighest" ? " ｜ 判据：本次收益 ≥ 当前持有 IP × " + (a.xHighest ?? "2") : "")
+      + " ｜ 存值 " + (mode === "time" ? (a.time ?? 0.1) + "s" : mode === "amount" ? (a.amount ?? "1") : (a.xHighest ?? "2"));
   }
 }
