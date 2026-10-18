@@ -1387,7 +1387,14 @@ export function doEternity(state) {
   for (const k of Object.keys(state.voidUpgrades ?? {})) state.voidUpgrades[k] = false;
   for (const k of Object.keys(state.zpeMilestones ?? {})) state.zpeMilestones[k] = false;
   for (const k of Object.keys(state.deMilestones ?? {})) state.deMilestones[k] = false;
-  for (const k of Object.keys(state.deUpgradeLevels ?? {})) state.deUpgradeLevels[k] = D(0);
+  // ★★★ 2026 修 bug（用户：「梦想烬灭虚无每次永恒都会被重置，每次都要重新消耗梦想点」）——
+  //   它是 **暗能量升级**（DE_UPGRADES.dreamAnnihilation），但**用梦想点购买** ✗
+  //   而梦想点/梦想升级**永不重置** ⇒ 它必须一起保留 ✓（否则等于重复收费 ✗）
+  //   ⇒ 重置时**跳过**它（其余暗能量升级照常归零 ✓）
+  for (const k of Object.keys(state.deUpgradeLevels ?? {})) {
+    if (k === "dreamAnnihilation") continue;   // ★ 梦想点买的，跨永恒保留 ✓
+    state.deUpgradeLevels[k] = D(0);
+  }
   state.phaseTransmuterUnlocked = false;
   // （自动化不是独立字段：`isAutoAcquire()` 由 v9 / ZPE 里程碑推导 ⇒ 上面清掉它们就自动失效）
 
