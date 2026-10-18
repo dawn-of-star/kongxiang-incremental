@@ -4464,8 +4464,11 @@ export function effectiveEngineLevel(state) {
   // ★★★ 2026：**纵轴**（覆盖率 ⇒ 免费 ZPE 引擎等级 10 → 10000）—— 设计稿 §2 已勘定 ✓
   //   ⚠️ 走 log 插值 + knee 饱和 ⇒ 有极强软上限（`PROGRESSION.md` §4.5）✓
   const base = zpeEngineLevel(state).max(0);
-  const bonus = typeof state?.tangramPlaced === "object" ? tangramEngineBonusLevels(state) : 0;
-  return base.add(Math.max(0, bonus));
+  const covBonus = typeof state?.tangramPlaced === "object" ? tangramEngineBonusLevels(state) : 0;
+  // ★★★ 2026（用户：「七巧板的加成还没实装？」）—— **挑战奖励**的免费引擎级也要进公式 ✓
+  //   原来它只在面板显示（显示 ≠ 实发 ✗）；现在两条来源**相加**：覆盖率 + 挑战奖励 ✓
+  const rewardBonus = tangramRewardEffects(state?.tangramCleared).freeZpeEngineLevels ?? 0;
+  return base.add(Math.max(0, covBonus)).add(Math.max(0, rewardBonus));
 }
 
 // ══════════════════════════════════════════════════════════

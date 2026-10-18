@@ -1,5 +1,6 @@
 import { quantumToIPGain } from "./config.js";
 // ★★★ 2026：七巧板三条轴的加成（设计稿 docs/TANGRAM.md §2 已勘定的落点）✓
+import { tangramRewardEffects } from "./tangram.js";
 import { tangramCountFreqMult, tangramEngineBonusLevels, tangramConvRateMult } from "./tangram-bonus.js";
 // ★ 2026：挑战奖励系数（乘一个数，不改形状 ⇒ p 不变 ✓）
 import { rewardConvSlopeMult, rewardCountFreqMult } from "./tangram-reward.js";
@@ -795,7 +796,10 @@ export function effectiveDarkEnergyGain(state) {
   let g = darkEnergyGainPerConversion(state);
   // ★ 里程碑 dm4b：全局加成作用于相变转换速率
   if (hasDe(state, "dm4b")) g = g.mul(globalMultiplier(state));
-  return g;
+  // ★ 2026：挑战奖励的 `deKneeMult`（d3~d6 清满）⇒ 暗能量收益抬升 ✓
+  //   ⚠️ 它只是"乘一个数"（不改曲线形状 ⇒ 不动 p）✓
+  const _deKnee = tangramRewardEffects(state?.tangramCleared).deKneeMult ?? 1;
+  return (g) * _deKnee;
 }
 
 /**
