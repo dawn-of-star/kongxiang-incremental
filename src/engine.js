@@ -339,6 +339,12 @@ function tickBody(state, dt) {
   // ★★★ 2026：**自动无限**（AD 的 Big Crunch autobuyer）——
   //   独立模块 `src/autocrunch.js`；把 `doBigCrunch` 当参数传进去，避免循环 import ✓
   //   ⚠️ 判据成立后再等 0.1s（用户裁定）⇒ 冷却在模块里判 ✓
+  // ★★★ 2026（用户：「理论上应该因为拥有 1 次无限而自动解锁的 zpe 引擎需要手动解锁」）——
+  //   自动解锁：达标就在 tick 里自动开（幂等 ✓），不必再点按钮 ✓
+  if (!zpeEngineUnlocked(state)) {
+    const hasInf = (state.infinityCount ?? 0) >= 1 || (state.bigCrunchCount ?? D(0)).gte(1);
+    if (hasInf) unlockZpeEngine(state);
+  }
   maybeAutoCrunch(state, doBigCrunch, bigCrunchGain);   // ★ 2026：×最高 用**本次收益** ✓
   // ★★★ 2026：**每秒 1% 本次无限可获得的 IP**（中间难度全清奖励；未解锁 ⇒ 恰好 0 ✓）
   //   ⚠️ 收益源走 bigCrunchGain（唯一数据源），当参数传进去避免循环 import ✓
@@ -1457,8 +1463,9 @@ export function doEternity(state) {
  */
 export function unlockZpeEngine(state) {
   if (zpeEngineUnlocked(state)) return false;
-  // 条件：至少大坍缩过 1 次（不再花无限点）
-  if ((state.bigCrunchCount ?? D(0)).lt(1)) return false;
+  // ★ 2026：条件放宽 —— **有 1 次无限**（含 em7 送的）或大坍缩过 1 次 都算达标 ✓
+  const hasInfinity = (state.infinityCount ?? 0) >= 1 || (state.bigCrunchCount ?? D(0)).gte(1);
+  if (!hasInfinity) return false;
   state.zpeEngineUnlocked = true;
   markPageUnlocked(state, "zpe");        // ★ 永久解锁记录（永恒后不再上锁）
   // 送 1 级（里程碑奖励）
