@@ -1281,7 +1281,7 @@ export const ETERNITY_MILESTONES = [
      *   —— 与 em2 同 kind；实发走 `em7BonusMult()`（唯一入口）✓
      */
     effect: { kind: "nekoBonusDouble" },
-    desc: "N.E.K.O 好感度提供的全局加成**再翻倍**" },
+    desc: "N.E.K.O 好感度提供的全局加成**再翻倍**；每次永恒 **+1 次无限**，且**打破无限默认解锁**" },
   {
     id: "em8",
     need: 8,
