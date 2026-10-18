@@ -17,8 +17,8 @@
 > 权威文档：[`docs/TANGRAM.md`](docs/TANGRAM.md)、[`docs/NEKO.md`](docs/NEKO.md)、
 > [`docs/TIMESPACE.md`](docs/TIMESPACE.md)（**设计草案，未实装**）。
 >
-> 统计：自 `0.7.1` 起共 **66 个提交** —— feat 31 / fix 17 / style 7 / docs 7 / chore 3 / revert 1，
-> 其中七巧板相关 34 个。下面各节按"修了什么 / 为什么 / 怎么验"记录。
+> 统计：自 `0.7.1` 起共 **69 个提交** —— feat 31 / fix 17 / docs 9 / style 7 / chore 3 / revert 1，
+> 其中七巧板相关 39 个。下面各节按"修了什么 / 为什么 / 怎么验"记录。
 
 ### ★★ 修 bug：梦想页**自动化升级的效果全是死的**（用户：「自动化升级都不正常工作怎么办？还不修？」）
 
