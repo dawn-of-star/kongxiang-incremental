@@ -3427,6 +3427,14 @@ export const QUANTUM_MILESTONES = [
  * ⚠️ `bMax` 是**硬封顶**（用户既有要求：影响永恒阶段的东西必须有极强软上限）。
  */
 export const DE_SPAN = {
+  /**
+   * ★★★ 2026（用户裁定）：「跨度层」**改名为「量子共振」**（机制/数值完全不变）——
+   *   · 玩家可见的标题、标签、说明、日志全部改用「量子共振」✓
+   *   · **内部标识符仍是 `span*`**（`DE_SPAN` / `matterSpanMult` / `state.spanDeBase` …）：
+   *     其中 `state.spanDeBase` 是**存档字段**，改名要写迁移且零收益 ⇒ 保留，
+   *     并在注释里写明对应关系 ✓
+   *   ⚠️ 看到 `span` 就是「量子共振」——不要再往回改 ✓
+   */
   /** 标定系数：q = 100 时 k 恰好 = kMax */
   kCoeff: 0.516509,
   /** 封顶 = log10(物质硬顶) / log10(暗能量软上限) = 308.2547 / 50 */
@@ -3455,6 +3463,23 @@ export const DE_SPAN = {
   /** 软上限的压紧跨度（越大越宽松） */
   bSoftSpan: 0.09,
   bMax: 0.02,
+  /**
+   * ★★★ 2026（用户要求）：**量子共振的硬上限** ——
+   *   **基础物质（`state.resources.matter`）超过 `1e100000` ⇒ 共振不再生效**（乘数恒 ×1）。
+   *
+   * ── 为什么用"物质"而不是"暗能量" ──
+   *   共振的落点就是**物质产出**（`matterRate` 里乘它）⇒ 用物质本身设闸门最直观：
+   *   玩家看到"物质已经 1e100000 了 ⇒ 共振关闭"能立刻理解 ✓
+   *
+   * ── 为什么叫"硬"上限 ──
+   *   到点**直接失效**（不是渐近饱和、不是软上限）—— 用户明确要"大于…不再生效"✓
+   *   ⚠️ 它与暗能量侧的 `DE_EFF_CAP`（软上限）**是两回事**：
+   *      那个压的是"参与运算的暗能量有效量"；这个压的是"共振这条机制本身" ✓
+   *
+   * ── 触发成本 ──
+   *   比较用**预构造的 Decimal 常量**（`SPAN_OFF_ABOVE_MATTER`），不在热路径上构造/求 log10 ✓
+   */
+  offAboveMatterLog10: 100000,
   /**
    * ★ 档位加速系数：`qm2` 达成后每档位乘它。
    *
@@ -3750,16 +3775,28 @@ export function matterSpanExponent(state) {
 }
 
 /**
- * 跨度乘数 `(DE / DE₀)^k`。**未买「门槛压平」时恒为 1**。
+ * 量子共振的硬上限常量（`1e100000`）—— **模块级预构造**，供热路径 O(1) 比较 ✓
+ * ⚠️ 用 `"1e" + 数字` 拼字符串而不是 `pow`：`Decimal.pow(10,100000)` 有浮点尾巴，
+ *   而这里只需要一个**精确的**比较阈值 ✓
+ */
+const SPAN_OFF_ABOVE_MATTER = new Decimal("1e" + DE_SPAN.offAboveMatterLog10);
+
+/**
+ * 量子共振乘数 `(DE / DE₀)^k`（**原名「跨度层」，机制未变**）。**未买「门槛压平」时恒为 1**。
  *
  * ⚠️ 2025 起"基准"与"开关"是**两件事**（之前我用 `spanDeBase > 0` 兼任开关，需求变了）：
  *   · **基准 `DE₀`**：在 **ZPE 引擎到手时**记录（引擎把 `a(DE)` 打开，DE 从那一刻起指数增长）
  *   · **开关**：`thresholdFlatBought`（无限升级「门槛压平」，需先打破无限）
- *   ⇒ 这样"引擎到手 → 买到开关"期间 DE 的增长**全部**被换算成跨度 ✓
- *   （否则若在买开关时才记基准、而 DE 早已撞到 1e50 ⇒ 跨度乘数 ≈ 1 ⇒ 跨度层白买 ✗）
+ *   ⇒ 这样"引擎到手 → 买到开关"期间 DE 的增长**全部**被换算成共振 ✓
+ *
+ * ★★★ 2026：**硬上限** —— 基础物质 `> 1e100000` ⇒ **恒 ×1**（用户要求，见 `offAboveMatterLog10`）✓
  */
 export function matterSpanMult(state) {
   if (!state.thresholdFlatBought) return new Decimal(1);      // 开关：门槛压平
+  // ★ 硬上限：基础物质超过 1e100000 ⇒ 量子共振不再生效（放在最前面之一：
+  //   比它便宜的判据先挡，避免无谓的 Decimal 运算 ✓）
+  const matter = state.resources?.matter;
+  if (matter && matter.gt(SPAN_OFF_ABOVE_MATTER)) return new Decimal(1);
   const base = state.spanDeBase ?? new Decimal(0);
   if (base.lte(0)) return new Decimal(1);
   const de = state.darkEnergy ?? new Decimal(0);
@@ -3795,9 +3832,15 @@ export function matterSpanStatus(state) {
   const deLog10 = de.gt(0) ? de.log10().toNumber() : 0;
   const effectiveLog10 = effectiveDarkEnergyLog10(state);
   const overBase = base.gt(0) && de.gt(base);
+  // ★★★ 2026：**硬上限**是否已触发（基础物质 > 1e100000 ⇒ 量子共振失效）
+  const matter = state.resources?.matter;
+  const capped = !!(matter && matter.gt(SPAN_OFF_ABOVE_MATTER));
 
   let reason = "";
-  if (!state.thresholdFlatBought) reason = "状态：未开启（需先买「门槛压平」）";
+  // ⚠️ 顺序有意义：**硬上限排在最前** —— 它一旦触发，其他阶段都不重要了
+  //   （否则会显示"已生效"而乘数其实是 ×1 ⇒ 又一次"显示 ≠ 实发"✗）
+  if (capped) reason = `状态：量子共振已失效（基础物质已超过 1e${DE_SPAN.offAboveMatterLog10} 硬上限）`;
+  else if (!state.thresholdFlatBought) reason = "状态：未开启（需先买「门槛压平」）";
   else if (base.lte(0)) reason = "状态：基准未记录（应在 ZPE 引擎到手时记录）";
   else if (!overBase) reason = "状态：暗能量尚未超过基准 ⇒ 乘数恒为 ×1";
   else reason = "状态：已生效";
@@ -3805,6 +3848,7 @@ export function matterSpanStatus(state) {
   return {
     on: mult.gt(1),                    // ★ "真的在乘"才叫开启（而不是"开关买了"）
     armed: state.thresholdFlatBought === true && base.gt(0),   // 开关+基准就绪（但可能还没超过基准）
+    capped,                            // ★ 2026：硬上限已触发（物质 > 1e100000）
     k,
     mult,
     base,

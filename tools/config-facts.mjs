@@ -49,6 +49,10 @@ const facts = () => [
   ["ETERNITY_MILESTONES 里 pending 的", c.ETERNITY_MILESTONES.filter((m) => m.pending).map((m) => m.id).join(", ") || "（无）",
     "⭐ 2026：`em7` 因 IC 删除而退回 pending（见其注释）"],
   ["ZONES（乘区）", Object.keys(c.ZONES).length, ""],
+  // ★★★ 2026：量子共振（原名「跨度层」）的**硬上限**（用户要求）
+  ["DE_SPAN.offAboveMatterLog10", c.DE_SPAN.offAboveMatterLog10,
+    "基础物质 **> 1e" + c.DE_SPAN.offAboveMatterLog10 + "** ⇒ 量子共振失效（乘数恒 ×1）；"
+    + "⚠️ 严格「大于」：正好 = 1e" + c.DE_SPAN.offAboveMatterLog10 + " 仍生效"],
   ["ZONE_OF（id 乘区登记）", Object.keys(c.ZONE_OF).length, "由 dom-smoke 的「乘区登记」断言守"],
   ["NEKO.tiers（好感度档位）", c.NEKO.tiers.length,
     c.NEKO.tiers.map((t) => `>${t.need} ⇒ ×${t.pow}`).join("｜")],

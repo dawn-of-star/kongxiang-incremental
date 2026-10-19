@@ -45,6 +45,8 @@ import { BASE, COLLAPSE, DE_MILESTONES, DE_UPGRADES, REPEATABLE, VOID_UPGRADES, 
   // ★★★ 2025：两个新修复（ipDouble 封顶平台 / ZPE 引擎 2000 级后增幅）断言要用
   //   ⚠️ `ipDoublePriceAt` 上面已经导过了 ⇒ 这里**不要**再列一次（会 `already been declared` ✗）
   IP_DOUBLE_AD, zpeEngineStepMult, zpeEngineCostMult, zpeEngineCost,
+  // ★★★ 2026：量子共振（原名「跨度层」）的硬上限断言要用 ✓
+  matterSpanStatus, matterSpanMult,
   ZPE_ENGINE, zpeEngineAffordableIn, zpeEngineTotalCost,
   // ★★★ 2026：性能回归断言要"逐级"版做**对照基准**（闭式快、循环显然正确 ⇒ 必须一致）✓
   zpeEngineTotalCostLoop, zpeEngineAffordableInLoop } from "../src/config.js";
@@ -880,6 +882,45 @@ console.log();
           + `keepVoidEternity ⇒ 虚空升级+ZPE 里程碑保留 ✓｜engineAtStart ⇒ 开局 Lv${c.zpeEngineLevel.toString()} ✓｜`
           + `未购买时全部照常清零 ✓`
         : `暗能量=${keepDe}｜虚空=${keepVoid}｜开局引擎=${engine1}｜未买对照组清零=${cleared}`,
+    };
+  });
+
+  // ══════════════════════════════════════════════════════════
+  // ★★★ 2026：**量子共振**（原名「跨度层」，改名不改机制）的**硬上限**
+  // ══════════════════════════════════════════════════════════
+  // 用户要求：「设立一个大于 1e100000 基础物质不再生效的硬上限」
+  //   ⇒ **严格"大于"**：物质 = 1e100000 仍然生效，> 1e100000 才失效 ✓
+  //   ⚠️ `on`（status）必须与 `matterSpanMult(state).gt(1)` **严格同源** ——
+  //      否则会显示"已生效"而乘数其实是 ×1（本项目头号老 bug）✗
+  check("★ 量子共振：基础物质 > 1e100000 ⇒ 硬上限失效（= 1e100000 仍生效）", () => {
+    const mk = (matter) => {
+      const s = { ...newState(), thresholdFlatBought: true };
+      s.spanDeBase = D(1e6);
+      s.darkEnergy = D(1e20);                 // 远超基准 ⇒ 正常情况下一定会乘
+      s.resources.matter = D(matter);
+      return s;
+    };
+    const m1 = mk("1e100000");                 // 边界内：仍生效
+    const m2 = mk("1e100001");                 // 越界：失效
+    const m3 = mk("1e100000.0001");            // 刚过线：失效
+    const r1 = matterSpanStatus(m1), r2 = matterSpanStatus(m2), r3 = matterSpanStatus(m3);
+    const x1 = matterSpanMult(m1), x2 = matterSpanMult(m2), x3 = matterSpanMult(m3);
+    const ok = r1.capped === false && x1.gt(1) && r1.on === true
+      && r2.capped === true && x2.eq(1) && r2.on === false
+      && r3.capped === true && x3.eq(1)
+      // ★ 同源：徽标判据（on）必须等于"真的在乘"
+      && [m1, m2, m3].every((s) => matterSpanStatus(s).on === matterSpanMult(s).gt(1))
+      // ★ 失效时原因里必须写明"硬上限"（否则玩家不知道为什么不生效）
+      && /硬上限/.test(r2.reason) && /硬上限/.test(r3.reason);
+    return {
+      ok,
+      detail: ok
+        ? `= 1e100000 ⇒ 仍生效（×${x1.toString().slice(0, 6)}，capped=false）✓｜`
+          + `= 1e100001 ⇒ 失效（×1，capped=true）✓｜= 1e100000.0001 ⇒ 失效 ✓｜`
+          + `on 与 matterSpanMult>1 严格同源 ✓｜失效原因含「硬上限」✓`
+        : `1e100000 capped=${r1.capped} mult=${x1.toString().slice(0, 8)} on=${r1.on}｜`
+          + `1e100001 capped=${r2.capped} mult=${x2.toString()} on=${r2.on}｜`
+          + `1e100000.0001 capped=${r3.capped} mult=${x3.toString()}｜原因=${r2.reason}`,
     };
   });
 

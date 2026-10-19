@@ -1,4 +1,4 @@
-﻿import { OVERLOAD } from "./config.js";
+import { OVERLOAD } from "./config.js";
 import { infinityUpgradeEffect } from "./engine.js";
 // ★★★ 2026：七巧板（游戏侧函数在独立模块 tangram-game.js；几何/价目/奖励在 tangram.js）✓
 import {
@@ -61,7 +61,7 @@ import {
 // ★★★ 2025 UI 同步：ZPE 引擎「2000 级后价格增幅」要显示"每级 ×多少" ⇒ 唯一入口 ✓
   zpeEngineStepMult, zpeEngineLevel, effectiveEngineLevel,
   zpeEngineProdMult, zpeEngineUnlocked, quantumZpeMultBonus, qOf, zoneOf, TIER_MILESTONES, DE_UPGRADES, DE_MILESTONES, DREAM_UPGRADES, INFINITY_ORDER, INFINITY_UPGRADES, BASE, ETERNITY, eternityPointGain, ipDoubleMult, tierMilestonesDone, matterTotalExponent, MATTER_B_KNEE, MATTER_B_KMAX, COLLAPSE, crunchThreshold, CRUNCH_AT_LABEL, pageUnlocked, markPageUnlocked,
-  // ★★★ 2025：跨度层的常量（文案里的上界数字要从它来，**不手写** ✗）
+  // ★★★ 2025：量子共振（原名「跨度层」）的常量（文案里的上界数字要从它来，**不手写** ✗）
   DE_SPAN,
   // ★★★ 2025：渲染时的**实时自愈**要遍历全部页面（见 `render` 开头）
   PAGE_KEYS,
@@ -360,7 +360,7 @@ function cache() {
     // ⚠️ `q-locked` / `q-need` 已删除（用户裁定：锁定块删掉 ⇒ 内容常显）✓
     "q-content", "q-hint",
     "val-quantum", "quantum-sub", "quantum-mult", "quantum-demult", "quantum-degain", "quantum-zpemult", "quantum-grow",
-    // ★ 跨度层（2025）：k / 乘数 / 基准 / 徽标
+    // ★ 量子共振（原名「跨度层」）：k / 乘数 / 基准 / 徽标
     "span-badge", "span-de", "span-state", "span-k", "span-mult", "span-base", "span-kmax",
     // ★★★ 2025：三页描述里的数字（由 buildDynamicText 从常量渲染，**不手写** ✗）
     "zpe-price-shape", "zpe-price-anchor", "zpe-k-shape",
@@ -1658,10 +1658,10 @@ export function render(state) {
 
   perfSection("量子面板", () => renderQuantum(state, R));
 
-  // ── ★ 跨度层：**无条件刷新** ──
+  // ── ★ 量子共振（原名「跨度层」）：**无条件刷新** ──
   //   它在 `renderQuantum` 里会因"量子页本轮未推进"被提前 return 跳过，
   //   而它恰恰在**打破无限之后**才生效 ⇒ 必须放在这里 ✓（见 renderSpanLayer 的说明）
-  perfSection("跨度层", () => renderSpanLayer(state));
+  perfSection("量子共振", () => renderSpanLayer(state));
 
   // ── ★★★ 2026：暗物质面板（暗能量的第二个子页）──
   //   同样**无条件刷新**：解锁判据是 `eternityCount >= 4`，
@@ -1791,10 +1791,10 @@ function renderQuantum(state, R) {
   //   与引擎同一个函数 `quantumZpeMultBonus` ⇒ 显示即实发 ✓
   if (el["quantum-zpemult"]) el["quantum-zpemult"].textContent = `+${fmt(quantumZpeMultBonus(state.quantum, ebmQ))}`;
 
-  // ── ★ 跨度层（2025 用户方案）：k 由量子给，把暗能量撬到 inf ──
+  // ── ★ 量子共振（原名「跨度层」，2025 用户方案）：k 由量子给，把暗能量撬到 inf ──
   //    ⚠️⚠️ **不在这里渲染**：本函数在 `!showContent` 时**提前 return**（见上），
-  //      而跨度层恰恰是"打破无限之后才生效"的机制 ——
-  //      那时量子页可能显示「已解锁 · 待推进」⇒ 跨度层整块**永远不刷新** ✗
+  //      而量子共振恰恰是"打破无限之后才生效"的机制 ——
+  //      那时量子页可能显示「已解锁 · 待推进」⇒ 量子共振整块**永远不刷新** ✗
   //      （用户裁定：「ui 确保在**购买门槛压平后**正确显示就行」⇒ 就是这条）
   //    ⇒ 已抽成 `renderSpanLayer(state)`，在 `render()` 里**无条件**调用 ✓
 
@@ -1816,7 +1816,7 @@ function renderQuantum(state, R) {
   //   ⚠️ 别再在 `renderQuantum` 里写任何 `dream-*` 元素 —— **双写**是本项目
   //      "显示 ≠ 实发" 反复重现的老根源 ✓
   //
-  //   ⚠️ 跨度层也**不在这里**（同一类坑）：见 `renderSpanLayer`（`render()` 里无条件调用）✓
+  //   ⚠️ 量子共振也**不在这里**（同一类坑）：见 `renderSpanLayer`（`render()` 里无条件调用）✓
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2111,7 +2111,7 @@ function buildDynamicText() {
     `k = 1 + ${MATTER_B_KMAX}·x/(1+x)（x = 等级/${MATTER_B_KNEE}）` +
     ` ⇒ **1 → ${(1 + MATTER_B_KMAX).toFixed(0)}** 单调饱和` +
     `（等级 ${MATTER_B_KNEE} 时 k = ${matterTotalExponent({ zpeEngineLevel: MATTER_B_KNEE }).toFixed(2)}）`);
-  // 量子页：跨度幂的上界（6.1651）
+  // 量子页：量子共振的幂上界（6.1651）
   set("span-kmax", String(DE_SPAN.kMax));
 }
 
@@ -2204,11 +2204,13 @@ export function applyFoldPreference(f, head, body, box, store) {
 }
 
 /**
- * ★★★ 2025（用户裁定：「ui 确保在**购买门槛压平后**正确显示就行」）：**跨度层**渲染。
+ * ★★★ 2025（用户裁定：「ui 确保在**购买门槛压平后**正确显示就行」）：**量子共振**渲染。
+ *   （★★★ 2026 用户裁定：原名「跨度层」⇒ **改名为「量子共振」**，机制/数值完全不变；
+ *     内部标识符仍是 `span*`（`state.spanDeBase` 是存档字段）⇒ 见 `DE_SPAN` 的注释）
  *
  * ── 为什么必须独立成一个函数（而不是留在 `renderQuantum` 里）──
  *   `renderQuantum` 在"本轮还没推进到量子页"时**提前 return**（`if (!showContent) return`），
- *   而跨度层是**打破无限之后**才生效的机制 —— 那一刻量子页往往正显示
+ *   而量子共振是**打破无限之后**才生效的机制 —— 那一刻量子页往往正显示
  *   「已解锁 · 待推进」⇒ 留在里面就**永远不刷新**（徽标停在静态 HTML 的初值）✗
  *   ⇒ 抽出来，在 `render()` 里**无条件**调用（与猫猫卡同一做法）✓
  *
@@ -2218,13 +2220,16 @@ export function applyFoldPreference(f, head, body, box, store) {
  *   ⇒ "引擎到手 → 买到门槛压平"这段会显示「已开启」而实际乘数恒 ×1 ✗（显示 ≠ 实发）
  *   ⇒ 现在徽标只在**真的在乘**（`mult > 1`）时才说"已生效"，
  *     中间每个阶段都有**具体原因**（armed / 未超基准 / 未开启）✓
+ *   ★ 2026：**硬上限**（基础物质 > 1e100000）单独一个徽标「已失效（硬上限）」——
+ *     它必须**优先于**其他阶段判断，否则会显示"已生效"而乘数其实是 ×1 ✗
  */
 function renderSpanLayer(state) {
   if (!el["span-badge"]) return;
   const st = matterSpanStatus(state);
-  el["span-badge"].textContent = st.on ? "已生效"
-    : st.armed ? "已开启（待超过基准）"
-      : "未开启";
+  el["span-badge"].textContent = st.capped ? "已失效（硬上限）"
+    : st.on ? "已生效"
+      : st.armed ? "已开启（待超过基准）"
+        : "未开启";
   el["span-badge"].classList.toggle("on", st.on);
   if (el["span-k"]) el["span-k"].textContent = st.k.toFixed(4);
   if (el["span-mult"]) el["span-mult"].textContent = fmtMult(st.mult);

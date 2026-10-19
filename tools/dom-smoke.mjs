@@ -1441,13 +1441,34 @@ let zoneGuard = "未跑";
           return r.on === cfgSp.matterSpanMult(s).gt(1);
         });
 
-        const okSp = ok1 && ok2 && ok3 && ok4 && consistent;
-        console.log(`  跨度层显示      ${okSp
+        // ⑥ ★★★ 2026（用户要求）：**硬上限**（基础物质 > 1e100000 ⇒ 量子共振失效）
+        //   面板徽标必须显示「已失效（硬上限）」，乘数回 ×1.00，状态文案点明原因 ✓
+        const p5 = probe((s) => {
+          s.thresholdFlatBought = true; s.spanDeBase = DSp(1e6); s.darkEnergy = DSp(1e20);
+          s.resources.matter = DSp("1e100001");        // ★ 越过硬上限
+        });
+        const r5 = cfgSp.matterSpanStatus(p5.state);
+        const ok5 = r5.capped === true && r5.on === false && r5.mult.eq(1)
+          && p5.badge.includes("硬上限") && p5.mult.includes("1.00")
+          && p5.stateTxt.includes("硬上限")
+          // 边界：正好 = 1e100000 仍然生效（"大于"才失效）
+          && (() => {
+            const s6 = probe((s) => {
+              s.thresholdFlatBought = true; s.spanDeBase = DSp(1e6); s.darkEnergy = DSp(1e20);
+              s.resources.matter = DSp("1e100000");
+            });
+            return s6.badge === "已生效";
+          })();
+
+        const okSp = ok1 && ok2 && ok3 && ok4 && ok5 && consistent;
+        console.log(`  量子共振        ${okSp
           ? `✅ 四阶段文案都对：未开启 ✓｜★引擎到手但没买开关 ⇒ **不再谎报"已开启"**（乘数仍 1.00）✓`
             + `｜买开关+DE超基准 ⇒ "已生效"且乘数 >1 ✓｜买了但没超基准 ⇒ "待超过基准" ✓`
             + `｜徽标「已生效」与「matterSpanMult > 1」**严格同源** ✓`
+            + `｜★硬上限（物质 > 1e100000）⇒ 徽标「${p5.badge}」+ 乘数 ${p5.mult} ✓｜= 1e100000 仍生效 ✓`
           : `❌ ①[${p1.badge}|${p1.base}|${p1.mult}]`
             + ` ②[${p2.badge}|${p2.mult}] ③[${p3.badge}|${p3.mult}|${p3.de}] ④[${p4.badge}]`
+            + ` ⑤硬上限[${p5.badge}|${p5.mult}|capped=${r5.capped}|${p5.stateTxt}]`
             + `｜同源=${consistent}`}`);
         console.log();
         if (!okSp) process.exitCode = 1;
