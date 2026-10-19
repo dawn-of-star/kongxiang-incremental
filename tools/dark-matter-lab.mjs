@@ -179,7 +179,8 @@ if (check) {
   console.log("\n── ⑨ doEternity 不清暗物质（静态源码守卫）──");
   {
     const { readFileSync } = await import("node:fs");
-    const src = readFileSync(new URL("../src/engine.js", import.meta.url), "utf8");
+    // ★ 2026 模块化：doEternity 已搬到 src/engine/eternity.js（engine.js 只剩 barrel）
+    const src = readFileSync(new URL("../src/engine/eternity.js", import.meta.url), "utf8");
     const start = src.indexOf("export function doEternity(");
     const end = src.indexOf("\n}", start);
     const body = start < 0 ? "" : src.slice(start, end < 0 ? start + 5000 : end);

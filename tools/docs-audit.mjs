@@ -6,7 +6,7 @@
  * ── 为什么需要它（用户的顾虑：「这不可能犯错的吧」）──
  *   文档**没有编译器、没有断言**拦着 ⇒ 它必然漂移 ✗
  *   本项目已经出现过：`README-STATUS.md` 说「47 个脚本全绿」、
- *   而实测默认 44 个、`--strict` 还有 **7 个失败**（盲区没写明）。
+ *   而实测默认 44 个、`--strict` 还有 **6 个失败**（盲区没写明）。
  *   ⇒ 靠人肉读 17 篇 ≈ 一定会漏 ⇒ **把"能机械验证的部分"自动化** ✓
  *
  * ── 判据（只做**可信的机械检查**，不猜语义）──
@@ -128,7 +128,7 @@ for (const f of docFiles()) {
     total = readdirSync(join(ROOT, "tools")).filter((n) => /\.(mjs|cjs)$/.test(n)).length;
   } catch (_) { /* ignore */ }
   notes.push(`脚本口径（**权威来源 = \`run-all --list\`**）：默认批跑 **${defaultRun}** 个｜tools/ 下共 ${total} 个 .mjs/.cjs`);
-  notes.push(`\`--strict\` 已知 **7** 个失败（见 docs/TODO.md M 段）—— 文档写"全绿"时必须同时写明这条 ✓`);
+  notes.push(`\`--strict\` 已知 **6** 个失败（见 docs/TODO.md M 段）—— 文档写"全绿"时必须同时写明这条 ✓`);
 
   if (defaultRun > 0) {
     // ⚠️ 与"计数与代码不符"同一套判据：**整行含历史/对比词就跳过** ——
@@ -150,7 +150,7 @@ for (const f of docFiles()) {
       // 「全绿」的说法必须同时写明 `--strict` 的真实状态
       const greenClaim = /(\d+\s*个[^。\n]{0,8}(全绿|全部通过))|((全绿|全部通过)[^。\n]{0,8}脚本)|npm test[^。\n]{0,12}(全绿|全部通过)/;
       if (greenClaim.test(src) && !/--strict/.test(src)) {
-        add(f, "只说全绿、没写 --strict", `默认 ${defaultRun} 个全绿成立，但 \`--strict\` 有 7 个失败必须写明`);
+        add(f, "只说全绿、没写 --strict", `默认 ${defaultRun} 个全绿成立，但 \`--strict\` 有 6 个失败必须写明`);
       }
     }
   }

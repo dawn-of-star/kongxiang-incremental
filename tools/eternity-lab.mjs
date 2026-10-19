@@ -42,7 +42,7 @@ import {
   deGainBaseEffectMult, computeS,
   // ── 2025：永恒里程碑 ──
   ETERNITY_MILESTONES, hasEternityMilestone, eternityMilestonesActive, em5IpMult,
-  infinityUpgradeOwned, INFINITY_UPGRADES, INFINITY_ORDER, COLLAPSE,
+  infinityUpgradeOwned, infinityUpgradeCost, INFINITY_UPGRADES, INFINITY_ORDER, COLLAPSE,
 } from "../src/config.js";
 import { newState } from "../src/state.js";
 import { tick, doEternity } from "../src/engine.js";
@@ -147,7 +147,8 @@ ck("常数与 AD 逐项一致",
 }
 // ★ 差异项：没有强制触发
 {
-  const engineSrc = readFileSync(join(ROOT, "src", "engine.js"), "utf8");
+  // ★ 2026 模块化：tickBody 已搬到 src/engine/tick.js（engine.js 只剩 barrel）
+  const engineSrc = readFileSync(join(ROOT, "src", "engine", "tick.js"), "utf8");
   // ⚠️⚠️ 判据必须**只在 `tickBody` 的函数体里**找 `doEternity` ——
   //   原来写成 `/tick[\s\S]{0,4000}doEternity/`，那会从文件里**第一个** `tick` 开始扫，
   //   于是只要文件后文**任何位置**（含注释）出现 `doEternity` 就判红 ✗
@@ -194,7 +195,11 @@ console.log();
     seqOk ? `0/1/3/6/8 次 ⇒ 达成 ${counts.join("/")} 条` : `need 序列异常：${needs.join(",")}`);
 }
 
-// ── ② em1：保留最贵的非重复 ∞ 升级，且口径一致 ──
+// ── ② em1：保留**最便宜**的 floor(次数/2) 个非重复 ∞ 升级，且口径一致 ──
+// ★ 2026 更正：代码在 `applyEternityRetention()` 里按**真实价格升序**取最便宜的 N 个
+//   （用户原话：「应该是**从便宜的 iu 保存到贵的 iu**」）。
+//   旧断言写的是「最贵的 / singles.slice(-count)」⇒ 与实现相反，长期红 ✗
+//   ⇒ 期望值现在从 `infinityUpgradeCost()`（唯一价格入口）独立算，不抄实现。
 {
   const singles = INFINITY_ORDER.filter((id) => !INFINITY_UPGRADES[id]?.repeatable);
   const runs = [1, 2, 3, 4, 5, 9].map((n) => {
@@ -203,19 +208,24 @@ console.log();
     st.infinityPoints = D(10).pow(ETERNITY.goalLog10);   // ★ 从常量取，**别写死** ——
     //   原来写死 `pow(300)`（当时门槛 280 够用）⇒ 2026 门槛提到 308.25 后本夹具当场失效，
     //   连带 ②/②b 两条断言假失败 ✗（写死门槛 = 同一类"显示 vs 实际"的错）
+    const expect = Math.floor(n / 2);
+    const cheapest = singles
+      .map((id, idx) => ({ id, idx, cost: Number(infinityUpgradeCost(st, id) ?? Infinity) }))
+      .sort((a, b) => (a.cost - b.cost) || (a.idx - b.idx))
+      .slice(0, expect)
+      .map((x) => x.id);
     doEternity(st);
     const keptIds = singles.filter((id) => infinityUpgradeOwned(st, id));
-    const expect = Math.floor(n / 2);
     return {
-      n, kept: keptIds,
+      n, kept: keptIds, cheapest,
       expectOk: keptIds.length === expect,
-      tailOk: keptIds.every((id) => singles.slice(-expect).includes(id)),
+      cheapOk: keptIds.every((id) => cheapest.includes(id)),
     };
   });
-  const ok = runs.every((r) => r.expectOk && r.tailOk);
-  ck("② em1 保留 floor(次数/2) 个最贵的", ok,
-    ok ? `1/2/3/4/5/9 次 ⇒ 保留 ${runs.map((r) => r.kept.length).join("/")} 个（且都是末尾最贵的）`
-      : runs.filter((r) => !(r.expectOk && r.tailOk)).map((r) => `${r.n}次:${r.kept.length}(期望${Math.floor(r.n / 2)})`).join(" "));
+  const ok = runs.every((r) => r.expectOk && r.cheapOk);
+  ck("② em1 保留 floor(次数/2) 个最便宜的非重复 ∞ 升级", ok,
+    ok ? `1/2/3/4/5/9 次 ⇒ 保留 ${runs.map((r) => r.kept.length).join("/")} 个（且都是最便宜的）`
+      : runs.filter((r) => !(r.expectOk && r.cheapOk)).map((r) => `${r.n}次:${r.kept.length}(期望${Math.floor(r.n / 2)})`).join(" "));
   const last = runs[runs.length - 1];
   ck("②b 保留项被 infinityUpgradeOwned 认到", last.kept.length > 0,
     `9 次永恒后认到 ${last.kept.length} 个：${last.kept.join(", ")}`);

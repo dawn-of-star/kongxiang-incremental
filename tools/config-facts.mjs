@@ -112,7 +112,7 @@ async function scriptFacts() {
   return [
     ["默认批跑脚本数", defaultRun, "权威来源 = `node tools/run-all.mjs --list`"],
     ["tools/ 下脚本总数", all, ".mjs + .cjs"],
-    ["--strict 已知失败数", 7, "见 `docs/TODO.md` M 段（过期断言/坏工具/数值漂移）"],
+    ["--strict 已知失败数", 6, "见 `docs/TODO.md` M 段（过期断言/坏工具/数值漂移）"],
   ];
 }
 

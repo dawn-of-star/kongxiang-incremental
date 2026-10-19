@@ -27,15 +27,15 @@
 | 项 | 实测值 | 权威来源 |
 |---|---|---|
 | 默认批跑脚本数 | **49** | `node tools/run-all.mjs --list` |
-| `npm test` 结果 | **✅ 默认全绿**；`--strict` 有 **7 个失败** | `tools/run-all.mjs` |
-| `--strict` 的 7 个失败 | 见 `TODO.md` **M 段**（已登记，属"过期断言/坏工具/数值漂移"，非坏实现） | `docs/TODO.md` |
+| `npm test` 结果 | **✅ 默认全绿**；`--strict` 有 **6 个失败** | `tools/run-all.mjs` |
+| `--strict` 的 6 个失败 | `base-vs-quantum` / `cap-monotonic-lab` / `check-web-bundle` / `ip-economy-lab` / `quantum-particle-lab` / `zpe-engine-lab`（属"过期断言/坏工具/数值漂移"，非坏实现） | `docs/TODO.md` M 段 |
 | 版本 | **0.7.2**（`package.json` 是唯一出处） | `package.json` |
 | 文档篇数 / 脚本总数 / 各类计数 | ⇒ **见 [`CONFIG-FACTS.md`](CONFIG-FACTS.md)**（机器生成） | `tools/config-facts.mjs` |
 
 > ⚠️ **历史教训（本文件被改写的直接原因）**：
 >   本文件的旧版本写着「✅ **47 个脚本全绿**」—— 而实测
 >   ① 默认批跑是 **45**（不是 47；那个数是"`tools/` 下文件数"的历史口径）
->   ② **`--strict` 有 7 个失败**，那句"全绿"**从没验证过断言** ⇒ 属于盲区，不是事实 ✗
+>   ② **`--strict` 当时有 7 个失败**（2026 模块化后已降到 **6**，见上表），那句"全绿"**从没验证过断言** ⇒ 属于盲区，不是事实 ✗
 >   ⇒ 现在所有数字都写成"**权威来源 = 某条命令**"，不再手抄 ✓
 
 ---
@@ -85,7 +85,7 @@
 ```
 · `npm test` = `node tools/run-all.mjs` ⇒ 自动发现 `tools/*.mjs`，
   跳过 GUI/打包类（SKIP）与重诊断类（HEAVY，默认不跑，`--all` 才跑）
-· `--strict` 额外跑 `--check` 定点断言（目前 7 个失败，见 TODO M 段）
+· `--strict` 额外跑 `--check` 定点断言（目前 6 个失败，见 TODO M 段）
 · ★ 文档守卫（两件）：
     `tools/config-facts.mjs` —— 生成并校验 `docs/CONFIG-FACTS.md`（事实表）
     `tools/docs-audit.mjs`   —— 引用路径 · 脚本数量 · 标识符 · 状态头 · **计数与代码**

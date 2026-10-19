@@ -187,6 +187,6 @@ main.js            装配 + rAF 主循环
 | `cbea9b8` | `engine.js` 1,660 行 → `src/engine/` 5 个动作域模块 + 18 行 barrel |
 | 本轮末 | 新增 `tools/structure-guard.mjs`（49th 脚本）；本文件 + README / README-STATUS / CONFIG-FACTS 同步 |
 
-**验收基线**：`npm test` → **49/49 全绿**（默认批跑；`--strict` 仍有 7 个已知失败，
+**验收基线**：`npm test` → **49/49 全绿**（默认批跑；`--strict` 仍有 6 个已知失败，
 见 [`TODO.md`](TODO.md) M 段，属过期断言/坏工具/数值漂移，非坏实现）；`node tools/dom-smoke.mjs` 全绿；
 `node tools/consistency.mjs` 速率 8/8 一致、其他 33/33 通过。
