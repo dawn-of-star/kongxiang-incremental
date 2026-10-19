@@ -357,6 +357,14 @@ function tickBody(state, dt) {
   // ★★★ 2026：**每秒 1% 本次无限可获得的 IP**（中间难度全清奖励；未解锁 ⇒ 恰好 0 ✓）
   //   ⚠️ 收益源走 bigCrunchGain（唯一数据源），当参数传进去避免循环 import ✓
   applyTangramPassiveIp(state, dt, bigCrunchGain);
+  // ★★★ 2026（本地 AD 源码 `core/autobuyers/big-crunch-autobuyer.js`）——
+  //   AD 的 X_HIGHEST 比的是 `records.thisEternity.maxIP`（本永恒**持有 IP 的峰值**）✓
+  //   ⇒ 这里维护同一个量（不再是"单次收益纪录" ✗）
+  {
+    const ipNow = state.infinityPoints ?? D(0);
+    const prev = state.maxIpThisEternity instanceof Decimal ? state.maxIpThisEternity : D(state.maxIpThisEternity ?? 0);
+    if (ipNow.gt(prev)) state.maxIpThisEternity = ipNow;
+  }
   // ⚠️ 2026：这里原来有 icAutoAdvance(state, dt)（em7 自动完成无限挑战）——
   //   **IC 整个系统已删除**（用户裁定）⇒ 那行移除；em7 本身退回 pending ✓
 

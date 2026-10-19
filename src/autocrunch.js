@@ -95,9 +95,13 @@ export function shouldAutoCrunch(state, ctx = {}) {
     //   ⇒ 判据 = **本次坍缩收益** ≥ **当前持有 IP** × N ✓
     //   （我先前写成"比本永恒单次收益纪录" ✗ 那是错的）
     //   ⚠️ 因为 ZPE 引擎的存在，这个条件**天生会成立** ✓（收益随引擎等级增长 ✓）
-    const held = D(state?.infinityPoints ?? 0);
-    if (held.lte(0)) return true;                 // 一分没有 ⇒ 立刻坍（AD 同义）✓
-    return gain.gte(held.mul(D(thr)));
+    // ★★★ 2026（本地 AD 源码逐行对齐）：
+    //   `get highestPrevPrestige() { return player.records.thisEternity.maxIP; }`
+    //   `case X_HIGHEST: return gainedInfinityPoints().gte(highestPrevPrestige.times(xHighest));`
+    //   ⇒ 比的是**本永恒持有 IP 的峰值**（不是当前余额 ✗ 也不是单次收益纪录 ✗）✓
+    const highest = D(state?.maxIpThisEternity ?? state?.infinityPoints ?? 0);
+    if (highest.lte(0)) return true;              // 峰值还是 0 ⇒ 立刻坍（AD 同义）✓
+    return gain.gte(highest.mul(D(thr)));
   }
   return gain.gte(D(thr));
 }
