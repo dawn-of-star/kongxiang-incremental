@@ -2174,7 +2174,7 @@ export const DE_UPGRADES = {
     return {
       id: "deGainBase",
       name: "相变增幅",
-      maxLevel: 60,   // ★ 2026：自喂升级必须有上限（否则暗能量复利无界 ✗）
+      maxLevel: null,   // ★ 2026 撤回封顶：等级**可以无限买**（break_eternity 就是为此存在 ✓）
       baseCost: 10,
       /** 用分段闭式解代替固定 costMult */
       piecewise: true,
@@ -2215,7 +2215,7 @@ export const DE_UPGRADES = {
     return {
       id: "convOutput",
       name: "凝聚斜率",
-      maxLevel: 60,   // ★ 2026：自喂升级必须有上限（否则暗能量复利无界 ✗）
+      maxLevel: null,   // ★ 2026 撤回封顶：等级**可以无限买**（break_eternity 就是为此存在 ✓）
       baseCost: 100,
       costMult: 2,
       costDarkEnergy: true,
