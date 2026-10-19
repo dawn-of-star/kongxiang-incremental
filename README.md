@@ -5,7 +5,7 @@
 当前版本：**0.7.2**
 
 > **改完东西只想确认没搞坏？** 跑 `npm test`（或 `node tools/run-all.mjs`）——
-> 一次跑完 47 个自检脚本，只把失败细节打出来。约 4 分钟。
+> 一次跑完 49 个自检脚本，只把失败细节打出来。约 4 分钟。
 > 不知道该改哪个文件？看下面[「想改一个数值」](#想改一个数值)那张表。
 
 ### 维护约定（改机制时必须同步的三处）
@@ -18,7 +18,9 @@
 3. **README 与 `docs/` 同步** —— 新数值进「想改一个数值」表，新机制进对应章节。
    **没有断言与文档的机制，视为没做完。**
 
-> 换个说法：数值住在 `src/config.js`，理由住在注释与 `docs/`，验收住在 `tools/`。
+> 换个说法：数值住在 `src/config/`（`config.js` 只是门面），理由住在注释与 `docs/`，验收住在 `tools/`。
+> **结构本身也有守卫**：`tools/structure-guard.mjs` 会拦住"把逻辑塞回 god module / barrel / 死模块"，
+> 规则与预算见 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)。
 > 人只需要决定「要什么」，不需要同时记住「怎么算」。
 
 ### 数值约定（两条硬线，2026 用户裁定）
@@ -102,6 +104,7 @@ test-034/
 ├── .npmrc                       Electron 下载源换成国内镜像
 ├── .gitignore / .gitattributes  node_modules、release、换行符与语言统计
 ├── docs/                        ★ 设计文档（不参与打包与发布）
+│   ├── ARCHITECTURE.md          ★ 模块分层 / 目录职责 / 结构预算 / 维护性评分（2026）
 │   ├── INFINITY-UPGRADES.md     ∞ 层升级清单（含 AD 原版逐条对照）
 │   ├── ZPE-ENGINE.md            ZPE 引擎（已实现 · 虚空科技第二个子页 · 含极强软上限）
 │   ├── IP-ECONOMY.md            无限点 → 永恒（24 小时档 · 各机制提速表）
@@ -117,15 +120,23 @@ test-034/
 │   ├── icon.ico                 ★ 应用图标（进过 exe）
 │   └── make-icon.py             图标生成脚本（纯标准库，零依赖）
 ├── src/                         ★ 新实现（分层，纯逻辑可无头测试）
-│   ├── config.js                全部内容与数值（唯一数据源）
+│   ├── config.js                配置门面（22 行 barrel，只 re-export）
+│   ├── config/                  ★ 12 个领域模块（base / upgrades / milestones / zpe-engine /
+│   │                              eternity / dream / dark-energy / quantum / infinity /
+│   │                              dark-matter / zones / neko）
 │   ├── state.js                 状态工厂 + 序列化（纯数据）
 │   ├── formulas.js              全部计算（纯函数，不碰 DOM）
-│   ├── engine.js                tick / 离线闭式解 / 购买动作
+│   ├── engine.js                引擎门面（18 行 barrel）
+│   ├── engine/                  ★ tick / actions / collapse / purchases / eternity
 │   ├── save.js                  localStorage 存档
-│   ├── ui.js                    所有 DOM 操作（唯一碰 DOM 的地方）
+│   ├── ui.js                    装配层：静态结构构建 + `render()` 编排（不再堆面板逻辑）
+│   ├── ui-core.js               DOM 缓存 / 写入去重 / 乘区上色 / 格式化
+│   ├── ui-panels.js             主面板 11 个区块的 render
+│   ├── ui-quantum.js 等 6 个    各面板的 render（量子 / 无限 / 永恒 / 暗物质 / 猫猫 / 七巧板）
 │   └── main.js                  装配 + requestAnimationFrame 主循环
 ├── tools/                       开发期脚本（★ 不参与打包）
 │   ├── run-all.mjs              ★ `npm test`：一次跑完下面全部自检
+│   ├── structure-guard.mjs      ★ 结构守卫（文件/函数预算 · 死模块 · 分层方向）
 │   ├── smoke-protocol.cjs       自检：驱动真实的 app:// 处理函数发请求
 │   ├── smoke-electron.cjs       自检：真起 Electron 加载页面（需 npm install）
 │   ├── inspect-asar.cjs         自检：列出放进 exe 的文件清单（需打包产物）
@@ -269,7 +280,7 @@ git push origin v0.6.17
 ### 为什么不能直接把整个仓库发布出去
 
 发布前要先挑文件。游戏真正需要的只有 4 个：`index.html`、`css/`、`src/`、`dist/`。
-`legacy/`（0.3.4 原稿）、`tools/`（47 个开发脚本）、`electron/`、`build/` 都不该公开可访问。
+`legacy/`（0.3.4 原稿）、`tools/`（49 个默认批跑的开发脚本）、`electron/`、`build/` 都不该公开可访问。
 
 `tools/check-web-bundle.cjs` 负责这件事，它做两步：
 
@@ -299,8 +310,17 @@ Windows 本地不敏感，所以 `import "./Formulas.js"` 这种错在你机器�
 
 ## 已知问题
 
-这一版经过评估，**加权不可维护性 64.3%**，判定为「保留 HTML/CSS，重写 JS 层」。
+### 2026 模块化（当前 `src/`）
+
+2026-10-19 评估：**加权不可维护性 60%**（> 50% 阈值）⇒ 已执行模块化重构；
+重构后 **31.8%**。模块清单、结构预算、剩余债务（`tickBody` 298 行等）见
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)。
+
+### 历史：0.3.4 原稿（`legacy/`）
+
+这一版（0.3.4）经过评估，**加权不可维护性 64.3%**，判定为「保留 HTML/CSS，重写 JS 层」。
 完整报告见 `../incremental-base/docs/MIGRATION-034.md`。
+**该判定已执行**：新实现在 `src/`，原稿保留在 `legacy/` 只做行为对照。
 
 ### 已经修掉的（工程化缺失）
 
@@ -354,6 +374,8 @@ JS 的 `Number` 上限是 1.8e308，`Math.pow(4, 512)` 就会溢出成 `Infinity
 
 **关键是「唯一数据源」**：每个数值只有一处定义，改那里就够了；改完跑对应工具。
 （不用记住全部 —— 跑了 `npm test` 就知道有没有牵动别处。）
+★ 2026 模块化后：数值在 **`src/config/<领域>.js`**；`src/config.js` 只是门面（barrel），
+**不要**把新常量写回门面。不知道该进哪个领域时看 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §4。
 
 **日志策略**：重复购买类升级（三条主升级、暗能量可重复升级、∞ 的①、ZPE 引擎等级）
 **只在关键节点写日志** —— 等级跨过 `1 / 5 / 10 / 50 / 100 / 500 / 1000 …`（×5、×2 交替）才写一条。
@@ -376,7 +398,7 @@ JS 的 `Number` 上限是 1.8e308，`Math.pow(4, 512)` 就会溢出成 `Infinity
 | 价格曲线（含分段） | `REPEATABLE`、`VOID_UPGRADES`、`PIECEWISE` | `tools/audit.mjs` |
 | 乘区颜色 / 词条 / 图例 | `ZONES`、`ZONE_OF` | `tools/dom-smoke.mjs`（乘区登记守卫） |
 | ZPE 引擎（打破无限后） | `ZPE_ENGINE`（解锁 = **1 次大坍缩**里程碑，不花无限点；三条机制的阈值都在这里） | `tools/zpe-engine-lab.mjs --check`（a<1 红线） |
-| 界面文字（卡片描述） | `config.js` 各条目的 `desc`（要**从公式算**） | `tools/dom-smoke.mjs`、`consistency.mjs` |
+| 界面文字（卡片描述） | `src/config/` 各条目的 `desc`（要**从公式算**） | `tools/dom-smoke.mjs`、`consistency.mjs` |
 | **过载**（打破无限后的软上限） | `OVERLOAD`（`halvingOrders` / `stepOrders` / `tierShift` / `crunchBelow`） | `tools/overload-lab.mjs`（零回归 + **收手阈值可达**）、`tools/infinity-ladder-lab.mjs` |
 | **量子捕获门槛**（累进档位） | `QUANTUM.captureTierFactor` | `tools/quantum-tier-lab.mjs` |
 | **永恒里程碑**（8 条，按永恒次数解锁） | `ETERNITY_MILESTONES`（`pending` 标记未实装项） | `tools/eternity-lab.mjs --check`（18 条：EP 公式 6 + 里程碑 12） |

@@ -26,7 +26,7 @@
 
 | 项 | 实测值 | 权威来源 |
 |---|---|---|
-| 默认批跑脚本数 | **46** | `node tools/run-all.mjs --list` |
+| 默认批跑脚本数 | **49** | `node tools/run-all.mjs --list` |
 | `npm test` 结果 | **✅ 默认全绿**；`--strict` 有 **7 个失败** | `tools/run-all.mjs` |
 | `--strict` 的 7 个失败 | 见 `TODO.md` **M 段**（已登记，属"过期断言/坏工具/数值漂移"，非坏实现） | `docs/TODO.md` |
 | 版本 | **0.7.2**（`package.json` 是唯一出处） | `package.json` |
@@ -44,6 +44,7 @@
 
 | 文档 | 状态 | 说明 |
 |---|---|---|
+| **[ARCHITECTURE.md](ARCHITECTURE.md)** | ✅ 权威 | ★ **模块分层 / 目录职责 / 结构预算 / 维护性评分**（2026 模块化后的唯一结构依据） |
 | **[CONFIG-FACTS.md](CONFIG-FACTS.md)** | ✅ 权威（**机器生成**） | ★ **所有计数/常量的唯一出处** —— 由 `tools/config-facts.mjs` 生成并校验，与代码不同步会**测试失败** ✓ |
 | **ZONES.md** | ✅ 权威 | 乘区归属（**改乘区必看**）。计数见 `CONFIG-FACTS.md` |
 | **ZPE-ENGINE.md** | ✅ 权威 | ZPE 引擎（含第 5 条机制：基于自身倍数提升前 8 个虚空升级） |
@@ -88,6 +89,9 @@
 · ★ 文档守卫（两件）：
     `tools/config-facts.mjs` —— 生成并校验 `docs/CONFIG-FACTS.md`（事实表）
     `tools/docs-audit.mjs`   —— 引用路径 · 脚本数量 · 标识符 · 状态头 · **计数与代码**
+· ★ 结构守卫（2026 模块化后新增）：
+    `tools/structure-guard.mjs` —— 文件/函数预算 · barrel 纯度 · **死模块可达性** · 分层方向
+    ⇒ 规则与阈值见 [`ARCHITECTURE.md`](ARCHITECTURE.md) §3
 ```
 
 ## 📌 开发分工（2025 用户裁定）
