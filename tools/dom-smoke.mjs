@@ -219,9 +219,9 @@ for (const m of html.matchAll(/<[^>]*\bid="([\w-]+)"[^>]*>/g)) {
   staticIds++;
 }
 
-// 顺带检查 UI 的 cache 数组是否都能在 html 里找到（2026：cache 在 ui-core.js）
-const uiCoreSrc = readFileSync(join(ROOT, "src", "ui-core.js"), "utf8");
-const cacheBlock = uiCoreSrc.match(/const ids = \[([\s\S]*?)\];/)[1];
+// 顺带检查 UI 的 cache 数组是否都能在 html 里找到（2026：cache 在 ui-cache.js）
+const uiCoreSrc = readFileSync(join(ROOT, "src", "ui-cache.js"), "utf8");
+const cacheBlock = uiCoreSrc.match(/const CACHE_IDS = \[([\s\S]*?)\n\];/)[1];
 const cachedIds = [...cacheBlock.matchAll(/"([\w-]+)"/g)].map((m) => m[1]);
 // ★ 2025：这些 id 现在是**静态写进 index.html** 的（① 置顶行的外壳），
 //   所以不再需要动态白名单 —— 保留一个空的 Set 只是给将来留口子。

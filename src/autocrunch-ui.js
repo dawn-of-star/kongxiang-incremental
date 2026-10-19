@@ -41,25 +41,10 @@ function mkLab(text) {
   return s;
 }
 
-export function paintAutoCrunchUI(state, commit) {
-  if (typeof document === "undefined") return;
-  if (state) cur = state;
 
-  let host = null;
-  for (const w of document.querySelectorAll("#panel-dream .q-card-wrap")) {
-    if (w.querySelector(".q-card")?.id === "dream-btn-autoInfinities") { host = w; break; }
-  }
-  if (!host) host = document.getElementById("dream-upgrade-list");
-  if (!host) return;
-
-  let box = document.getElementById("tg-ac-rule");
-  if (box && box.dataset.ver !== PANEL_VER) {
-    if (typeof box.remove === "function") box.remove();
-    else box.parentNode?.removeChild?.(box);
-    box = null;
-  }
-  if (!box) {
-    box = document.createElement("div");
+/** 建一次自动无限规则面板（内联样式 + 版本号；旧版会被 paint 逻辑移除）。 */
+function buildAutoCrunchPanel(host, commit) {
+    const box = document.createElement("div");
     box.id = "tg-ac-rule";
     box.dataset.ver = PANEL_VER;
     box.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;align-items:center;"
@@ -95,8 +80,12 @@ export function paintAutoCrunchUI(state, commit) {
     box.appendChild(hint);
 
     host.appendChild(box);
+  box.addEventListener("click", (ev) => handleAutoCrunchClick(ev, commit));
+  return box;
+}
 
-    box.addEventListener("click", (ev) => {
+/** 面板的点击处理：规则切换 / 设定阈值 / 开关。 */
+function handleAutoCrunchClick(ev, commit) {
       const b = ev.target?.closest?.("button");
       if (!b) return;
       const st = cur;
@@ -139,10 +128,10 @@ export function paintAutoCrunchUI(state, commit) {
         st.autoCrunch.isActive = st.autoCrunch.isActive === false;
         commit?.();
       }
-    });
-  }
-  box._state = state;
+}
 
+/** 每帧只同步文本/选中态（不重建 DOM）。 */
+function syncAutoCrunchPanel(box, state) {
   const a = state?.autoCrunch ?? {};
   const mode = a.mode ?? AUTO_CRUNCH.defaultMode;
 
@@ -184,4 +173,26 @@ export function paintAutoCrunchUI(state, commit) {
         + (okNow ? " ｜ 现已成立" : "");
     }
   }
+}
+
+export function paintAutoCrunchUI(state, commit) {
+  if (typeof document === "undefined") return;
+  if (state) cur = state;
+
+  let host = null;
+  for (const w of document.querySelectorAll("#panel-dream .q-card-wrap")) {
+    if (w.querySelector(".q-card")?.id === "dream-btn-autoInfinities") { host = w; break; }
+  }
+  if (!host) host = document.getElementById("dream-upgrade-list");
+  if (!host) return;
+
+  let box = document.getElementById("tg-ac-rule");
+  if (box && box.dataset.ver !== PANEL_VER) {
+    if (typeof box.remove === "function") box.remove();
+    else box.parentNode?.removeChild?.(box);
+    box = null;
+  }
+  if (!box) box = buildAutoCrunchPanel(host, commit);
+  box._state = state;
+  syncAutoCrunchPanel(box, state);
 }

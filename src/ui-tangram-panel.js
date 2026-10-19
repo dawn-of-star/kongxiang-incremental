@@ -171,6 +171,21 @@ safePaint("tangram-preview", () => paintChallengePreview(st));
     if (node) node.textContent = (pair[1] * 100).toFixed(1) + "%";
   }
 
+  paintTangramSlots(st);
+  buildTangramAcquireCard();
+  paintTangramAcquire(st, pc, pr, factor);
+  bindTangramChallengeButtons(st);
+  buildTangramControlBar(st);
+}
+
+
+// ──────────────────────────────────────────────────────────
+// ★ 2026：托盘槽位的**真实形状缩略图**（用户唯一要求的那件事）
+//   每格 = 小 SVG（顶点取 TANGRAM_PIECES，包围盒自动缩放）+ 原来的名字文字 ✓
+//   ⚠️ 只建一次（data-thumb 标记）；不改尺寸/不改网格/不改控制条位置 ✓
+// ──────────────────────────────────────────────────────────
+/** 画 7 个托盘槽位：已获得高亮、选中描边、点击选中并重绘。 */
+function paintTangramSlots(st) {
   const slots = typeof document !== "undefined"
     ? document.querySelectorAll("#panel-tangram .tangram-slot")
     : [];
@@ -192,7 +207,10 @@ safePaint("tangram-preview", () => paintChallengePreview(st));
     node.style.opacity = own ? "1" : "0.5";
     node.style.outline = tgSel === piece.id ? "1px solid var(--eternity, #b388ff)" : "none";
   }
+}
 
+/** 建获取卡片（只建一次；抽/兑换按钮的闭包读 stRefForAcq）。 */
+function buildTangramAcquireCard() {
   // ★★★ 2026（用户：「一开始的抽取系统不是挺好的么？**进度条 + 直接兑换**，在**托盘上方**」）——
   //   获取卡片放在托盘**最上面**（`.tangram-tray` 的第一个子节点）✓ 只建一次，之后每帧只改数字 ✓
   if (!tgAcqBuilt && typeof document !== "undefined") {
@@ -224,6 +242,11 @@ safePaint("tangram-preview", () => paintChallengePreview(st));
       });
     }
   }
+}
+
+/** 刷新获取卡片上的下一块 / 保底 / 价格。 */
+function paintTangramAcquire(st, pc, pr, factor) {
+  stRefForAcq = st;
   if (tgAcqBuilt) {
     stRefForAcq = st;
     const nm = document.getElementById("tg-acq-name");
@@ -238,6 +261,10 @@ safePaint("tangram-preview", () => paintChallengePreview(st));
     if (btnD) { btnD.textContent = pc && pr ? "抽（" + sci(D(pr.draw).mul(factor)) + "）" : "抽"; btnD.disabled = !pc; }
     if (btnE) { btnE.textContent = pc && pr ? "直接兑换（" + sci(D(pr.exchange).mul(factor)) + "）" : "直接兑换"; btnE.disabled = !pc; }
   }  // ★ 2026：拼装挑战节的两个按钮（挂一次 ✓）
+}
+
+/** 绑定拼装挑战的「下一题 / 重置棋盘」（只绑一次）。 */
+function bindTangramChallengeButtons(st) {
   if (!tgChalBound && typeof document !== "undefined") {
     const bNext = document.getElementById(tgChalBound ? "" : "tg-chal-next");
     const bReset = document.getElementById("tg-chal-reset");
@@ -247,6 +274,10 @@ safePaint("tangram-preview", () => paintChallengePreview(st));
       bReset.addEventListener("click", () => { resetTangramBoard(st); uiHandlers?.onTangramCommit?.(); });
     }
   }
+}
+
+/** 建七巧板控制条（只建一次；回调读模块级 tgSel）。 */
+function buildTangramControlBar(st) {
   if (!tgBarBuilt && typeof document !== "undefined") {
     // ★ 2026：控制条挂在 **.tangram-side** 的末尾（托盘下方，不前不后 ✓）
     const host = document.querySelector("#panel-tangram .tangram-side")
@@ -278,12 +309,6 @@ safePaint("tangram-preview", () => paintChallengePreview(st));
   }
 }
 
-
-// ──────────────────────────────────────────────────────────
-// ★ 2026：托盘槽位的**真实形状缩略图**（用户唯一要求的那件事）
-//   每格 = 小 SVG（顶点取 TANGRAM_PIECES，包围盒自动缩放）+ 原来的名字文字 ✓
-//   ⚠️ 只建一次（data-thumb 标记）；不改尺寸/不改网格/不改控制条位置 ✓
-// ──────────────────────────────────────────────────────────
 function tgThumbSvg(piece) {
   const NS = "http://www.w3.org/2000/svg";
   const xs = piece.verts.map((v) => v[0]);

@@ -124,7 +124,7 @@ const forbidden = {
   formulas: [/^engine\//, /^engine\.js$/, /^ui/, /^main\.js$/, /^save\.js$/],
   state: [/^engine\//, /^engine\.js$/, /^ui/, /^main\.js$/, /^save\.js$/],
   engine: [/^ui/, /^main\.js$/],
-  "ui-core": [/^ui\.js$/, /^ui-/, /^main\.js$/],
+  "ui-core": [/^ui\.js$/, /^ui-(?!cache\.js$)/, /^main\.js$/],
   "ui-panel": [/^ui\.js$/, /^main\.js$/],
   ui: [/^main\.js$/],
 };
