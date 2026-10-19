@@ -123,7 +123,7 @@ test-034/
 │   ├── config.js                配置门面（22 行 barrel，只 re-export）
 │   ├── config/                  ★ 12 个领域模块（base / upgrades / milestones / zpe-engine /
 │   │                              eternity / dream / dark-energy / quantum / infinity /
-│   │                              dark-matter / zones / neko）+ infinity/ 下 4 个子模块
+│   │                              dark-matter / zones / neko）+ infinity/、quantum/ 子模块
 │   ├── state.js                 状态门面（16 行 barrel）
 │   ├── state/                   ★ schema / serialize / accessors / log / helpers
 │   ├── formulas.js              计算门面（19 行 barrel）
@@ -135,7 +135,8 @@ test-034/
 │   ├── neko/                    ★ log / snapshot / actions / bridge
 │   ├── save.js                  localStorage 存档
 │   ├── ui.js                    装配层：静态结构构建 + `render()` 编排（不再堆面板逻辑）
-│   ├── ui-core.js               DOM 缓存 / 写入去重 / 乘区上色 / 格式化
+│   ├── ui-core.js               乘区上色 / 效果文案 / 格式化 / 共享回调
+│   ├── ui-cache.js              DOM 缓存 / 写入去重 / 真实写入计数
 │   ├── ui-panels.js             主面板 11 个区块的 render
 │   ├── ui-quantum.js 等 6 个    各面板的 render（量子 / 无限 / 永恒 / 暗物质 / 猫猫 / 七巧板）
 │   └── main.js                  装配 + requestAnimationFrame 主循环

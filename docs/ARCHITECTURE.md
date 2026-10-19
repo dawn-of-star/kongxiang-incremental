@@ -28,7 +28,7 @@
 | 最大函数 | 560 行（`render`） | **265 行**（`createNekoBridge`） |
 | 导出入口 | `config.js` / `engine.js` 各自是 god module | 6 个 **≤ 22 行的 barrel**（config / engine / formulas / state / neko / config/infinity） |
 | `ui.js` | 2,784 行 | **761 行**（只做 build / init / render 编排） |
-| 模块数 | 23 个平铺 `.js` | **70 个模块**（含 barrel） |
+| 模块数 | 23 个平铺 `.js` | **73 个模块**（含 barrel） |
 | 死模块 | 1 个（235 行） | **0**（`structure-guard` 守可达性） |
 | 自检脚本 | 48 | **49**（新增结构守卫） |
 
@@ -38,12 +38,32 @@
 
 ---
 
+## 0.5 🧊 冻结区：N.E.K.O 协同代码（**未经用户明确解除，不许动**）
+
+用户 2026 裁定：**「涉及到协同的暂时不要动 —— 与 N.E.K.O 通讯、并让对方能操控游戏的函数千万不要动。」**
+
+| 冻结文件 / 段落 | 冻结原因 |
+|---|---|
+| `src/neko.js` + `src/neko/**` | 宿主握手、状态发布、动作白名单、派发器 —— 对面按契约调用 |
+| `src/ui-neko.js` | 猫猫子页的通讯状态/对话展示 |
+| `src/config/neko.js` | 好感度、道具、动作白名单数据 |
+| `src/main.js` 的 Neko 段落 | `createNekoBridge` / `nekoActionApi` / `dispatchNekoActions` / `__game.nekoActions` |
+| `src/state/serialize.js` 的 `nekoAffinity` / `nekoDriftStamps` 迁移 | 玩家好感度存档 |
+| `src/state/schema.js` 的 Neko 字段 | 同上 |
+
+> 这些文件可以**读**、可以跑它的测试，但**不要改结构/签名/行为**。
+> 其它模块如果只是「被 Neko 调用」（如 `engine` 的购买函数），可以在**保持导出签名**的前提下重构；
+> 本轮的 `engine/purchases` / `config/quantum` 拆分都属于这一类。
+
+---
+
 ## 1. 分层（从下到上，**只许上层依赖下层**）
 
 ```
 main.js            装配 + rAF 主循环
   ├─ ui.js         静态结构构建 + 编排；唯一初始化入口
-  │    ├─ ui-core.js        DOM 缓存 / 写入去重 / 乘区上色 / 格式化
+  │    ├─ ui-core.js        乘区上色 / 效果文案 / 格式化 / 共享回调
+  │    ├─ ui-cache.js       DOM 缓存 / 写入去重 / 真实写入计数
   │    ├─ ui-panels.js      主面板 11 个区块的 render
   │    └─ ui-<panel>.js    量子 / 无限 / 永恒 / 暗物质 / 猫猫 / 七巧板
   ├─ engine.js     引擎门面（barrel）
@@ -87,7 +107,7 @@ main.js            装配 + rAF 主循环
 | `eternity.js` | 永恒门槛、EP 公式、永恒升级、8 条永恒里程碑 |
 | `dream.js` | 梦想升级、效果聚合、离线上限、`computeS`、分段价格 |
 | `dark-energy.js` | 暗能量升级、惩罚、有效量软上限 |
-| `quantum.js` | 量子、粒子增幅 `b`、跨度幂 `k`、暗能量自增长 |
+| `quantum.js` | 量子层门面；实现见 `quantum/{gates,growth}.js` |
 | `infinity.js` | 无限层门面；实现见 `infinity/{tier,break,upgrades,ip}.js` |
 | `dark-matter.js` | 暗物质 / 第二台相变仪 |
 | `zones.js` | 乘区颜色与归属 |
@@ -111,7 +131,8 @@ main.js            装配 + rAF 主循环
 | 文件 | 职责 |
 |---|---|
 | `ui.js` | 构建静态 DOM、标签/按钮绑定、`render()` 编排（26 行） |
-| `ui-core.js` | `el` / `$` / `cache` / 写入去重 / `applyZone` / 格式化 re-export |
+| `ui-core.js` | `applyZone` / `effectText` / 格式化 re-export / `uiHandlers`（re-export 缓存层） |
+| `ui-cache.js` | `el` / `$` / `cache()` / `domWriteStats`（CACHE_IDS 表 + 写入去重） |
 | `ui-panels.js` | 资源条、升级中心、虚空、永恒、坍缩里程碑、ZPE 引擎、自动化、ZPE 里程碑、暗能量、日志 |
 | `ui-quantum.js` / `ui-infinity.js` / `ui-eternity.js` / `ui-darkmatter.js` / `ui-neko.js` / `ui-tangram-panel.js` | 各自面板的 render |
 
@@ -156,6 +177,7 @@ main.js            装配 + rAF 主循环
 | `ui.js` | ≤ 850 行（现 761） |
 | `config/*` | ≤ 800 行（现最大 740） |
 | `config/infinity/*` | ≤ 500 行（现最大 434） |
+| `config/quantum/*` | ≤ 500 行（现最大 478） |
 | `engine/*` | ≤ 600 行（现最大 559） |
 | `formulas/*` | ≤ 300 行（现最大 239） |
 | `state/*` | ≤ 350 行（现最大 273） |
@@ -194,7 +216,7 @@ main.js            装配 + rAF 主循环
 
 | 维度 | 权重 | 前 | 后 | 依据（前 → 后） |
 |---|---:|---:|---:|---|
-| 模块边界 / 职责 | 25% | 70 | **20** | 3 个 god module → **70 个模块（含 6 个 barrel）**；config / ui / engine / formulas / state / neko 全部按领域拆开 |
+| 模块边界 / 职责 | 25% | 70 | **20** | 3 个 god module → **73 个模块（含 7 个 barrel）**；config / ui / engine / formulas / state / neko 全部按领域拆开 |
 | 文件 / 函数规模 | 20% | 85 | **30** | 最大文件 4,973 → 762；最大函数 560 → 265；`render` 560 → 26；`tickBody` 298 → 30 |
 | 耦合 / 依赖方向 | 15% | 55 | **30** | import 图单向分层；结构守卫拦反向依赖；少量函数级循环（config/infinity、formulas）已确认无顶层调用 |
 | 重复 / 死代码 | 15% | 50 | **30** | 删除 235 行死模块；`ui.js` 清掉 121 个未使用 import；死代码审计修复假绿；barrel 纯度有守卫 |
@@ -211,10 +233,9 @@ main.js            装配 + rAF 主循环
 
 | # | 债务 | 为什么这轮不动 | 建议 |
 |---|---|---|---|
-| D1 | `neko/bridge.js` 的 `createNekoBridge()` **265 行** | 它是宿主握手 + 四个生命周期方法（connect / assist / ask / snapshot）的闭包；硬拆要引入上下文对象，属行为变更 | 下次改接入层时按「connection / lifecycle / assist」三段拆，并用真宿主回归 |
-| D2 | `state/serialize.js` 的 `deserialize()` **245 行**、`state/schema.js` 的 `newState()` **232 行** | 旧档迁移与字段默认值**必须逐字兼容**；拆错会丢玩家存档 | 先补「newState 字段 == deserialize 读字段」的守卫，再按迁移批次拆函数 |
-| D3 | `ui-tangram-panel.js` 的 `renderTangramReal()` **183 行**、`ui-core.js` 的 `cache()` **151 行** | 都是单面板/单职责，拆分收益低于风险 | 面板再长时按「数据 / 画板 / 交互」拆 |
-| D4 | 注释密度 45%~61% | **刻意保留**：项目规矩是"理由住在注释与 docs/"，防回退 | 不要为了行数删注释；把长推导搬到 `docs/` 再留链接 |
+| D1 | `neko/bridge.js` 的 `createNekoBridge()` **265 行** | **N.E.K.O 冻结区**（用户 2026 明令：协同代码不许动） | 等用户解除冻结后，按「connection / lifecycle / assist」三段拆 |
+| D2 | `state/serialize.js` 的 `deserialize()` **245 行**、`state/schema.js` 的 `newState()` **232 行** | 两处都含 Neko 字段（`nekoAffinity` / `nekoDriftStamps`）⇒ 属冻结区；且旧档迁移拆错会丢存档 | 解除冻结后先补「newState 字段 == deserialize 读字段」守卫，再按迁移批次拆 |
+| D3 | 注释密度 45%~61% | **刻意保留**：项目规矩是"理由住在注释与 docs/"，防回退 | 不要为了行数删注释；把长推导搬到 `docs/` 再留链接 |
 
 ---
 
@@ -231,7 +252,9 @@ main.js            装配 + rAF 主循环
 | `e7857ba` | `neko.js` 907 行 → `src/neko/` 4 个职责模块 + 17 行 barrel（公开 API 14 个不变） |
 | `f553a52` | `tickBody()` 298 → 30 行：11 个阶段抽成命名函数（运算顺序与代码逐字保留） |
 | `1ef3e09` | `config/infinity.js` 1,009 行 → `src/config/infinity/` 4 个模块（tier / break / upgrades / ip） |
-| 本轮末 | 收紧结构预算（文件 850 / 函数 300）；ARCHITECTURE 同步为 70 模块、加权 27.8% |
+| `76fc94d` | `ui-core.js` 437 → 134 行：DOM 缓存/去重下沉到 `ui-cache.js`；七巧板面板与自动无限面板的长绘制函数拆成命名子函数 |
+| `0befb22` | `config/quantum.js` 740 行 → `quantum/` 2 个模块（gates / growth） |
+| 本轮末 | 冻结 N.E.K.O 协同代码（§0.5）；收紧结构预算；ARCHITECTURE 同步为 73 模块、加权 27.8% |
 
 **验收基线**：`npm test` → **49/49 全绿**（默认批跑；`--strict` 仍有 6 个已知失败，
 见 [`TODO.md`](TODO.md) M 段，属过期断言/坏工具/数值漂移，非坏实现）；`node tools/dom-smoke.mjs` 全绿；
