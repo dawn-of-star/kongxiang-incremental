@@ -99,7 +99,9 @@ export function shouldAutoCrunch(state, ctx = {}) {
     //   `get highestPrevPrestige() { return player.records.thisEternity.maxIP; }`
     //   `case X_HIGHEST: return gainedInfinityPoints().gte(highestPrevPrestige.times(xHighest));`
     //   ⇒ 比的是**本永恒持有 IP 的峰值**（不是当前余额 ✗ 也不是单次收益纪录 ✗）✓
-    const highest = D(state?.maxIpThisEternity ?? state?.infinityPoints ?? 0);
+    // ★ 2026：`maxIpThisEternity` 现在是 Decimal ⇒ 不要二次包（D(Decimal) 也行但没必要 ✓）
+    const _h = state?.maxIpThisEternity ?? state?.infinityPoints ?? 0;
+    const highest = _h instanceof Decimal ? _h : D(_h);
     if (highest.lte(0)) return true;              // 峰值还是 0 ⇒ 立刻坍（AD 同义）✓
     return gain.gte(highest.mul(D(thr)));
   }

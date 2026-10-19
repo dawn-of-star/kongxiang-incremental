@@ -188,7 +188,7 @@ export function newState() {
     //   ⚠️ 将来重做 em7 时**不要照着旧字段复活** —— 那时需要的时间源要重新设计
     //      （旧实现的口径是"历次本轮时长的最小值"，依赖 IC 关卡数）✓
     infinityFromQuantumBought: false,
-    ipTimeAccrued: 0,
+    ipTimeAccrued: D(0),   // ★ 数值约定 #3：IP 累加量会超过 1.8e308 ⇒ Decimal ✓
     ipTimeBought: false,
     ipToTransmuterBought: false,
     ipToZpeBought: false,
@@ -212,7 +212,7 @@ export function newState() {
     autoToggles: {},
     autoCrunch: { isActive: false, mode: "xHighest", amount: "1", time: 0.1, xHighest: "2", dynamic: false, lastAtMs: 0 },
     /** 本永恒**单次**收益最高纪录（× 最高模式的判据）✓ */
-    maxIpThisEternity: 0,
+    maxIpThisEternity: D(0),   // ★ 本永恒 IP 峰值（AD 的 records.thisEternity.maxIP）⇒ Decimal ✓
     tangramOwned: {},          // 已获得（id → true）
     tangramPity: {},           // 抽取保底（id → 连续失败次数）
     tangramPlaced: {},         // 摆位（id → {rot, flip, dx, dy}；小数 = 自由拖动）
@@ -469,7 +469,7 @@ export function deserialize(raw) {
     dynamic: raw.autoCrunch?.dynamic === true,
     lastAtMs: Math.max(0, num(raw.autoCrunch?.lastAtMs, 0)),
   };
-  s.maxIpThisEternity = num(raw.maxIpThisEternity, 0);
+  s.maxIpThisEternity = dec(raw.maxIpThisEternity);   // ★ Decimal 存储（num 会截断成 Infinity ✗）
   s.version = num(raw.version, fresh.version);
   s.startedAt = num(raw.startedAt, fresh.startedAt);
   s.lastSavedAt = num(raw.lastSavedAt, Date.now());
@@ -580,7 +580,7 @@ export function deserialize(raw) {
   s.infinityElapsed = num(raw.infinityElapsed, 0);
   // ⚠️ 2026：`fastestInfinitySec` / `icAutoTimer` **不再读取**（随 IC 删除）——
   //   老存档里仍有这两个字段 ⇒ **明文忽略**（不迁移、不报错）✓
-  s.ipTimeAccrued = num(raw.ipTimeAccrued, 0);
+  s.ipTimeAccrued = dec(raw.ipTimeAccrued);           // ★ Decimal 存储 ✓
   s.zpeEngineUnlocked = bool(raw.zpeEngineUnlocked);
   s.zpeEngineLevel = dec(raw.zpeEngineLevel);
   s.eternityPoints = dec(raw.eternityPoints);

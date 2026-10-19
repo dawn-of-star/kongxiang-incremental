@@ -148,7 +148,8 @@ function tickBody(state, dt) {
         .mul(ipDoubleMult(state));
     state.infinityPoints = state.infinityPoints.add(gain);
       // 本次无限"实时累计了多少"（仅供日志与界面显示；上限 = 30 分钟那笔）
-    state.ipTimeAccrued = (state.ipTimeAccrued ?? 0) + gain.toNumber();
+    // ★ 数值约定 #3：别再 toNumber ✗（IP 累加量会超过 1.8e308）
+  state.ipTimeAccrued = (state.ipTimeAccrued instanceof Decimal ? state.ipTimeAccrued : D(state.ipTimeAccrued ?? 0)).add(gain);
     }
   }
 
@@ -931,7 +932,7 @@ export function doBigCrunch(state) {
   resetForCollapse(state);
   // ④ 的计时器与实时累计归零：下一次无限从 0 开始重新累计
   state.infinityElapsed = 0;
-  state.ipTimeAccrued = 0;
+  state.ipTimeAccrued = D(0);
   // ★ 2025：**本轮时长也归零**（收手判据按时间 ⇒ 必须每轮重置）
   state.runElapsed = 0;
 
@@ -1399,7 +1400,7 @@ export function doEternity(state) {
     state.infinityCount = Math.max(1, Math.floor(Number(state.infinityCount ?? 0)) + 1);
     state.brokenInfinity = true;
   }
-  state.ipTimeAccrued = 0;
+  state.ipTimeAccrued = D(0);
   state.infinityElapsed = 0;
   // 档位 / 量子（铸币与坍缩加速器已删除）
   state.bigCrunchCount = D(0);
