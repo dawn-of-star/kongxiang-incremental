@@ -133,6 +133,22 @@ export function renderDreamPage(state) {
   if (state) stateRef = state;
   const box = document.getElementById("dream-upgrade-list");
   if (!box || box.dataset.arranged !== "1") return;
+
+  // ★★★ 2026（用户：「该解锁的时候有些看不到解锁」）—— **排列只在启动时跑过一次** ✗
+  //   ⇒ 之后解锁条件变了（比如有了量子/到了第 8 次永恒），旧 DOM 不会再长出新卡 ✗
+  //   ⇒ 这里比一次"可见集合"的签名，变了就**重新排列** ✓
+  {
+    const sig = DREAM_UPGRADES.filter((d) => isDreamUnlocked(state, d)).map((d) => d.id).join(",");
+    if (box.dataset.visibleSig !== sig) {
+      box.dataset.visibleSig = sig;
+      box.dataset.arranged = "0";
+      try { arrangeDreamPage(state); } catch { /* 忽略 */ }
+      if (box.dataset.arranged === "0") box.dataset.arranged = "1";
+    }
+  }
+  if (state) stateRef = state;
+  const box2 = document.getElementById("dream-upgrade-list");   // ★ 2026：重排用（原名 box 已被上面占用）
+  if (!box || box.dataset.arranged !== "1") return;
   let ownedCount = 0;
   for (const d of DREAM_UPGRADES) {
     const tg = document.getElementById(`dream-toggle-${d.id}`);
