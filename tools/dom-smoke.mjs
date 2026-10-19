@@ -190,6 +190,8 @@ function queryIn(root, sel) {
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+// ★ 2026 模块化：ui / config 都已拆到子目录 —— 静态守卫必须递归收集
+import { walkFiles } from "./lib/walk.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -217,9 +219,9 @@ for (const m of html.matchAll(/<[^>]*\bid="([\w-]+)"[^>]*>/g)) {
   staticIds++;
 }
 
-// 顺带检查 ui.js 的 cache 数组是否都能在 html 里找到
-const uiSrc = readFileSync(join(ROOT, "src", "ui.js"), "utf8");
-const cacheBlock = uiSrc.match(/const ids = \[([\s\S]*?)\];/)[1];
+// 顺带检查 UI 的 cache 数组是否都能在 html 里找到（2026：cache 在 ui-core.js）
+const uiCoreSrc = readFileSync(join(ROOT, "src", "ui-core.js"), "utf8");
+const cacheBlock = uiCoreSrc.match(/const ids = \[([\s\S]*?)\];/)[1];
 const cachedIds = [...cacheBlock.matchAll(/"([\w-]+)"/g)].map((m) => m[1]);
 // ★ 2025：这些 id 现在是**静态写进 index.html** 的（① 置顶行的外壳），
 //   所以不再需要动态白名单 —— 保留一个空的 Set 只是给将来留口子。
@@ -232,7 +234,10 @@ const missingIds = cachedIds.filter((id) => !html.includes(`id="${id}"`) && !DYN
 //   TypeError: Cannot set properties of undefined (setting 'textContent')
 // 踩过：dream-badge 崩溃 + dream-upgrade-list 静默失效（按钮从来不出现）。
 // 先剥掉注释 —— 否则注释里举的例子（`el["x"].textContent`）会被误报
-const uiCode = uiSrc
+// ★ 2026：UI 已拆成 ui.js + ui-core.js + 面板模块 ⇒ 扫全部 src（含子目录）
+const uiCode = walkFiles(join(ROOT, "src"))
+  .map((f) => readFileSync(f, "utf8"))
+  .join("\n")
   .replace(/\/\*[\s\S]*?\*\//g, "")
   .replace(/^\s*\/\/.*$/gm, "");
 const usedByCode = new Set([...uiCode.matchAll(/el\["([\w-]+)"\]/g)].map((m) => m[1]));
@@ -241,8 +246,12 @@ const notCached = [...usedByCode].filter((id) => !cachedIds.includes(id));
 // ── 守卫：REPEATABLE（有等级的升级）不许写死 desc ──
 // 它的效果随等级变，手写字符串迟早和 formulas.js 脱节。
 // 踩过：particleBoost.desc 写 `×1.1^等级`，实现却是 `1+0.05×等级`，100 级差 2000 倍。
-const configSrc = readFileSync(join(ROOT, "src", "config.js"), "utf8");
-const repeatableBlock = configSrc.match(/export const REPEATABLE = \{([\s\S]*?)\n\};/)?.[1] ?? "";
+// ★ 2026：配置表在 src/config/upgrades.js —— 取 REPEATABLE 到 VOID_UPGRADES 之间的文本
+const configSrc = readFileSync(join(ROOT, "src", "config", "upgrades.js"), "utf8");
+const rStart = configSrc.indexOf("export const REPEATABLE =");
+const repeatableBlock = rStart >= 0
+  ? configSrc.slice(rStart, configSrc.indexOf("export const VOID_UPGRADES", rStart))
+  : "";
 const hardcodedDescs = [...repeatableBlock.matchAll(/\bdesc\s*:/g)].length;
 
 globalThis.document = {
@@ -1141,14 +1150,18 @@ let zoneGuard = "未跑";
 
         // ④ **静态**：没有任何路径把 pageUnlocked 写回 false / 清空
         const { readFileSync: rf6 } = await import("node:fs");
-        const cfgSrc = rf6(new URL("../src/config.js", import.meta.url), "utf8");
+        // ★ 2026：配置已拆到 src/config/；UI 已拆到 ui-*.js —— 守卫必须扫全部模块
+        const cfgSrc = walkFiles(join(ROOT, "src", "config")).map((f) => rf6(f, "utf8")).join("\n");
         const engSrc = rf6(new URL("../src/engine.js", import.meta.url), "utf8");
         const noWriteFalse = !/pageUnlocked\[[^\]]+\]\s*=\s*(false|0|null|undefined)/.test(cfgSrc)
           && !/pageUnlocked\s*=\s*\{\s*\}/.test(engSrc)
           && !/delete\s+[^\n]*pageUnlocked/.test(engSrc);
 
         // ⑤ 4 个会锁的主标签，判据都必须含 perma（子标签 void/zpe 从不上锁）
-        const uiSrc6 = rf6(new URL("../src/ui.js", import.meta.url), "utf8");
+        const uiSrc6 = walkFiles(join(ROOT, "src"))
+          .filter((f) => /(?:^|\/)ui[^/]*\.js$/.test(f.replace(/\\/g, "/")))
+          .map((f) => rf6(f, "utf8"))
+          .join("\n");
         const lockLines = uiSrc6.split(/\r?\n/).filter((l) => /classList\.toggle\("locked"/.test(l));
         const allHavePerma = lockLines.length === 4
           && lockLines.every((l) => /perma|tabUnlocked/.test(l));
