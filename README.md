@@ -127,7 +127,8 @@ test-034/
 │   ├── state.js                 状态门面（16 行 barrel）
 │   ├── state/                   ★ schema / serialize / accessors / log / helpers
 │   ├── formulas.js              计算门面（19 行 barrel）
-│   ├── formulas/                ★ core / global / zpe / dark-energy / entropy / matter / costs / quantum / infinity
+│   ├── formulas/                ★ core / global / zpe / dark-energy / dark-energy-rate / entropy /
+│   │                              matter / costs / quantum / infinity
 │   ├── engine.js                引擎门面（17 行 barrel）
 │   ├── engine/                  ★ tick / actions / collapse / purchases / eternity
 │   ├── neko.js                  N.E.K.O 门面（17 行 barrel，公开 API 不变）

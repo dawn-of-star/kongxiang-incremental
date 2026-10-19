@@ -49,7 +49,7 @@ main.js            装配 + rAF 主循环
   ├─ engine.js     引擎门面（barrel）
   │    └─ engine/{tick,actions,collapse,purchases,eternity}.js
   ├─ formulas.js   纯计算门面（barrel）
-  │    └─ formulas/{core,global,zpe,dark-energy,entropy,matter,costs,quantum,infinity}.js
+  │    └─ formulas/{core,global,zpe,dark-energy,dark-energy-rate,entropy,matter,costs,quantum,infinity}.js
   ├─ state.js      状态门面（barrel）
   │    └─ state/{schema,accessors,log,serialize,helpers}.js
   ├─ config.js     配置门面（barrel）
