@@ -27,8 +27,10 @@
  *   ⇒ 本文件末尾有一条**静态扫描**：`src/` 不许调用 `*Loop` 系列 ✓
  */
 
-import { readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync } from "node:fs";
+import { join, relative, sep } from "node:path";
+// ★ 2026 模块化：静态扫描必须递归 src/，否则 config 子目录里的 O(n) 调用会漏检
+import { walkFiles } from "./lib/walk.mjs";
 import Decimal from "../dist/break_eternity.esm.js";
 import { BASE, COLLAPSE, DE_MILESTONES, DE_UPGRADES, REPEATABLE, VOID_UPGRADES, ipDoubleMult,
   // ★ 2025：① 的价格序列断言要用（用户裁定「首价 1 点、之后每级 ×10」）
@@ -1217,10 +1219,11 @@ console.log();
   const ROOT = join(new URL("..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"), "src");
   const LOOP_FNS = ["zpeEngineTotalCostLoop", "zpeEngineAffordableInLoop"];
   const offenders = [];
-  for (const f of readdirSync(ROOT)) {
-    if (!f.endsWith(".js")) continue;
-    if (f === "config.js") continue;                 // 定义处（含兜底调用）不算 ✓
-    const src = readFileSync(join(ROOT, f), "utf8");
+  for (const f of walkFiles(ROOT)) {
+    const rel = relative(ROOT, f);
+    // 定义处（config.js 及其拆分后的 src/config/）含兜底调用，不算 ✓
+    if (rel === "config.js" || rel.startsWith(`config${sep}`)) continue;
+    const src = readFileSync(f, "utf8");
     for (const fn of LOOP_FNS) {
       // 只看**非注释行**里的调用
       const hit = src.split(/\r?\n/).some((line) => {
@@ -1228,7 +1231,7 @@ console.log();
         if (t.startsWith("//") || t.startsWith("*") || t.startsWith("/*")) return false;
         return new RegExp(`\\b${fn}\\s*\\(`).test(line);
       });
-      if (hit) offenders.push(`${f} 调了 ${fn}`);
+      if (hit) offenders.push(`${rel.replace(/\\/g, "/")} 调了 ${fn}`);
     }
   }
   const ok = offenders.length === 0;
@@ -1236,7 +1239,7 @@ console.log();
   console.log("  ★ 结构性守卫：热路径上不许有 O(n) 循环");
   console.log("=".repeat(80));
   if (ok) {
-    console.log("  ✅ `src/`（除 config.js 定义处）没有任何 `*Loop` 调用 —— 闭式在位 ✓");
+    console.log("  ✅ `src/`（除 config.js 与 config/ 定义处）没有任何 `*Loop` 调用 —— 闭式在位 ✓");
   } else {
     console.log("  ❌ 发现 O(n) 循环被放进 src/：");
     for (const o of offenders) console.log(`     · ${o}`);

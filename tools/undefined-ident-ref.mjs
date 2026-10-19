@@ -22,9 +22,11 @@
  *
  * 退出码：0 = 干净；1 = 有未定义标识符（run-all 会据此判失败）
  */
-import { readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { dirname, join, relative } from "node:path";
+// ★ 2026 模块化：必须递归 src/（含 src/config/），否则子目录里的模块不会被扫到
+import { walkFiles } from "./lib/walk.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SRC = join(HERE, "..", "src");
@@ -95,13 +97,14 @@ function definedNames(src, declared) {
 }
 
 let problems = 0;
-const files = readdirSync(SRC).filter((f) => f.endsWith(".js")).sort();
+const files = walkFiles(SRC).sort();
 console.log("=".repeat(74));
-console.log(`未定义标识符扫描：src/ 共 ${files.length} 个模块`);
+console.log(`未定义标识符扫描：src/ 共 ${files.length} 个模块（含子目录）`);
 console.log("=".repeat(74));
 
 for (const f of files) {
-  const raw = readFileSync(join(SRC, f), "utf8");
+  const rel = relative(SRC, f).replace(/\\/g, "/");
+  const raw = readFileSync(f, "utf8");
   const src = strip(raw);
 
   const imported = new Set();
@@ -164,7 +167,7 @@ for (const f of files) {
   }
   if (!bad.length) continue;
 
-  console.log(`\n  ❌ ${f}`);
+  console.log(`\n  ❌ ${rel}`);
   for (const { n, count, kind } of bad) {
     console.log(`       ${n.padEnd(24)} ${kind}了 ${count} 次，但既没 import 也没声明`);
   }

@@ -24,15 +24,14 @@
  * 不是证明。真正的保证仍然要靠跑一遍真实流程。
  */
 
-import { readFileSync, readdirSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { readFileSync } from "node:fs";
+import { join, dirname, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+// ★ 2026 模块化：配置表已拆到 src/config/ —— 声明源与"消费者代码"都要按新目录取
+import { walkFiles } from "./lib/walk.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = join(ROOT, "src");
-
-const configSrc = readFileSync(join(SRC, "config.js"), "utf8");
-const codeFiles = readdirSync(SRC).filter((f) => f.endsWith(".js") && f !== "config.js");
 
 /**
  * ⚠️ 扫描前**必须剥掉注释**。
@@ -45,21 +44,58 @@ const stripComments = (s) => s
   .replace(/^\s*\/\/.*$/gm, "")
   .replace(/([^:])\/\/.*$/gm, "$1");   // 行尾注释（避免吃掉 http:// 这类）
 
+const configSrc = stripComments(walkFiles(join(SRC, "config")).map((f) => readFileSync(f, "utf8")).join("\n"));
+/** 消费者代码 = 除 config.js（barrel）与 src/config/（声明处）以外的所有 src 模块 */
+const codeFiles = walkFiles(SRC).filter((f) => {
+  const rel = relative(SRC, f);
+  return rel !== "config.js" && !rel.startsWith(`config${sep}`);
+});
+
 const codeSrc = codeFiles
-  .map((f) => stripComments(readFileSync(join(SRC, f), "utf8")))
+  .map((f) => stripComments(readFileSync(f, "utf8")))
   .join("\n");
+/** 全项目源码（含 config 领域模块）—— 用来判断 id 是否在**别的表/别的模块**里被引用 */
+const allSrc = walkFiles(SRC).map((f) => stripComments(readFileSync(f, "utf8"))).join("\n");
 
 /**
- * 取出某个导出常量块的源码。
+ * 取出某个导出常量块**内部**的源码（不含外层 `{...}` / `[...]`）。
  *
- * ⚠️ 必须同时认 `];` 和 `};` 两种结尾。
- * 最初只写了 `\n};`，于是**数组**（ZPE_MILESTONES 等）的块会一路吞到下一个
- * 对象常量的结尾 —— 自检时表现为「同一个假 id 同时出现在两个分组里」。
+ * ⚠️ 2026 修：旧实现用 `export const X = [\s\S]*?\n[\]\}]`，而配置表常以
+ *    `firstRewardDream: true } };`（**同一行**收尾）结束 ⇒ 匹配不到结尾，
+ *    会一路吞到下一个声明 ⇒ 把无关的 ZONES 键当成这组的 id（实测 76 个假 id ✗）。
+ *   ⇒ 改成按括号深度扫描，正确识别字符串与注释。
  */
 function block(name) {
-  const re = new RegExp(`export const ${name} = [\\[\\{]([\\s\\S]*?)\\n[\\]\\}]`, "m");
-  const m = configSrc.match(re);
-  return m ? m[1] : "";
+  const start = configSrc.indexOf(`export const ${name} =`);
+  if (start < 0) return "";
+  const open = (() => {
+    for (let i = start; i < configSrc.length; i++) {
+      if (configSrc[i] === "{" || configSrc[i] === "[") return i;
+    }
+    return -1;
+  })();
+  if (open < 0) return "";
+  let depth = 0, quote = null, esc = false, line = false, blk = false;
+  for (let i = open; i < configSrc.length; i++) {
+    const c = configSrc[i], n = configSrc[i + 1];
+    if (line) { if (c === "\n") line = false; continue; }
+    if (blk) { if (c === "*" && n === "/") { blk = false; i++; } continue; }
+    if (quote) {
+      if (esc) esc = false;
+      else if (c === "\\") esc = true;
+      else if (c === quote) quote = null;
+      continue;
+    }
+    if (c === "/" && n === "/") { line = true; i++; continue; }
+    if (c === "/" && n === "*") { blk = true; i++; continue; }
+    if (c === '"' || c === "'" || c === "`") { quote = c; continue; }
+    if (c === "{" || c === "[") depth++;
+    else if (c === "}" || c === "]") {
+      depth--;
+      if (depth === 0) return configSrc.slice(open + 1, i);
+    }
+  }
+  return "";
 }
 
 /** 从块里取所有 id（对象键 或 id 字段） */
@@ -81,9 +117,9 @@ const GROUPS = [
 ];
 
 /** 这个 id 在代码里被引用了吗？（字符串字面量 或 属性访问） */
-function referenced(id) {
-  if (new RegExp(`["'\`]${id}["'\`]`).test(codeSrc)) return "字符串";
-  if (new RegExp(`\\.${id}\\b`).test(codeSrc)) return "属性";
+function referenced(id, source = allSrc) {
+  if (new RegExp(`["'\`]${id}["'\`]`).test(source)) return "字符串";
+  if (new RegExp(`\\.${id}\\b`).test(source)) return "属性";
   return null;
 }
 
@@ -92,7 +128,7 @@ console.log("=".repeat(78));
 console.log("死代码审计：声明了但没有任何代码引用的效果");
 console.log("=".repeat(78));
 console.log();
-console.log(`  扫描 src/ 下 ${codeFiles.length} 个文件（排除 config.js）`);
+console.log(`  扫描 src/ 下 ${codeFiles.length} 个消费方文件（排除 src/config/ 与 config.js 声明处）`);
 console.log();
 
 /**
@@ -124,7 +160,10 @@ let total = 0;
 for (const [label, name] of GROUPS) {
   const ids = idsOf(name);
   total += ids.length;
-  const miss = ids.filter((id) => !referenced(id) && !KNOWN_UNWIRED.has(id));
+  // 判断引用时排除**本表自身**（否则表里每个 id 都"引用"了它自己）
+  const own = block(name);
+  const consumer = own ? allSrc.replace(own, "") : allSrc;
+  const miss = ids.filter((id) => !referenced(id, consumer) && !KNOWN_UNWIRED.has(id));
   const hit = ids.length - miss.length;
   const exempt = GENERIC_GROUPS.has(name);
   console.log(

@@ -15,6 +15,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+// ★ 2026 模块化：递归 src/（含 src/config/），否则新子目录不在守卫范围内
+import { walkFiles } from "./lib/walk.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = path.join(ROOT, "src");
@@ -30,8 +32,9 @@ const BIG = [
 const SAFE_MIDDLE = /\.log10\(\)|\.log\(|\.log2\(\)|\.min\(1e15\)/;   // 取对数 或 先限幅 ⇒ 安全 ✓
 
 const problems = [];
-for (const f of fs.readdirSync(SRC).filter((x) => x.endsWith(".js"))) {
-  const lines = fs.readFileSync(path.join(SRC, f), "utf8").split("\n");
+for (const f of walkFiles(SRC)) {
+  const rel = path.relative(SRC, f).replace(/\\/g, "/");
+  const lines = fs.readFileSync(f, "utf8").split("\n");
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (/^\s*(\*|\/\/)/.test(line)) continue;           // 注释跳过
@@ -42,7 +45,7 @@ for (const f of fs.readdirSync(SRC).filter((x) => x.endsWith(".js"))) {
       // state.field.toNumber() / state.field.mul(...).toNumber()（链式里没取对数）
       const reToNum = new RegExp(`\\b(?:state|s|st)\\??\\.${field}\\b[^;]*?\\.toNumber\\(\\)`);
       if (reCall.test(line) || reToNum.test(line)) {
-        problems.push({ file: f, line: i + 1, field, text: line.trim().slice(0, 110) });
+        problems.push({ file: rel, line: i + 1, field, text: line.trim().slice(0, 110) });
         break;
       }
     }

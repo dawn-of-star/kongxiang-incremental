@@ -29,6 +29,8 @@ import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join, dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
+// ★ 2026 模块化：src/ 现在有子目录（src/config/）—— 必须递归，否则标识符检查会假绿
+import { readAll, walkFiles } from "./lib/walk.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DOCS = join(ROOT, "docs");
@@ -43,14 +45,9 @@ const read = (p) => readFileSync(p, "utf8");
  *     （仍能抓到"真被删掉的常量"，如 `R_BASE` / `DE_GROWTH` —— 它们在 R-REPLACEMENT.md ✓）
  */
 const ALL_SRC_TEXT = (() => {
-  let out = "";
-  for (const f of readdirSync(join(ROOT, "src"))) {
-    if (f.endsWith(".js")) out += read(join(ROOT, "src", f));
-  }
-  for (const f of readdirSync(join(ROOT, "tools"))) {
-    if (f.endsWith(".mjs")) out += read(join(ROOT, "tools", f));
-  }
-  return out;
+  // ★ 2026：递归（含 src/config/）；tools 同时收 .mjs 与 .cjs
+  return readAll(join(ROOT, "src"))
+    + "\n" + readAll(join(ROOT, "tools"), { exts: [".mjs", ".cjs"] });
 })();
 const nameInCode = (n) => ALL_SRC_TEXT.includes(n);
 

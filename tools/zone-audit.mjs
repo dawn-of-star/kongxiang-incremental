@@ -31,8 +31,10 @@
  */
 
 import { readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join, dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
+// ★ 2026 模块化：config 已拆到 src/config/ —— 本工具必须把所有领域模块一起扫
+import { walkFiles } from "./lib/walk.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = join(ROOT, "src");
@@ -44,7 +46,9 @@ const read = (f) => strip(readFileSync(join(SRC, f), "utf8"));
 const pad = (s, n) => String(s).padEnd(n);
 const lineOf = (src, idx) => src.slice(0, idx).split("\n").length;
 
-const files = { "formulas.js": read("formulas.js"), "config.js": read("config.js"), "engine.js": read("engine.js") };
+const files = { "formulas.js": read("formulas.js"), "engine.js": read("engine.js") };
+const configFiles = walkFiles(join(SRC, "config"));
+for (const f of configFiles) files[`config/${basename(f)}`] = strip(readFileSync(f, "utf8"));
 
 console.log("=".repeat(90));
 console.log("乘区审计 —— 语义判据：b区 = 「对值本身取幂」");
@@ -121,14 +125,15 @@ const isCommentLine = (line) => /^\s*(\*|\/\/|\/\*)/.test(line);
 
 const wordHits = [];   // 玩家可见 / 声明用的字符串字面量
 const noteHits = [];   // 注释里提到（不算成员登记）
-for (const f of ["config.js", "formulas.js", "engine.js", "ui.js"]) {
-  const raw = readFileSync(join(SRC, f), "utf8");
+for (const f of [...configFiles.map((p) => ["config/" + basename(p), p]), ...["formulas.js", "engine.js", "ui.js"].map((n) => [n, join(SRC, n)])]) {
+  const [label, p] = f;
+  const raw = readFileSync(p, "utf8");
   const spans = quoted(raw);
   for (const m of raw.matchAll(/最终/g)) {
     const ln = lineOf(raw, m.index);
     const line = raw.split("\n")[ln - 1].trim();
     const visible = inQuotes(spans, m.index) && !isCommentLine(line);
-    (visible ? wordHits : noteHits).push({ f, ln, line });
+    (visible ? wordHits : noteHits).push({ f: label, ln, line });
   }
 }
 const htmlRaw = readFileSync(join(ROOT, "index.html"), "utf8");
