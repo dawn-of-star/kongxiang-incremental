@@ -26,7 +26,7 @@
 |---|---|---|
 | 最大源文件 | 4,973 行（`config.js`） | **1,117 行**（`formulas.js`，注释占 59%） |
 | 最大函数 | 560 行（`render`） | **298 行**（`tickBody`，保留为已知债务） |
-| 导出入口 | `config.js` / `engine.js` 各自是 god module | 两者都是 **≤ 18 行的 barrel**，实现按领域拆开 |
+| 导出入口 | `config.js` / `engine.js` 各自是 god module | 两者都是 **≤ 22 行的 barrel**，实现按领域拆开 |
 | `ui.js` | 2,784 行 | **761 行**（只做 build / init / render 编排） |
 | 死模块 | 1 个（235 行） | **0**（`structure-guard` 守可达性） |
 | 自检脚本 | 48 | **49**（新增结构守卫） |
