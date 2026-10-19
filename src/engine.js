@@ -1360,7 +1360,8 @@ export function doEternity(state) {
   state.eternityPoints = (state.eternityPoints ?? D(0)).add(gained);
   // ★★ 2025：**累计 EP** —— em5 的读数源（只增不减；见 state.js 的字段说明）
   state.eternityPointsTotal = (state.eternityPointsTotal ?? D(0)).add(gained);
-  state.eternityCount = (state.eternityCount ?? 0) + 1;
+  // ★ 数值约定 #3：ternityCount 现在是 Decimal ⇒ 必须用 .add()（+ 会变字符串拼接 ✗）
+  state.eternityCount = D(state.eternityCount ?? 0).add(1);
 
   // ══════════════════════════════════════════════════════════
   // ★★★ 2025（用户实测报告 + 用户裁定）：**永恒后补齐「曾经解锁过」的记录**

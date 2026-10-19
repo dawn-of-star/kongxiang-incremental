@@ -108,7 +108,7 @@ export function newState() {
      *     两者由 `dreamUpgradeLevelOf()` 统一读取（旧档布尔 ⇒ 视为 1 级）✓
      */
     dreamUpgradeLevels: {},
-    eternityCount: 0,
+    eternityCount: D(0),
     eternityPoints: D(0),
     /**
      * ★★ 2025：**累计获得**的永恒点（只增不减）—— em5 的读数源。
@@ -126,7 +126,7 @@ export function newState() {
      * ⚠️ 它**不随永恒重置**（永恒升级本来就是跨永恒的进度）——
      *    所以 `doEternity` / `resetForEternity` 里**不要**清它 ✓
      */
-    epMultLevel: 0,
+    epMultLevel: D(0),
     /**
      * ★★★ 2026（第三层设计稿第 50~52 行）：**暗物质个数**（「永恒之后」的第一块）。
      *
@@ -150,7 +150,7 @@ export function newState() {
      *    （这是"永恒重置除梦想系统外一切"这条铁律的**第二处明确例外** ——
      *      第一处是 `epMultLevel`；两处都是用户逐次裁定出来的 ✓）
      */
-    eternityDarkMatter: 0,
+    eternityDarkMatter: D(0),
     /**
      * ★★★ 2026：**第一台相变仪速率的快照**（存 `log10(速率)`，普通 Number）。
      *
@@ -165,7 +165,7 @@ export function newState() {
      * ⚠️ 刻意存 **log10**（不是原值）：`Decimal.toNumber()` 在巨量时是 `Infinity` ✗，
      *   而 `v1^0.01 = 10^(0.01·log10 v1)` **只需要 log10** ⇒ 既省又不会溢出 ✓
      */
-    v1Log10: 0,
+    v1Log10: D(0),
     /**
      * ★★★ 2025（`docs/NEKO.md` §7 / §10）：**好感度系统**（游戏原生，零依赖 SDK）。
      *
@@ -584,7 +584,7 @@ export function deserialize(raw) {
   s.zpeEngineUnlocked = bool(raw.zpeEngineUnlocked);
   s.zpeEngineLevel = dec(raw.zpeEngineLevel);
   s.eternityPoints = dec(raw.eternityPoints);
-  s.eternityCount = num(raw.eternityCount, 0);
+  s.eternityCount = dec(raw.eternityCount);
   // ★ 2025：累计 EP（em5 的读数源）。**旧存档没有这个字段** ⇒ 用当前持有量兜底
   //   （旧档的持有量 ≥ 0，兜底后行为正常；新档从此只增不减 ✓）
   s.eternityPointsTotal = raw.eternityPointsTotal != null

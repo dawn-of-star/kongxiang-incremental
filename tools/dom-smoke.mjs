@@ -1011,7 +1011,7 @@ let zoneGuard = "未跑";
       /** 造一份"旧版存档"：有永恒次数，但**没有** pageUnlocked 字段 */
       const legacy = (n) => {
         const s = ns2();
-        s.eternityCount = n;
+        s.eternityCount = n;   // 允许 number/Decimal（断言一律 Number() 后再比 ✓）
         const raw = se2(s);
         delete raw.pageUnlocked;                 // ← 关键：模拟加字段之前的存档
         return JSON.parse(JSON.stringify(raw));
@@ -1060,7 +1060,7 @@ let zoneGuard = "未跑";
         const canBefore = canEternity3(s3);
         const r3 = doEternity3(s3);
         const got = PK.filter((k) => pu(s3, k)).length;
-        const ok3 = canBefore && r3 != null && s3.eternityCount === 1 && got === PK.length;
+        const ok3 = canBefore && r3 != null && Number(s3.eternityCount) === 1 && got === PK.length;   // ★ eternityCount 现为 Decimal ✓
         console.log(`  永恒打点        ${ok3
           ? `✅ 可永恒=${canBefore}｜永恒后 count=1 ✓｜**记录补全 ${got}/${PK.length} 个** ✓（不依赖载入兜底）`
           : `❌ 可永恒=${canBefore}｜返回=${r3 == null ? "null" : "ok"}｜count=${s3.eternityCount}（应 1）｜记录 ${got}/${PK.length}`}`);
@@ -1119,7 +1119,7 @@ let zoneGuard = "未跑";
         const a = ns6();
         a.infinityPoints = Dec6.pow(10, ET6.goalLog10 + 30);
         const did = doE6(a) != null;
-        const r1 = did && a.eternityCount === 1 && cnt(a) === PK6.length;
+        const r1 = did && Number(a.eternityCount) === 1 && cnt(a) === PK6.length;   // ★ Decimal 化后按 Number 比较 ✓
 
         // ② 存盘→读档（含旧档"记录为空"的最恶劣情况）
         const b = de6(se6(a)).state;
