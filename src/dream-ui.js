@@ -42,19 +42,22 @@ const GROUPS = [
 export function isDreamUnlocked(state, d) {
   const when = d?.unlockWhen ?? "always";
   if (when === "always") return true;
-  if (when === "de") {
-    return (state?.darkEnergy ?? 0) > 0 || state?.phaseTransmuterUnlocked === true
-      || Object.values(state?.deMilestones ?? {}).some(Boolean);
-  }
-  // ★ 2026（用户裁定）：暗能量层自动化 ⇒ **有量子时**解锁 ✓
-  if (when === "quantum") {
-    const q = state?.quantum ?? 0;
-    return (typeof q === "object" && q.gt ? q.gt(0) : Number(q) > 0) || (state?.quantumPairs ?? 0) > 0;
-  }
-  // ★ 2026（用户裁定）：其余（除自动无限）都是 **em8** 的效果 ✓
-  if (when === "em8") return hasEternityMilestone(state, "em8");
-  if (when === "breakInfinity") return state?.brokenInfinity === true || (state?.infinityCount ?? 0) >= 1;
-  if (when === "eternity") return (state?.eternityCount ?? 0) >= 1;
+
+  // ★★★ 2026（用户：「我请你基于**次数**检测 —— 该解锁的时候有些看不到解锁」）
+  //   ⇒ 一律看**计数器**（Decimal / number 都能读），不看任何标志位 ✗
+  const num = (v) => {
+    if (v == null) return 0;
+    if (typeof v === "number") return v;
+    try { return Number(v.toString()); } catch { return 0; }
+  };
+  const eternity = num(state?.eternityCount);
+  const infCount = num(state?.infinityCount);
+  const quantum = num(state?.quantum) + num(state?.quantumPairs);
+
+  if (when === "quantum") return quantum > 0;                    // 有量子 ⇒ 暗能量层自动化 ✓
+  if (when === "em8") return eternity >= 8;                     // 第 8 次永恒 ⇒ 其余 ✓
+  if (when === "breakInfinity") return infCount >= 1 || state?.brokenInfinity === true;
+  if (when === "eternity") return eternity >= 1;
   return true;
 }
 
