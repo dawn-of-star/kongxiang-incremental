@@ -270,6 +270,22 @@ if (state.zpeEngineUnlocked) {
   const deSelf = state.darkEnergy.max(1).mul(a).mul(Math.LN10).mul(_dtS).mul(_capDecay);
   state.darkEnergy = state.darkEnergy.add(deSelf);
   state.darkEnergy = state.darkEnergy.max(0);
+  // 2026: per-frame sanitiser -- any resource that turns non-finite is clamped back to 1e308
+  // so the UI can never render the infinity glyph (README convention #4: infinity = fatal error).
+  {
+    const LIMIT = D("1e308");
+    for (const k of ["darkEnergy", "zpe", "infinityPoints", "eternityPoints", "quantum", "matter", "entropy", "particles"]) {
+      const v = state[k];
+      if (v && typeof v.isFinite === "function" && !v.isFinite()) {
+        state[k] = LIMIT;
+        globalThis.__KI_INF_SEEN ??= {};
+        if (!globalThis.__KI_INF_SEEN[k]) {
+          globalThis.__KI_INF_SEEN[k] = true;
+          console.error("[inf-sanitise] state." + k + " was non-finite; clamped to 1e308");
+        }
+      }
+    }
+  }
   if (String(state.darkEnergy).includes("NaN")) state.darkEnergy = D(1);
   state.darkEnergyTotal = state.darkEnergyTotal.add(deSelf);
   }
