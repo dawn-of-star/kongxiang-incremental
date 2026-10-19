@@ -1,7 +1,7 @@
 # 交接：当前已知问题（2026-10-19，供重写参考）
 
-> 用户 2026：「我准备重覆写代码，记得纪录下现在的问题」⇒ 本页是**问题清单**，不是设计方案。
-> 基线：`HEAD = a9baa5d`，`npm test` → **48 个脚本全绿**，`docs-audit` ✅，`decimal-guard` ✅。
+> **状态：待同步**（交接清单 —— 记录 2026-10-19 时点的问题，重写完成后作废）
+> 基线：`HEAD = a9baa5d`，`npm test` → **48 个脚本全绿**；注意 `--strict` 下仍有 **7 项已知失败**（见 §7）
 
 ---
 
@@ -102,3 +102,18 @@
 - `docs/` 里用户**逐字原文**（`TANGRAM.md` §0.2、`SPACE-EXPANSION.md` §1、`NEKO.md` 原文段）**不许改** ✓
 - 唯一入口约定：`effectiveEngineLevel` / `benefit` / `nekoGlobalExponent` / `tangramAxisParams` …
 - 自动化语义：**间隔 + 每次 1 级**（不是每帧买满 ✗）
+---
+
+## 7. `--strict` 下的 7 项已知失败（不是本轮引入，长期存在）
+
+`node tools/run-all.mjs --strict` 会额外跑一批历史断言，其中 **7 项长期红**：
+
+```
+base-vs-quantum ｜ cap-monotonic-lab ｜ check-web-bundle
+ic-lab ｜ ip-economy-lab ｜ quantum-particle-lab ｜ zpe-engine-lab
+```
+
+- 大部分是**旧数值标定**与当前公式脱节（如 `ip-economy-lab` 的斜率表 ✓）
+- `check-web-bundle` 是**打包产物**检查（需要先构建 ✓）
+- `ic-lab` 在 IC 系统删除后可能自然消失 ✗（用户侧已删 ✓）
+⇒ **重写时请把这 7 项要么修好、要么删掉**，不要再留「默认绿、严格红」的双口径 ✗
