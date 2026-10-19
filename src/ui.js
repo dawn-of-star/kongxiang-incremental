@@ -1862,7 +1862,7 @@ function renderInfinity(state) {
 
   // ★ 2025：无限点数值统一走 `sci`（原来 `fmt(·, 0)` 会显示成 `1e308`）✓
   el["val-infinity"].textContent = sci(state.infinityPoints);
-  el["bigcrunch-count"].textContent = String(state.bigCrunchCount.toNumber());
+  el["bigcrunch-count"].textContent = fmt(state.bigCrunchCount, 0);   // ★ 数值约定 #3：不在显示层 toNumber（会 ∞ ✗）
   el["bigcrunch-gain"].textContent = sci(bigCrunchGain(state));
 
   const broken = state.brokenInfinity;

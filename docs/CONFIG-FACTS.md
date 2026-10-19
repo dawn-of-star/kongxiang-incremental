@@ -50,8 +50,8 @@
 | growthRateHalf 是否存在 | **false** | 同上 |
 | epMult.costMultTiers | **[5,10,100,500]** |  |
 | epMult.costThresholds | **["1e30","1e1000","1e10000",null]** | 末段 null = 永不切换（无封顶） |
-| 默认批跑脚本数 | **47** | 权威来源 = `node tools/run-all.mjs --list` |
-| tools/ 下脚本总数 | **54** | .mjs + .cjs |
+| 默认批跑脚本数 | **48** | 权威来源 = `node tools/run-all.mjs --list` |
+| tools/ 下脚本总数 | **55** | .mjs + .cjs |
 | --strict 已知失败数 | **7** | 见 `docs/TODO.md` M 段（过期断言/坏工具/数值漂移） |
 
 ---

@@ -194,14 +194,16 @@ export const COLLAPSE_MILESTONES = [
 export function hasCollapse(state, id) {
   const m = COLLAPSE_MILESTONES.find((x) => x.id === id);
   if (!m) return false;
-  return Number(state?.bigCrunchCount ?? 0) >= m.at;
+  // ★ 数值约定 #3：走 Decimal 比较（`Number(1e400)` = Infinity ✗）
+  return new Decimal(state?.bigCrunchCount ?? 0).gte(m.at);
 }
 
 /** ⑤ 相变仪随持有 IP 的倍率（对数 ⇒ 倍增而减缓；封顶防失控） */
 export const TRANSMUTER_IP = { coeff: 0.5, cap: 100 };
 export function transmuterIpMult(state) {
   if (!hasCollapse(state, "cm5")) return 1;
-  const ip = Math.max(0, (state?.infinityPoints ?? 0).toNumber());
+  // ★ 数值约定 #3：IP 可以 >1e308 ⇒ 用 Decimal，安全的地方才降级
+  const ip = new Decimal(state?.infinityPoints ?? 0).max(0);
   const v = 1 + TRANSMUTER_IP.coeff * Math.log10(1 + ip);
   return Math.min(v, TRANSMUTER_IP.cap);
 }
@@ -738,7 +740,7 @@ export const TIER_MILESTONES = [
 
 /** 已解锁的档位里程碑（大坍缩次数 ≥ at） */
 export function tierMilestonesDone(state) {
-  const n = state.bigCrunchCount instanceof Decimal ? state.bigCrunchCount.toNumber() : Number(state.bigCrunchCount) || 0;
+  const n = state.bigCrunchCount instanceof Decimal ? state.bigCrunchCount.min(1e15).toNumber() : Number(state.bigCrunchCount) || 0;
   return TIER_MILESTONES.filter((m) => n >= m.at);
 }
 
@@ -3532,7 +3534,7 @@ const TIER_ACCEL_SOFT_SPAN = 6;
  */
 export function tierAccelMult(state) {
   if (!state.quantumMilestones?.qm2) return 1;
-  const tiers = Math.max(0, (state.bigCrunchCount ?? 0).toNumber ? (state.bigCrunchCount).toNumber() : Number(state.bigCrunchCount ?? 0));
+  const tiers = Math.max(0, (state.bigCrunchCount ?? 0).toNumber ? (state.bigCrunchCount).min(1e15).toNumber() : Number(state.bigCrunchCount ?? 0));
   const raw = Math.pow(DE_SPAN.tierAccel, tiers);
   if (!Number.isFinite(raw)) return TIER_ACCEL_KNEE + TIER_ACCEL_SOFT_SPAN;
   if (raw <= TIER_ACCEL_KNEE) return raw;
@@ -3721,7 +3723,8 @@ export function quantumZpeMultBonus(quantum, bonus = null) {
 /** 跨度幂 k：由**量子个数**的开根给出，封顶 `DE_SPAN.kMax` */
 export function matterSpanExponent(state) {
   // ⚠️ config.js 没有 `D()` 辅助函数（那是 state.js 的），直接用 new Decimal
-  const q = Math.max(0, (state.quantum ?? new Decimal(0)).toNumber());
+  // ★ 数值约定 #3：量子可以极大 ⇒ 限幅后再降级（1e15 远超任何真实用量 ✓）
+  const q = Math.max(0, (state.quantum ?? new Decimal(0)).min(1e15).toNumber());
   const raw = 1 + DE_SPAN.kCoeff * Math.sqrt(q);
   return Math.min(raw, DE_SPAN.kMax);
 }
