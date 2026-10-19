@@ -192,8 +192,22 @@ export function dispatchNekoActions(state, actions, api) {
     let ok = false, detail = null;
     try {
       const r = spec.fn(state, p, api);
-      ok = r === true || r?.ok === true;
-      detail = typeof r === "object" && r !== null ? (r.reason ?? null) : null;
+      // ★ 引擎的返回约定**不统一**（实测）：
+      //    · buyRepeatable / buyTrap      → 返回买到的**等级数**（0 = 失败）
+      //    · buyVoidUpgrade / buyDeUpgrade → 返回 boolean
+      //    · buyInfinityUpgrade            → 返回 { ok: boolean }
+      //    · doBigCrunch / doEternity      → 返回非 null 对象
+      //   ⚠️ 旧实现只认 `true` / `{ok:true}` ⇒ **买成功了也报 rejected**，
+      //      于是猫娘会误以为失败并反复重试（实测：particleBoost 买到却被判失败）。
+      if (r === true) {
+        ok = true;
+      } else if (typeof r === "number") {
+        ok = r > 0;
+        if (!ok) detail = "买不起或条件不满足（引擎返回 0）";
+      } else if (r !== null && typeof r === "object") {
+        ok = r.ok === true;
+        detail = r.reason ?? null;
+      }
     } catch (err) {
       ok = false;
       detail = err?.message ?? String(err);
@@ -451,21 +465,172 @@ export const NEKO_MANIFEST = Object.freeze({
 });
 
 /**
+ * **关键日志**的白名单（`t/kind/text` 之后只留命中这些词的条目）。
+ *
+ * 口径（用户 2026 裁定：「只关注系统解锁和关键的转生层提示」）：
+ *   · **系统解锁**：`解锁` / `已开启` / `首次`
+ *   · **转生层**：`大坍缩` / `打破无限` / `永恒` / `里程碑` / `成就` / `相变` / `七巧板` / `时空`
+ *   · 其余（购买流水、日常量子涨落）一律不进快照 —— 实测日志占总快照 74%，而其中
+ *     95% 是重复的「⬆某升级→N 级」流水；把它们塞给宿主既无信息量又占带宽。
+ * ⚠️ 用**文本**而不是 `kind` 做判据：`⚛ 量子涨落已解锁` 的 kind 是 `quantum`，
+ *   但内容是"解锁"，属于该留的；只看 kind 会把它和日常量子噪声一起丢掉。
+ */
+const NEKO_KEY_LOG_RE = /解锁|已开启|首次|大坍缩|打破无限|永恒|里程碑|成就|相变|七巧板|时空|崩溃|重置/;
+
+/**
+ * 从 `state.log` 里取**最近的关键日志**（新的在前扫，最后按时间正序返回）。
+ *
+ * @param {object} state
+ * @param {{limit?:number}} [opts] 最多返回多少条（默认 12）
+ * @returns {Array<{t:number,kind:string,text:string}>}
+ */
+export function nekoKeyLogEntries(state, { limit = 12 } = {}) {
+  const log = Array.isArray(state?.log) ? state.log : [];
+  const out = [];
+  for (let i = log.length - 1; i >= 0 && out.length < limit; i -= 1) {
+    const entry = nekoLogEntry(log[i]);
+    // ★ 购买类**无条件丢弃** —— 「💭 首次购买…」会命中白名单里的 `首次`，
+    //   但它属于流水而非"系统解锁"，只看文本会漏进来（实测抓到 3 条）。
+    if (entry.kind === "buy") continue;
+    if (!NEKO_KEY_LOG_RE.test(entry.text)) continue;
+    out.push({ t: entry.t, kind: entry.kind, text: entry.text });
+  }
+  return out.reverse();
+}
+
+/**
  * 把 `nekoSnapshot()` 投影成**契约允许**的形状。
  *
- * 两处必要修剪（都是"契约 vs 语义"的取舍）：
+ * 三处必要修剪（都是"契约 vs 语义"的取舍）：
  *   ① `rates` / `multipliers` 为 `null` 时**整个字段省略** —— 契约子集没有 `anyOf`，
  *      而它们**不该被编成 0**（0 是"真的没产出"的意思）；
- *   ② `log[].data` 不发给宿主 —— 它可能含任意结构（引擎内部字段），
+ *   ② `log` 只保留**系统解锁 + 转生层**（见 `nekoKeyLogEntries`），
+ *      且最多 12 条 —— 实测这能把日志从 1,329 字符压到 ~200；
+ *   ③ `log[].data` 不发给宿主 —— 它可能含任意结构（引擎内部字段），
  *      契约里只声明 `t/kind/text`，砍掉比放宽校验更安全。
  */
 export function nekoSnapshotForHost(state, nowMs = Date.now()) {
   const snap = nekoSnapshot(state, nowMs);
   if (snap.rates == null) delete snap.rates;
   if (snap.multipliers == null) delete snap.multipliers;
-  snap.log = snap.log.map((e) => ({ t: e.t, kind: e.kind, text: e.text }));
+  snap.log = nekoKeyLogEntries(state, { limit: 12 });
   return snap;
 }
+
+// ══════════════════════════════════════════════════════════
+// 主动问话：上下文构造 + 触发点
+// ══════════════════════════════════════════════════════════
+
+/** 数值归一化：Decimal / number / 字符串都转成 number（非有限值 → 0）。 */
+const nekoNum = (v) => {
+  const n = v && typeof v.toNumber === "function" ? v.toNumber() : Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
+
+/** 紧凑数字：3 位有效数字 + 科学计数法（`1.23e5`）。 */
+function nekoFmt(v) {
+  const n = nekoNum(v);
+  if (n === 0) return "0";
+  const a = Math.abs(n);
+  if (Number.isInteger(n) && a < 1000) return String(n);   // 计数/等级别写成 2.00
+  if (a >= 1e6 || a < 1e-2) return n.toExponential(2).replace("e+", "e");
+  if (a >= 1000) return Math.round(n).toString();
+  if (a >= 100) return n.toFixed(0);
+  return n.toFixed(2);
+}
+
+/**
+ * 构造**一次问话**用的紧凑上下文（默认 ≤ 600 字符）。
+ *
+ * ⚠️ 与 `nekoSnapshotForHost()` 的分工：
+ *   · 快照 = "她随时能读到的状态"（每 5 秒发布，字段受 manifest 契约约束）；
+ *   · 本函数 = "这次问话需要的最小信息"（一次性塞进 prompt，**不计入**状态契约）。
+ *   所以这里可以自由裁剪、换行、加解释，不受契约限制 ✓
+ *
+ * @param {object} state
+ * @param {{sinceT?:number, maxChars?:number}} [opts]
+ *   `sinceT`：只叙述这个时间戳之后的**关键日志**（通常是上次问话时间）。
+ * @returns {string}
+ */
+export function buildAssistContext(state, { sinceT = 0, maxChars = 600 } = {}) {
+  const lines = [];
+
+  // ── 阶段 ──
+  const stage = [];
+  if (state?.brokenInfinity === true) stage.push("已打破无限");
+  const crunches = nekoNum(state?.bigCrunchCount);
+  if (crunches > 0) stage.push(`大坍缩#${crunches}`);
+  const eternities = nekoNum(state?.eternityCount);
+  if (eternities > 0) stage.push(`永恒#${eternities}`);
+  if (eternities >= 8) stage.push("七巧板已解锁");
+  lines.push(`[阶段] ${stage.join(" · ") || "开局"}`);
+
+  // ── 资源（只列非零）──
+  const res = state?.resources ?? {};
+  const resourcePairs = [
+    ["熵", res.entropy], ["粒子", res.particle], ["物质", res.matter],
+    ["ZPE", state?.zpe], ["暗能量", state?.darkEnergy], ["量子", state?.quantum],
+    ["无限点", state?.infinityPoints], ["永恒点", state?.eternityPoints],
+    ["梦想点", state?.dreamPoints],
+  ].filter(([, v]) => nekoNum(v) > 0).map(([k, v]) => `${k} ${nekoFmt(v)}`);
+  if (resourcePairs.length) lines.push(`[资源] ${resourcePairs.join(" | ")}`);
+
+  // ── 速率（由 main.js 注入；没有就不写）──
+  const rates = state?.__nekoRates;
+  if (rates && typeof rates === "object") {
+    const ratePairs = [["熵", rates.entropy], ["粒子", rates.particle], ["物质", rates.matter]]
+      .filter(([, v]) => nekoNum(v) > 0).map(([k, v]) => `${k} +${nekoFmt(v)}/s`);
+    if (ratePairs.length) lines.push(`[速率] ${ratePairs.join(" | ")}`);
+  }
+
+  // ── 进度 ──
+  const progress = [];
+  const pairs = nekoNum(state?.quantumPairs);
+  if (pairs > 0) progress.push(`量子对 ${nekoFmt(pairs)}`);
+  if (state?.zpeEngineUnlocked === true) progress.push(`引擎 Lv${nekoFmt(state?.zpeEngineLevel)}`);
+  const tiers = Array.isArray(state?.__nekoTierMilestones) ? state.__nekoTierMilestones.length : 0;
+  if (tiers > 0) progress.push(`档位里程碑 ${tiers}`);
+  if (progress.length) lines.push(`[进度] ${progress.join(" · ")}`);
+
+  // ── 关键日志（只取 sinceT 之后、最多 5 条、每条 50 字）──
+  const logs = nekoKeyLogEntries(state, { limit: 12 })
+    .filter((e) => e.t > sinceT)
+    .slice(-5);
+  if (logs.length) {
+    lines.push(`[最近] ${logs.map((e) => e.text.slice(0, 50)).join("｜")}`);
+  }
+
+  let text = lines.join("\n");
+  if (text.length > maxChars) text = text.slice(0, maxChars);
+  return text;
+}
+
+/**
+ * **主动问话的触发点**（用户 2026 裁定：「一些关键的重置节点……前几次的转生层」）。
+ *
+ * 每条只在**首次达成**时触发一次（`asked` 集合去重）。`match` 一律用"≥"而不是"=="，
+ * 因为掉帧/读档可能跳过某个精确值。
+ */
+const NEKO_ASK_POINTS = Object.freeze([
+  { id: "broken-infinity", label: "第一次打破无限", match: (s) => s?.brokenInfinity === true },
+  { id: "crunch-1", label: "第 1 次大坍缩", match: (s) => nekoNum(s?.bigCrunchCount) >= 1 },
+  { id: "crunch-2", label: "第 2 次大坍缩", match: (s) => nekoNum(s?.bigCrunchCount) >= 2 },
+  { id: "crunch-3", label: "第 3 次大坍缩", match: (s) => nekoNum(s?.bigCrunchCount) >= 3 },
+  { id: "eternity-1", label: "第 1 次永恒", match: (s) => nekoNum(s?.eternityCount) >= 1 },
+  { id: "tangram-unlock", label: "七巧板解锁", match: (s) => nekoNum(s?.eternityCount) >= 8 },
+]);
+
+/** 问话的系统提示：台词 + 一行 control JSON。 */
+const NEKO_ASK_SYSTEM_PROMPT = [
+  "你在陪主人玩放置小游戏「空想增量」，下面会给你当前局面。",
+  "只输出两行：",
+  "第一行：一句不超过 20 字的中文台词（自然、像在陪玩，不要复述数字）。",
+  '第二行：控制指令 JSON，格式 {"action":{"type":"<动作>","id":"<id>","max":true}}。',
+  "可用动作：buyRepeatable（id 如 particleBoost/matterBoost/entropyCoeff）、",
+  "buyVoidUpgrade、buyDeUpgrade、buyInfinityUpgrade、doBigCrunch、doEternity。",
+  "**不需要操作时只输出第一行**，不要编造 id。",
+  "数字里的 e 是科学计数法（1.2e5 = 120000）。不要代码块、不要解释。",
+].join("\n");
 
 /**
  * 造一个**宿主桥**。没有宿主时全部方法都是安全的 no-op。
@@ -476,7 +641,9 @@ export function nekoSnapshotForHost(state, nowMs = Date.now()) {
  * @returns 桥对象（`available` 为 false 时方法仍可安全调用 ✓）
  */
 export function createNekoBridge({ getState, onStatus, actionApi } = {}) {
-  const status = { available: false, connected: false, capabilities: [], declared: null, lastError: null };
+  const status = { available: false, connected: false, capabilities: [], declared: null, lastError: null, lastAsk: null };
+  // 主动问话的节流状态（每座桥独立；读档时"已达成点"会在首帧被预标记）
+  const askState = { asked: new Set(), primed: false, lastAt: 0, count: 0, failedUntil: 0, sinceT: 0 };
   const report = (phase, detail) => {
     status.lastError = phase === "error" ? (detail?.message ?? String(detail)) : status.lastError;
     try { onStatus?.(phase, detail); } catch { /* UI 回调不该影响游戏 */ }
@@ -515,6 +682,16 @@ export function createNekoBridge({ getState, onStatus, actionApi } = {}) {
       const sent = client?.events?.emit?.("control-result", receipt);
       if (sent && typeof sent.catch === "function") sent.catch(() => {});
     } catch { /* 回执只是通知，失败不影响已生效的指令 */ }
+
+    // ★ 端到端调试出口（不参与业务）：最后一条 control 与它的执行结果。
+    //   用途：本地用真模型验证「她代操作」整条链时，外部只能看到 status，
+    //   看不到 handler 内部的执行结果 —— 这里给它一个只读出口。
+    status.lastControl = {
+      type,
+      payload: { id: payload?.id, max: payload?.max === true },
+      result,
+      at: Date.now(),
+    };
 
     try { bridge.publishSnapshot(); } catch { /* 同上 */ }
     return result;
@@ -593,6 +770,23 @@ export function createNekoBridge({ getState, onStatus, actionApi } = {}) {
 
         report("connected", { host: client?.host ?? null });
 
+        // ★★ 必须先 configure，否则 outputs 永不轮询 ⇒ `controls.on()` 收不到任何东西。
+        //    依据：SDK 里 `runtimeConfig` 初值是 null，`startRuntimeMonitoring()`
+        //    开头就是 `if (disposed || !runtimeConfig) return;`（neko-minigame-sdk.js L3097）。
+        //    对照：air_basketball 的 `configureGameRuntime()` 也是 configure → start 的顺序。
+        //    heartbeat 2.5s / outputs 700ms 与官方示例同量级。
+        if (typeof client?.runtime?.configure === "function") {
+          try {
+            client.runtime.configure({
+              payload: () => ({ schema: NEKO_SNAPSHOT_SCHEMA }),
+              heartbeat: { intervalMs: 2500, timeoutMs: 4500 },
+              outputs: { intervalMs: 700, timeoutMs: 8000, limit: 50 },
+            });
+          } catch (err) {
+            report("runtime-configure-failed", err);
+          }
+        }
+
         if (typeof client?.runtime?.start === "function") {
           Promise.resolve(client.runtime.start({ schema: NEKO_SNAPSHOT_SCHEMA }))
             .catch((err) => report("runtime-start-failed", err));
@@ -625,6 +819,59 @@ export function createNekoBridge({ getState, onStatus, actionApi } = {}) {
         report("error", err);
         return null;
       }
+    },
+
+    /**
+     * 到**关键重置节点**时主动问她一次（带紧凑上下文，≤600 字符）。
+     *
+     * 触发点见 `NEKO_ASK_POINTS`（首次打破无限 / 第 1–3 次大坍缩 / 首次永恒 / 七巧板解锁）。
+     * 节流：同一局最多 6 次、两次间隔 ≥120 秒、失败后 30 分钟内不重试。
+     * ⚠️ 首帧会把"读档时**已经达成**的点"全部预标记 —— 否则一进游戏就会补问
+     *   "恭喜你第一次大坍缩"（其实那是上一次存档里发生的）✗
+     *
+     * @returns {boolean} 本次是否真的发起了问话
+     */
+    maybeAskReset(stateLike) {
+      const state = stateLike ?? getState?.() ?? {};
+      if (!status.connected) return false;
+      const client = bridge.__client;
+      if (!client?.capabilities?.has?.("dialogue")) return false;
+
+      const now = Date.now();
+      if (now < askState.failedUntil) return false;
+
+      if (!askState.primed) {
+        for (const point of NEKO_ASK_POINTS) if (point.match(state)) askState.asked.add(point.id);
+        askState.primed = true;
+        return false;
+      }
+
+      if (now - askState.lastAt < 120_000) return false;
+      if (askState.count >= 6) return false;
+
+      const point = NEKO_ASK_POINTS.find((p) => !askState.asked.has(p.id) && p.match(state));
+      if (!point) return false;
+
+      askState.asked.add(point.id);
+      askState.lastAt = now;
+      askState.count += 1;
+
+      const context = buildAssistContext(state, { sinceT: askState.sinceT });
+      askState.sinceT = now;
+      status.lastAsk = { point: point.id, label: point.label, at: now, chars: context.length, context };
+
+      const prompt = {
+        mode: "author-managed",
+        messages: [
+          { role: "system", content: NEKO_ASK_SYSTEM_PROMPT },
+          { role: "user", content: `${context}\n\n现在到了「${point.label}」。` },
+        ],
+      };
+      // 失败就冷却 30 分钟：不刷屏、也不把"模型不可用"当成每 5 秒一次的重试
+      Promise.resolve(bridge.requestAssist(prompt)).then((result) => {
+        if (!result) askState.failedUntil = Date.now() + 30 * 60_000;
+      }).catch(() => { askState.failedUntil = Date.now() + 30 * 60_000; });
+      return true;
     },
 
     /** 当前能力（只读；没有宿主时为空） */

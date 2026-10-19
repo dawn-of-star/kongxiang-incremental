@@ -36,7 +36,7 @@ import { hasCollapse, transmuterIpMult,
   //     唯一入口 `darkMatterAdditiveTerm()`（未解锁 ⇒ 恰好 0 ⇒ 零回归 ✓）
   darkMatterAdditiveTerm,
   // ★★★ 2026：`em4`「优化暗能量获取公式」的唯一入口（1.10 → 1.12，见 config.js 的说明）
-  deGainBaseEffectMult } from "./config.js";
+  deGainBaseEffectMult, DE_EFF_CAP } from "./config.js";
 import { deLevelOf, hasDe, hasV9, hasVoid, hasZpe, levelOf } from "./state.js";
 
 const D = (v) => new Decimal(v ?? 0);
@@ -799,7 +799,11 @@ export function effectiveDarkEnergyGain(state) {
   // ★ 2026：挑战奖励的 `deKneeMult`（d3~d6 清满）⇒ 暗能量收益抬升 ✓
   //   ⚠️ 它只是"乘一个数"（不改曲线形状 ⇒ 不动 p）✓
   const _deKnee = tangramRewardEffects(state?.tangramCleared).deKneeMult ?? 1;
-  return (g) * _deKnee;
+  // ★ 2026：**软上限**（DE_EFF_CAP）必须作用在"收益"上，否则自增长仍是指数 ✗
+  const _dlg = (state?.darkEnergy ?? new Decimal(0)).lte(0) ? 0 : state.darkEnergy.log10().toNumber();
+  const _cap = DE_EFF_CAP;
+  const deCapDecay = _dlg <= _cap.kneeLog10 ? 1 : Math.pow(2, -(_dlg - _cap.kneeLog10) / _cap.span);
+  return ((g) * _deKnee) * deCapDecay;
 }
 
 /**

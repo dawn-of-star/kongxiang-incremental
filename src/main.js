@@ -414,6 +414,10 @@ function frame(nowMs) {
         state.__nekoTierMilestones = tierMilestonesDone(state).map((m) => m.id ?? m.at);
         nekoBridge.publishSnapshot();
       } catch { /* 快照失败不影响游戏 */ }
+      // ★ 关键重置节点（第 1–3 次大坍缩 / 首次永恒 / 七巧板解锁 / 首次打破无限）
+      //   到点时**主动**问她一次（自带 ≤600 字符的紧凑上下文 + 冷却）。
+      //   放在快照同一拍里：只在有宿主时才可能触发，且天然 5 秒一次的检查频率足够。
+      try { nekoBridge.maybeAskReset(state); } catch { /* 问话失败不影响游戏 */ }
     }
   }
 

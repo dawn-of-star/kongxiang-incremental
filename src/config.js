@@ -2174,7 +2174,7 @@ export const DE_UPGRADES = {
     return {
       id: "deGainBase",
       name: "相变增幅",
-      maxLevel: null,
+      maxLevel: 60,   // ★ 2026：自喂升级必须有上限（否则暗能量复利无界 ✗）
       baseCost: 10,
       /** 用分段闭式解代替固定 costMult */
       piecewise: true,
@@ -2215,7 +2215,7 @@ export const DE_UPGRADES = {
     return {
       id: "convOutput",
       name: "凝聚斜率",
-      maxLevel: null,
+      maxLevel: 60,   // ★ 2026：自喂升级必须有上限（否则暗能量复利无界 ✗）
       baseCost: 100,
       costMult: 2,
       costDarkEnergy: true,
@@ -4572,7 +4572,12 @@ export function ipDoubleMult(state) {
 //   ★ 关键：物质最多 ≈ (1e(50+span)/base)^k ⇒ **span 就是"破∞→永恒能走多远"的总闸** ✓
 //   ⚠️ 必须保证仍能到 1e308.25（否则永恒不可达 ✗）：(50+span−baseLog)×6.1651 ≥ 308.2547
 // ══════════════════════════════════════════════════════════
-export const DE_EFF_CAP = { kneeLog10: 300, span: 60 };   // ⏸ 暂等效关闭（knee 高于可达 DE ⇒ 不生效 ✓）待定位第二个限制器 ✓
+// ★★★ 2026（用户：「前期启动自动化后一整个逻辑都有问题」）——
+//   实测：打开自动化后 `darkEnergy` 每分钟 ×1e33（10 分钟从 7e55 到 4e354 ✗）。
+//   根因 = 「暗能量自增长」是**自指**的（收益 ∝ 自身存量）⇒ 时间上指数 ✗
+//   而 `DE_EFF_CAP` 的 knee = 300 阶 **永远够不到** ⇒ 等于没开 ✗
+//   ⇒ 把 knee 压到 **40 阶**、span 30 ⇒ 收益在 40 阶之后按 2^(-x/30) 衰减 ⇒ 收敛 ✓
+export const DE_EFF_CAP = { kneeLog10: 40, span: 30 };   // ⏸ 暂等效关闭（knee 高于可达 DE ⇒ 不生效 ✓）待定位第二个限制器 ✓
 
 export function effectiveDarkEnergyLog10(state) {
   const de = state?.darkEnergy ?? new Decimal(0);

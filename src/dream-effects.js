@@ -37,6 +37,10 @@ export function autoEnabled(state, id) {
  */
 export function dreamAutoBuyTick(state, buy) {
   const out = { ipDouble: 0, zpeEngine: 0 };
+  // ★★★ 2026：**节流 250ms**（AD 的 autobuyer 有间隔）——否则每帧买 1 级也太快 ✗
+  const now = Number(state?.playTimeMs ?? 0) || 0;
+  if (now - (Number(state?._lastDreamAutoAt) || 0) < 250) return out;
+  state._lastDreamAutoAt = now;
   if (autoEnabled(state, "autoIpDouble")) out.ipDouble = buy.buyIpDouble(state) ?? 0;
   if (autoEnabled(state, "autoZpeEngine")) out.zpeEngine = buy.buyZpeEngine(state) ?? 0;
   return out;

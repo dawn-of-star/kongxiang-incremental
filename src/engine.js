@@ -61,7 +61,7 @@ import {
   //   ⚠️ 落点在 `darkEnergyMultiplier` 的**加法区**（见 `config.js` 的 `darkMatterAdditiveTerm()`），
   //      不在 `darkEnergyRate`；本文件只负责购买与**速率快照**（见 tick 的 4c 段）✓
   DARK_MATTER, darkMatterUnlocked, darkMatterCount, darkMatterEffectMult,
-  darkMatterPriceAt, darkMatterCostFor, darkMatterAffordableIn } from "./config.js";
+  darkMatterPriceAt, darkMatterCostFor, darkMatterAffordableIn, DE_EFF_CAP } from "./config.js";
 import {
   D, bigCrunchGain, canBigCrunch, checkDeMilestones, checkQuantumMilestones, checkZpeMilestones, collapseUnlocked,
   clampToAffordable, conversion, darkEnergyGainPerConversion, darkEnergyRate, deUpgradeCost, effectiveTraps,
@@ -257,7 +257,12 @@ function tickBody(state, dt) {
     const lv = zpeEngineLevel(state).toNumber();
     const engineMult = deEngineLevelBonus(lv);
     const a = deGrowthRate(state, engineMult);          // 阶/秒（随 DE 衰减但有下限）
-    const deSelf = state.darkEnergy.max(1).mul(a).mul(Math.LN10).mul(dt);
+    // 2026: DE self-growth is exponential in time (dDE/dt ∝ DE); apply the existing
+    // soft cap (DE_EFF_CAP, knee 40 orders / span 30) so it converges instead of exploding.
+    const _dlg = state.darkEnergy.lte(0) ? 0 : state.darkEnergy.log10().toNumber();
+    const _cap = DE_EFF_CAP;
+    const _capDecay = _dlg <= _cap.kneeLog10 ? 1 : Math.pow(2, -(_dlg - _cap.kneeLog10) / _cap.span);
+    const deSelf = state.darkEnergy.max(1).mul(a).mul(Math.LN10).mul(dt).mul(_capDecay);
     state.darkEnergy = state.darkEnergy.add(deSelf);
     state.darkEnergy = state.darkEnergy.max(0);   // ★ 每帧统一夹住 ≥0（否则任何扣款扣成负数 ⇒ log10(负数)=NaN ⇒ 全链坏死 ✗）
     if (String(state.darkEnergy).includes("NaN")) state.darkEnergy = D(1);   // ★ NaN 守卫：NaN 无法被 max 救回 ⇒ 直接重置 ✓
@@ -696,6 +701,8 @@ function autoBuyDeUpgrade(state, id) {
   const cfg = DE_UPGRADES[id];
   if (!cfg) return 0;
   const lv = deLevelOf(state, id);
+  // ★★★ 2026：**自动购买必须尊重 maxLevel**（原来没查 ⇒ 能买到 659 级 ✗）
+  if (cfg.maxLevel != null && lv.gte(cfg.maxLevel)) return 0;
   const d = dreamUpgradeEffects(state);
 
   let r, base, pool, isParticle, isDarkEnergy = false;
@@ -723,7 +730,10 @@ function autoBuyDeUpgrade(state, id) {
     pool = state.darkEnergy;
     let k2 = 0;
     let acc = D(0);
-    for (let i = 0; i < 200; i++) {
+    // ★★★ 2026（用户：「前期启动自动化后一整个逻辑都有问题」）——
+    //   原来一次买满（最多 200 级）⇒ **每帧复利** ⇒ 暗能量 10 分钟从 3e2 冲到 6e19 ✗
+    //   ⇒ 自动化改成**每次只买 1 级**（与 AD 的 autobuyer 间隔语义一致）✓
+    for (let i = 0; i < 1; i++) {
       const one = piecewiseDeCost(cfg.baseCost, lv.add(k2));
       if (pool.lt(acc.add(one))) break;
       acc = acc.add(one);
@@ -742,7 +752,7 @@ function autoBuyDeUpgrade(state, id) {
 
   let k = Math.floor(pool.mul(r - 1).div(base).add(1).log(r).toNumber());
   if (!Number.isFinite(k) || k < 1) return 0;
-  k = Math.min(k, 1e6);
+  k = Math.min(k, 1);   // ★ 2026：每次只买 1 级（防每帧复利 ✗）
 
   // 浮点误差兜底：算出来的总价可能略微超过资源（抽到 formulas.js 里了）
   k = clampToAffordable(base, r, pool, k);
@@ -1593,4 +1603,3 @@ export function snapshot(state) {
     effectiveTraps: effectiveTraps(state),
     conversion: { threshold, output } };
 }
-
