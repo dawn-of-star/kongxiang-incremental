@@ -142,6 +142,9 @@ export function renderDreamPage(state) {
     if (box.dataset.visibleSig !== sig) {
       box.dataset.visibleSig = sig;
       box.dataset.arranged = "0";
+      // ★★★ 2026（用户截图：分组标题与开关**重复出现**）—— rrangeDreamPage 是**追加**的 ✗
+      //   ⇒ 重排前必须先**清空容器**（否则每重排一次就多一整套 ✗）
+      try { box.innerHTML = ""; } catch { /* 忽略 */ }
       try { arrangeDreamPage(state); } catch { /* 忽略 */ }
       if (box.dataset.arranged === "0") box.dataset.arranged = "1";
     }
