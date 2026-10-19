@@ -64,6 +64,13 @@ export function paintAutoCrunchUI(state, commit) {
   let box = document.getElementById("tg-ac-rule");
   // ★★★ 2026（用户：「刚才的没有生效」）—— 面板是"只建一次"的 ⇒ 旧版留下的 DOM 不会自动带上
   //   新元素（比如 #tg-ac-hint）✗ ⇒ 检测到结构缺件就**重建**一次 ✓
+  // ★★★ 2026（用户：「嗯……」—— 还是竖排）—— 面板是"只建一次"的 ⇒ 旧 DOM 一直沿用 ✗
+  //   ⇒ 用**版本号**强制重建：样式/结构改了就 bump 这个常量 ✓
+  const PANEL_VER = "3";
+  if (box && box.dataset.ver !== PANEL_VER) {
+    if (typeof box.remove === "function") box.remove(); else box.parentNode?.removeChild?.(box);
+    box = null;
+  }
   if (box && (!document.getElementById("tg-ac-hint") || !box.querySelector("[data-acmode]"))) {
     // ⚠️ stub DOM 可能没有 remove() ⇒ 两种写法都兜住 ✓
     if (typeof box.remove === "function") box.remove();
@@ -73,6 +80,7 @@ export function paintAutoCrunchUI(state, commit) {
   if (!box) {
     box = document.createElement("div");
     box.id = "tg-ac-rule";
+    box.dataset.ver = "3";
         box.innerHTML = [
       '<span class="ac-lab">规则</span>',
       '<span class="ac-row">',
