@@ -31,6 +31,26 @@ const GROUPS = [
 ];
 
 /** 只排一次（构建完成后调用）✓ */
+/**
+ * ★★★ 2026（用户：「照原稿的解锁顺序，没解锁的直接不显示」）——
+ *   阶段判定（**只读 state，不写**）：
+ *     `de`            ⇒ 暗能量层已解锁（有里程碑/暗能量 > 0）
+ *     `breakInfinity` ⇒ 破过无限
+ *     `eternity`      ⇒ 至少永恒 1 次
+ *     `always`        ⇒ 一直可见
+ */
+export function isDreamUnlocked(state, d) {
+  const when = d?.unlockWhen ?? "always";
+  if (when === "always") return true;
+  if (when === "de") {
+    return (state?.darkEnergy ?? 0) > 0 || state?.phaseTransmuterUnlocked === true
+      || Object.values(state?.deMilestones ?? {}).some(Boolean);
+  }
+  if (when === "breakInfinity") return state?.brokenInfinity === true || (state?.infinityCount ?? 0) >= 1;
+  if (when === "eternity") return (state?.eternityCount ?? 0) >= 1;
+  return true;
+}
+
 let stateRef = null;      // 由 renderDreamPage 每帧更新（arrange 在构建期没有 state ✓）
 
 export function arrangeDreamPage(state) {
@@ -50,7 +70,8 @@ export function arrangeDreamPage(state) {
   const frag = document.createElement("div");
   const used = new Set();
   for (const g of GROUPS) {
-    const items = DREAM_UPGRADES.filter((d) => !used.has(d.id) && g.pick(d) && cards.has(d.id));
+    // ★ 2026：未解锁的**直接不显示**（AD 的自动页面形态 ✓）
+  const items = DREAM_UPGRADES.filter((d) => !used.has(d.id) && g.pick(d) && cards.has(d.id) && isDreamUnlocked(state, d));
     if (!items.length) continue;
     for (const d of items) used.add(d.id);
 

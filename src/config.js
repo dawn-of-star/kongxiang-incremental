@@ -2278,6 +2278,8 @@ export function deGainBaseEffectMult(state) {
  */
 export const DREAM_UPGRADES = [
   {
+    // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
+    unlockWhen: "de",
     id: "autoPhase",
     name: "相变自动化",
     cost: 1,
@@ -2285,6 +2287,8 @@ export const DREAM_UPGRADES = [
     desc: "自动购买「高效相变」",
     effect: { kind: "autoBuy", deUpgrade: "phaseShift" } },
   {
+    // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
+    unlockWhen: "de",
     id: "autoVacuum",
     name: "加速自动化",
     cost: 1,
@@ -2294,6 +2298,8 @@ export const DREAM_UPGRADES = [
   // ★ 新增两条：覆盖前面的暗能量升级 4（相变增幅）和 5（凝聚斜率）。
   //   用户要求：梦想点经济要覆盖全部五条暗能量升级。
   {
+    // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
+    unlockWhen: "de",
     id: "autoDeGainBase",
     name: "增幅自动化",
     cost: 1,
@@ -2301,6 +2307,8 @@ export const DREAM_UPGRADES = [
     desc: "自动购买「相变增幅」",
     effect: { kind: "autoBuy", deUpgrade: "deGainBase" } },
   {
+    // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
+    unlockWhen: "de",
     id: "autoConvOutput",
     name: "斜率自动化",
     cost: 1,
@@ -2323,6 +2331,8 @@ export const DREAM_UPGRADES = [
   //       第 1 级 2 梦想点，之后每级 ×2 ⇒ 2 / 4 / 8 / … / 4096（12 级合计 8190）
   //     梦想点收入在后期是充裕的，但 8190 是个真实门槛 ⇒ 这是长期目标 ✓
   {
+    // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
+    unlockWhen: "always",
     id: "offlineCap",
     name: "离线时长扩展",
     cost: 2,                 // 第 1 级价格（梦想点）
@@ -2344,6 +2354,8 @@ export const DREAM_UPGRADES = [
     effect: { kind: "autoInfinities" },
   },
   {
+    // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
+    unlockWhen: "breakInfinity",
     id: "autoIpDouble",
     group: "emauto",
     name: "倍增自动化",
@@ -2360,6 +2372,8 @@ export const DREAM_UPGRADES = [
     effect: { kind: "autoBuy", target: "zpeEngine" },
   },
   {
+    // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
+    unlockWhen: "eternity",
     id: "keepDeEternity",
     group: "emauto",
     name: "暗能量永存",
@@ -2368,6 +2382,8 @@ export const DREAM_UPGRADES = [
     effect: { kind: "keep", target: "darkEnergy" },
   },
   {
+    // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
+    unlockWhen: "eternity",
     id: "engineAtStart",
     group: "emauto",
     name: "开局引擎",
@@ -2376,6 +2392,8 @@ export const DREAM_UPGRADES = [
     effect: { kind: "keep", target: "zpeEngineStart" },
   },
   {
+    // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
+    unlockWhen: "eternity",
     id: "keepVoidEternity",
     group: "emauto",
     name: "虚空永存",
