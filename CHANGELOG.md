@@ -7,6 +7,27 @@
 
 ---
 
+### ★ 修复：物质「显示 == 实发」但实际不相等（显示用的是瞬时值）
+
+**症状**：界面 `物质 +X/s` 与物质实际增长对不上；高速凝聚时偏差可达几个数量级。
+
+**根因**：
+- 界面原来调 `matterRate(state) = 粒子 × 系数`，这是 **dt→0 的瞬时速率**。
+- 引擎一步实际是闭式解 `ΔM = k·(P0·dt + c·dt²/2)`（本步内新生的粒子也会产物质）。
+- 两者相差 `1 + c·dt/(2P0)`；当粒子每秒被替换几十万次时，这个二阶项会反超一阶项。
+
+**修复**：
+- 新增 `matterGainOver(state, dt)`（`formulas/matter.js`）：引擎与显示侧**共用**的唯一步进函数。
+- `tick` 的 ①② 阶段改为只写回 `matterGainOver` 的结果，并把 `step.rate` 记到
+  `lastMatterRate`；界面直接显示 `lastMatterRatePerSecond()` —— **刚刚实际执行那一步**的速率。
+- `consistency.mjs` 的物质检查用 `dt=0.05` 对照公式，并新增
+  “UI 的 `lastMatterRatePerSecond()` 与本次 `ΔM/dt` **逐字相等**”断言。
+- `matterRate` 保留为瞬时值（过载判据等内部用途），文档明确“不要拿它当界面速率”。
+
+**验证**：`npm test` 49/49；`consistency` 8/8，物质 UI 显示与实测逐字相等。
+
+---
+
 ### ★ 修复：离线结算时 `darkEnergy` / `zpe` 变成 ∞（根因 = Decimal 被 JS 的 `*` 转成 Number）
 
 **症状**（用户控制台）：

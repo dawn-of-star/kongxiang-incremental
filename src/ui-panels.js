@@ -8,14 +8,20 @@
  */
 
 import { BASE, DE_MILESTONES, DE_UPGRADES, ETERNITY, MATTER_B_KMAX, MATTER_B_KNEE, PAGE_KEYS, REPEATABLE, TIER_MILESTONES, VOID_UPGRADES, ZPE_ENGINE, ZPE_MILESTONES, dreamUpgradeEffects, effectiveEngineLevel, engineBonusMult, eternityPointGain, markPageUnlocked, matterTotalExponent, pageUnlocked, qOf, quantumZpeMultBonus, tierMilestonesDone, zpeEngineAddBonus, zpeEngineCost, zpeEngineCountFreqUnlocked, zpeEngineLevel, zpeEngineMultBonus, zpeEngineProdMult, zpeEngineStepMult, zpeEngineUnlocked } from "./config.js";
-import { affordableCount, zpeEngineAffordable } from "./engine.js";
-import { D, conversion, darkEnergyMultiplier, darkEnergyRate, deUpgradeCost, effectiveTraps, entropyRate, globalMultiplierParts, isAutoAcquire, matterRate, particleRate, repeatableCost, trapCost, voidUpgradeCost, zpeBaseMultiplier, zpeMultiplier, zpeProductionPenalty, zpeRate } from "./formulas.js";
+import { affordableCount, lastMatterRatePerSecond, zpeEngineAffordable } from "./engine.js";
+import { D, conversion, darkEnergyMultiplier, darkEnergyRate, deUpgradeCost, effectiveTraps, entropyRate, globalMultiplierParts, isAutoAcquire, particleRate, repeatableCost, trapCost, voidUpgradeCost, zpeBaseMultiplier, zpeMultiplier, zpeProductionPenalty, zpeRate } from "./formulas.js";
 import { deLevelOf, levelOf } from "./state.js";
 import { $, effectText, el, escapeHtml, fmt, fmtMult, fmtTime, sci } from "./ui-core.js";
 import { renderEternityMilestones, renderEternityUpgrades } from "./ui-eternity.js";
 import Decimal from "../dist/break_eternity.esm.js";
 
 let lastLogSig = "";
+
+/**
+ * 界面物质速率：**直接显示引擎上一步实际发出的速率**（`lastMatterRate`）。
+ * ⇒ 显示与实发是字面意义上的同一个数，不存在"预测下一步"的偏差。
+ */
+const displayMatterRate = () => lastMatterRatePerSecond();
 
 export function renderPageUnlockSelfHeal(state) {
   // ══════════════════════════════════════════════════════════
@@ -53,7 +59,7 @@ export function renderResourceBars(state) {
   el["val-de"].textContent = fmt(state.darkEnergy);
 
   el["rate-particle"].textContent = `+${fmt(particleRate(state))}/s`;
-  el["rate-matter"].textContent = `+${fmt(matterRate(state))}/s`;
+  el["rate-matter"].textContent = `+${fmt(displayMatterRate())}/s`;
   el["rate-zpe"].textContent = `+${fmt(zpeRate(state))}/s`;
   el["rate-de"].textContent = state.phaseTransmuterUnlocked
     ? `+${fmt(darkEnergyRate(state))}/s`
@@ -146,7 +152,7 @@ export function renderClickAndUpgrades(state) {
   // ── 数值明细 ──
   el["d-entropy-rate"].textContent = fmt(entropyRate(state));
   el["d-particle-rate"].textContent = fmt(particleRate(state));
-  el["d-matter-rate"].textContent = fmt(matterRate(state));
+  el["d-matter-rate"].textContent = fmt(displayMatterRate());
   el["d-zpe-rate"].textContent = fmt(zpeRate(state));
   el["d-zpe-mult"].textContent = fmtMult(zpeMultiplier(state));
   el["d-zpe-prod"].textContent = fmtMult(zpeBaseMultiplier(state));

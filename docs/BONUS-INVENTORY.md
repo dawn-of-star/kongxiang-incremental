@@ -64,16 +64,20 @@ ZPE ──▶(÷阈值 × 相变仪增益)──▶ 暗能量 ──▶(量子�
 **阈值**受：熵转粒子等级 ｜ ZPE 里程碑 m6 ｜ 暗能量里程碑 dm2 ｜ **IC 熵需求倍率** ｜ **坍缩里程碑 cm3（×0.5）** ｜ 虚空 v9
 **产出**受：熵转粒子等级（×perLevel）｜ 虚空 v5（+0.5/级）｜ DE 升级「凝聚升华」｜ **cm5 相变仪随 IP**（对数 ✓）
 
-## 3. 物质（`matterRate`，formulas.js:460）
+## 3. 物质（`matterRate` / `matterRateOver`，formulas/matter.js）
+
+> ⚠️ **2026 修正（显示 == 实发）**：`tick` 的 ①② 阶段现在只调用
+> `matterGainOver(state,dt)` 并写回，同时把 `step.rate` 记到 `lastMatterRate`；
+> 界面直接显示 `lastMatterRatePerSecond()` —— 即**刚刚实际发出的那一步**的速率。
+> 旧的 `matterRate = 粒子 × coeff` 只是 **dt→0 的瞬时值**：它不含本步内新生粒子的
+> `c·dt²/2` 贡献，高速凝聚时会严重低报（实测可差几个数量级）。
+> `matterRate` 仍保留给过载判据等内部用途，**不要**拿它当界面速率 ✗。
+> `matterRateOver(state,dt)` 是同一函数的“预测下一步”形式，供诊断/测试用。
 
 ```
-物质 = 粒子 × BASE.matterPerParticle
-     × mb（kindProduct "matterMul"：物质倍率类升级）
-     × 全局加成
-     × zf（ZPE 里程碑 m3 ⇒ 把 ZPE 倍率按 0.5 或 1.0 折算进来）
-     × v3（虚空「物质重组」×1.5 × 第5条机制）
-     × 沉潜蓄能(unspentBoostMult)        ← ∞ 升级 ①：1 + (IP/2)^1.5，封顶 1e3 ✗ 超线性！
-     × 跨度(matterSpanMult) = (DE / spanDeBase)^k，k = min(1+0.5165√q, 6.1651)
+物质/秒（界面） = lastMatterRate = matterGainOver(state, 上一步 dt).matterGain / dt
+             = k × ( P0 + c·dt/2 )
+  P0 = 本步起始粒子数；c = 本步粒子增量 / dt；k = matterCoeff(state, P0)
 ```
 
 ## 4. ZPE（`zpeRate`，formulas.js:563）

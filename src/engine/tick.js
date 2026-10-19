@@ -9,7 +9,7 @@ import { maybeAutoCrunch } from "../autocrunch.js";
 import { doBigCrunch } from "./collapse.js";
 import { BASE, COLLAPSE, DE_EFF_CAP, INFINITY_UPGRADES, crunchThreshold, deEngineLevelBonus, deGrowthRate, hasEternityMilestone, ipDoubleMult, markPageUnlocked, quantumPerPair, quantumStepMult, quantumZpeRequirement, zpeEngineLevel, zpeEngineUnlocked } from "../config.js";
 import { sci } from "../format.js";
-import { D, bigCrunchGain, checkDeMilestones, checkQuantumMilestones, checkZpeMilestones, collapseUnlocked, conversion, darkEnergyRate, entropyRate, floorDiv, matterCoeff, particleTimeBoost, zpeRate } from "../formulas.js";
+import { D, bigCrunchGain, checkDeMilestones, checkQuantumMilestones, checkZpeMilestones, collapseUnlocked, darkEnergyRate, floorDiv, matterGainOver, zpeRate } from "../formulas.js";
 import { unlockZpeEngine } from "./purchases.js";
 import { awardDream, isQuantumLogLevel, pushLog } from "../state.js";
 import { applyTangramPassiveIp } from "../tangram-passive.js";
@@ -68,6 +68,14 @@ import Decimal from "../../dist/break_eternity.esm.js";
  * @param {object} state
  * @param {number} dt  秒。调用方负责分段（见 advance）
  */
+/**
+ * ★ 2026：上一次 `tick` 实际发出的物质速率。
+ *   界面直接显示这个数 ⇒ `显示 == 实发` 是字面意义的相等，
+ *   而不是"用公式预测下一步"。
+ */
+let lastMatterRate = D(0);
+export function lastMatterRatePerSecond() { return lastMatterRate; }
+
 export function tick(state, dt) {
   if (!(dt > 0) || !Number.isFinite(dt)) return state;
 
@@ -125,76 +133,20 @@ function applyTimedIncome(state, dt) {
   }
 }
 
-/** 第 1 阶段：熵产出 → 按阈值转成粒子（返回本片起始粒子数与本片粒子增量）。 */
-function advanceEntropyToParticle(state, dt) {
-  const P0 = state.resources.particle;
-
-  // ── 1. 熵产出，然后转成粒子 ──
-  const eGain = entropyRate(state).mul(dt);
-  let entropy = state.resources.entropy.add(eGain);
-  const { threshold, output } = conversion(state);
-
-  let particleGain = D(0);
-  if (entropy.gte(threshold)) {
-    // ★ 原稿是 while (entropy >= threshold) 逐次扣减 —— 后期一 tick 转几万次会卡死。
-    //   改成除法一次算完，O(1)。
-    //   （原来这里有一个旧量子升级「余量回收」的分支，整套系统已删除。）
-    //
-    // ⚠️ 必须用 floorDiv，不能写 `entropy.div(threshold).floor()`：
-    //    Decimal 的 div 只有 ~15 位有效数字，商会被四舍五入抬到整数上，
-    //    floor 就多一格，余量变成负数（实测「余 -0.001953125」）。
-    //    见 formulas.js 的 floorDiv 注释。
-    const times = floorDiv(entropy, threshold);
-    entropy = entropy.sub(times.mul(threshold));
-    // 兜底：即使 floorDiv 后仍有极小的负余量，也不许存负数
-    if (entropy.lt(0)) entropy = D(0);
-    particleGain = times.mul(output);
-  }
-  // ★ 量子 → 粒子获得的**时变增幅**（替代 R 的那个杠杆；2025 用户方案）
-  //
-  //   `粒子获得 ×= g(t)`，`g = 10^(b·**本轮已过时间**)` —— 用户选甲：时间每轮重置，
-  //   否则堆叠会让时间失去意义（第二次大坍缩起瞬间到顶）。
-  //   ⚠️ `g` **必须随时间增长**：常数倍率只平移高度，到不了 1e308
-  //      （这正是当年 perPair=200 也跨不到顶的原因）。
-  //   ⚠️ 粒子在**环外**（`effectiveTraps` 不读粒子）⇒ 不进环，S 判据安全。
-  //   ⚠️ 与 `formulas.js` 的 `particleRate()` **必须同项**（显示 == 实发）。
-  particleGain = particleGain.mul(particleTimeBoost(state));
-  state.resources.entropy = entropy;
-  state.stats.totalEntropy = state.stats.totalEntropy.add(eGain);
-
-  return { P0, particleGain };
-}
-
-/** 第 2 阶段：粒子 & 物质（闭式解；过载/爬升已含在 matterCoeff 里）。 */
-function advanceParticleToMatter(state, dt, P0, particleGain) {
-  // ── 2. 粒子 & 物质（闭式解 + 量子的指数项）──
-  // ★★ 2025：传入**本片的粒子数** `P0` —— 过载的触发量是「未削减的速率」`P0 × coeff`，
-  //   而 `matterCoeff` 需要它才能算出这个速率（`state.resources.particle` 此刻还是旧值）。
-  const k = matterCoeff(state, P0);
-  const c = particleGain.div(dt); // 本片的等效粒子速率
-  state.resources.particle = P0.add(particleGain);
-
-  let matterGain = k.mul(P0.mul(dt).add(c.mul((dt * dt) / 2)));
-
-  // ★ 旧「量子 → 指数成长速率 R」那一项**已删除**（2025 用户决定：取消 R 机制）。
-  //
-  //   它原本是 `dM/dt += M·R·ln10`，让物质在时间里指数增长（`d(log10 M)/dt = R`）。
-  //   取消的理由：R 是**速率常数**，只能改速度、改不了形状 ⇒ 可玩性窄（见 PROGRESSION.md §0.6）。
-  //   替代：**粒子获得的时变增幅**（上面的 `particleTimeBoost`）——
-  //   同样给"时间里指数增长"，但落在**粒子线**上，而且增幅本身随里程碑与档位成长 ✓
-  // ★★ 2025：R（量子给的指数成长速率）**已彻底删除**。物质不再有 `M·R·ln10` 那一项。
-  //   承重机制改为两层：
-  //     · 引擎之前：**粒子获得的时变增幅**（`particleTimeBoost`，见上）
-  //     · 引擎之后：**暗能量自增长 a(DE) → 跨度层 (DE/DE₀)^k**
-  //   实测删 R 后物质**仍能撞到 1e308**（第一次大坍缩 10.52h，×1.75 目标 13.39h）✓
-
-  // ★★ 2025：**过载 / 爬升不在这里乘** —— 它们已经含在 `matterCoeff(state, P0)` 里
-  //   （用户裁定「有且只影响获得速率」⇒ 落点在系数上，唯一入口）。
-  //   ⚠️ 踩过：这里原来又乘了一次 `overloadFactor` / `climbFactor` ⇒ **平方** ⇒
-  //      `consistency.mjs` 报「matterRate 误差 2.32%」✗
-  //   ⇒ 现在 `matterGain = k × (闭式积分项)`，衰减只出现一次 ✓
-
-  state.resources.matter = state.resources.matter.add(matterGain);
+/**
+ * 第 1~2 阶段：熵 → 粒子 → 物质。
+ *
+ * ★ 2026：**唯一入口** `matterGainOver()` —— 界面显示也调同一个函数
+ *   （见 `formulas/matter.js`）。这里只负责把返回值写回 state，不再重算公式，
+ *   所以「显示 == 实发」是结构保证 ✓
+ */
+function applyMatterStep(state, dt) {
+  const step = matterGainOver(state, dt);
+  lastMatterRate = step.rate;                 // ★ 界面直接显示这个"刚刚实发"的速率
+  state.resources.entropy = step.entropy;
+  state.stats.totalEntropy = state.stats.totalEntropy.add(step.eGain);
+  state.resources.particle = step.P0.add(step.particleGain);
+  state.resources.matter = state.resources.matter.add(step.matterGain);
 }
 
 /** 第 3 阶段：ZPE 产出。 */
@@ -434,9 +386,8 @@ export function tickBody(state, dt) {
   // ★ 2026：11 个阶段各自成函数（顺序 = 原 tickBody 的执行顺序）
   applyTimedIncome(state, dt);
 
-  // ── 1~2. 熵 → 粒子 → 物质 ──
-  const { P0, particleGain } = advanceEntropyToParticle(state, dt);
-  advanceParticleToMatter(state, dt, P0, particleGain);
+  // ── 1~2. 熵 → 粒子 → 物质（与界面共用的唯一步进）──
+  applyMatterStep(state, dt);
 
   // ── 3~4c. ZPE / 暗能量 / 速率快照 ──
   advanceZpe(state, dt);

@@ -57,9 +57,11 @@ import { newState, deLevelOf } from "../src/state.js";
 import { shouldAutoCrunch } from "../src/autocrunch.js";
 import {
   conversion, darkEnergyRate, deUpgradeCost, entropyRate, globalMultiplier, globalMultiplierParts,
-  matterRate, particleRate, repeatableCost, trapCost, zpeRate,
+  matterRateOver, particleRate, repeatableCost, trapCost, zpeRate,
 } from "../src/formulas.js";
 import { breakInfinity, buyDeUpgrade, buyDreamUpgrade, buyRepeatable, buyTrap, buyVoidUpgrade, doBigCrunch, doClick, tick, infinityUpgradeEffect,
+  // ★ 2026：界面显示的是「上一步实发」的速率（lastMatterRatePerSecond），必须逐字相等 ✓
+  lastMatterRatePerSecond,
   // ★ 2025：① 的"买满 == 逐级实买"断言要它
   buyInfinityUpgrade,
   // ★★★ 2025：永恒增幅的「买满 == 逐级」与「实得 EP」断言要它们
@@ -81,6 +83,8 @@ const rel = (a, b) => {
 };
 
 const DT = 0.001;   // 极小步长 -> 离散误差可忽略
+// 物质公式侧对照用实际帧步长；界面真正显示的是 tick 记录的 lastMatterRatePerSecond
+const DT_MATTER = 0.05;
 
 /**
  * ⚠️ 局面必须**跑出来**，不能手工拼。
@@ -128,7 +132,7 @@ console.log();
 
 const CHECKS = [
   ["粒子", "particleRate", (s) => particleRate(s), (s) => s.resources.particle],
-  ["物质", "matterRate", (s) => matterRate(s), (s) => s.resources.matter],
+  ["物质", "matterRateOver", (s) => matterRateOver(s, DT_MATTER), (s) => s.resources.matter],
   ["ZPE", "zpeRate", (s) => zpeRate(s), (s) => s.zpe],
   ["暗能量", "darkEnergyRate", (s) => darkEnergyRate(s), (s) => s.darkEnergy],
 ];
@@ -152,27 +156,28 @@ for (const scen of ["常规", "dm4b 生效"]) {
     s.deMilestones.dm4b = scen === "dm4b 生效";
     const shown = fn(s).toNumber();
     const before = getter(s);
-    // ★★ 2025 修（打点定位后）：**物质/粒子必须用更小的步长** ✗
-    //
-    //   为什么：引擎的物质增量是**闭式解** `ΔM = k·(P0·dt + c·dt²/2)`，
-    //     而 `matterRate()` 是**瞬时值** `k·P0` —— 两者的比是 `1 + c·dt/(2·P0)` ✗
-    //     在某些状态里"粒子每秒被替换 ~1e5 次"（`c/P0` 极大）⇒ 1 毫秒步长下
-    //     那个二阶项会**反超**一阶项 44 倍 ⇒ 断言误报 97.8% ✗（并被我误判成量子的问题 ✗）
-    //   修法：这两个量用 `dt = 1e-7`（二阶项占比 < 0.5% ✓），其余仍用 DT ✓
-    //   ⚠️ 这**不是**放宽标准：`matterRate` 的定义没错、引擎的闭式解也没错 ✗，
-    //      错的是"拿两个不同阶的东西比" ✗ —— 打点实测：`显示/(P0·k·过载·爬升) = 1.0000` ✓
-    const dtHere = (label === "物质" || label === "粒子") ? 1e-7 : DT;
+    // ★★ 2026 修（用户报「物质显示==实发但实际不等」）：
+    //   旧写法拿**瞬时值** `matterRate = k·P0` 去比**一步平均** `k·(P0 + c·dt/2)` ✗
+    //   高速凝聚时 c/P0 极大 ⇒ 即使 dt=1ms 也能差 44 倍（不是测量误差，是两条定义）。
+    //   ⇒ 现在表里用 `matterRateOver(state, dt)` 做公式侧对照；
+    //      界面实际显示的是 tick 内记下的 `lastMatterRatePerSecond()`，
+    //      下面 `uiOk` 会断言它与本次 `ΔM/dt` **逐字相等** ✓
+    const dtHere = label === "物质" ? DT_MATTER : (label === "粒子" ? 1e-7 : DT);
     tick(s, dtHere);
     const after = getter(s);
-    const actual = after.sub(before).div(dtHere).toNumber();
+    const actualDec = after.sub(before).div(dtHere);
+    const actual = actualDec.toNumber();
+    // ★ 2026：UI 显示的是 tick 内记下的「上一步实发」速率 ⇒ 必须与本次增量逐字相等
+    const uiOk = label !== "物质" || lastMatterRatePerSecond().eq(actualDec);
 
     const tol = label === "暗能量" ? 0.10 : 0.02;
     const err = rel(shown, actual);
-    const ok = err < tol;
+    const ok = err < tol && uiOk;
     if (ok) pass++; else fail++;
     console.log(
       `  ${pad(label, 10)} ${pad(fnName, 18)} ${pad(shown.toExponential(4), 15)} ` +
-      `${pad(actual.toExponential(4), 15)} ${ok ? "✅" : `❌ 误差 ${(err * 100).toFixed(2)}%`}`,
+      `${pad(actual.toExponential(4), 15)} ${ok ? "✅" : `❌ 误差 ${(err * 100).toFixed(2)}%`}` +
+      (uiOk ? "" : "｜UI 与上一步实发不等"),
     );
   }
   console.log();

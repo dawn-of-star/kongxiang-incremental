@@ -5,8 +5,10 @@
  *    对外统一从 `src/formulas.js`（barrel）导入。
  */
 import { BASE, CLIMB, OVERLOAD, matterSpanMult, matterTotalExponent, voidBoostMult } from "../config.js";
-import { D, kindProduct } from "./core.js";
+import { D, floorDiv, kindProduct } from "./core.js";
+import { conversion, entropyRate } from "./entropy.js";
 import { globalMultiplier } from "./global.js";
+import { particleTimeBoost } from "./quantum.js";
 import { zpeMultiplier } from "./zpe.js";
 import Decimal from "../../dist/break_eternity.esm.js";
 
@@ -39,7 +41,7 @@ export function matterCoeff(state, particleCount = undefined) {
   return coeff.mul(overloadFactor(state, preRate)).mul(climbFactor(state));
 }
 
-/** 熵产出速率 */
+/** 物质速率的**瞬时值**（`dM/dt = particle × coeff`，不含本步内新生粒子的贡献）。 */
 export function matterRate(state) {
   // ══════════════════════════════════════════════════════════
   // ★★★ 2025：**改为唯一入口的直接调用** —— 不再在这里重算一遍基础产出
@@ -54,7 +56,64 @@ export function matterRate(state) {
   //      （实测比值 8.18e17 = particle × 2.09e6）
   //
   //   过载 / 爬升的软上限**在 `matterCoeff` 内**（用户裁定：有且只影响获得速率）✓
+  //
+  //   ⚠️ 界面**不要**直接用它：它是 dt→0 的瞬时值。引擎一步用闭式解
+  //      `ΔM = k·(P0·dt + c·dt²/2)`，本步内新产的粒子也会产物质 ⇒
+  //      高速凝聚时两者能差几个数量级。
+  //      ⇒ 界面显示 `engine/tick.js` 记下的 `lastMatterRatePerSecond()`（上一步实发）✓
   return state.resources.particle.mul(matterCoeff(state));
+}
+
+/**
+ * **一步（dt 秒）内物质实际会增加多少** —— 引擎与显示侧唯一共用的步进函数。
+ *
+ * 引擎 `tick` 的 ①② 阶段现在只做「取本函数结果 → 写回 state」，
+ * 并把 `rate` 记到 `lastMatterRate`；界面直接显示它。
+ * 所以「显示 == 实发」是结构保证，而不是靠小步长近似。
+ *
+ * 返回：
+ *   · `P0`          本步起始粒子数
+ *   · `eGain`       本步熵产出（用于 stats.totalEntropy）
+ *   · `entropy`     本步结束后的熵余量
+ *   · `particleGain`本步粒子增量（含 particleTimeBoost）
+ *   · `matterGain`  本步物质增量（闭式解，含新生粒子的 c·dt²/2 项）
+ *   · `rate`        `matterGain / dt`（引擎记录下来给界面）
+ *
+ * ⚠️ 纯函数：不写 state。调用方负责把返回值写回。
+ */
+export function matterGainOver(state, dt) {
+  const step = Number(dt);
+  const P0 = state.resources.particle;
+  if (!(step > 0) || !Number.isFinite(step)) {
+    return { P0, eGain: D(0), entropy: state.resources.entropy, particleGain: D(0), matterGain: D(0), rate: D(0) };
+  }
+  const eGain = entropyRate(state).mul(step);
+  let entropy = state.resources.entropy.add(eGain);
+  const { threshold, output } = conversion(state);
+  let particleGain = D(0);
+  if (entropy.gte(threshold)) {
+    // 用 floorDiv：Decimal.div 的四舍五入会让商多一格（见 core.js 的注释）
+    const times = floorDiv(entropy, threshold);
+    entropy = entropy.sub(times.mul(threshold));
+    if (entropy.lt(0)) entropy = D(0);
+    particleGain = times.mul(output);
+  }
+  // 量子 → 粒子获得的时变增幅（必须与 particleRate 同项）
+  particleGain = particleGain.mul(particleTimeBoost(state));
+  // ⚠️ 过载 / 爬升已经含在 matterCoeff(state, P0) 内（用户裁定：只影响获得速率）
+  //   ⇒ 这里绝不能再乘一次 overloadFactor/climbFactor，否则是平方 ✗
+  //   （踩坑记录见 docs/R-REPLACEMENT.md §12.5）
+  const k = matterCoeff(state, P0);
+  const c = particleGain.div(step);
+  // 闭式积分：P(t)=P0+c·t ⇒ ∫P dt = P0·dt + c·dt²/2
+  //   ★ 旧「量子 → 指数成长速率 R」的 M·R·ln10 项已删除，见 docs/R-REPLACEMENT.md。
+  const matterGain = k.mul(P0.mul(step).add(c.mul((step * step) / 2)));
+  return { P0, eGain, entropy, particleGain, matterGain, rate: matterGain.div(step) };
+}
+
+/** 诊断/测试用：按给定 dt **预测下一步**的物质速率（与 `tick` 同一个步进函数）。 */
+export function matterRateOver(state, dt = BASE.tickMs / 1000) {
+  return matterGainOver(state, dt).rate;
 }
 
 /**
