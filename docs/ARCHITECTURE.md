@@ -26,9 +26,9 @@
 |---|---|---|
 | 最大源文件 | 4,973 行（`config.js`） | **762 行**（`ui.js`，只做装配/编排） |
 | 最大函数 | 560 行（`render`） | **265 行**（`createNekoBridge`） |
-| 导出入口 | `config.js` / `engine.js` 各自是 god module | 6 个 **≤ 22 行的 barrel**（config / engine / formulas / state / neko / config/infinity） |
+| 导出入口 | `config.js` / `engine.js` 各自是 god module | 9 个 **≤ 22 行的 barrel**（config / engine / formulas / state / neko / config-infinity / config-quantum / config-zpe / engine-purchases） |
 | `ui.js` | 2,784 行 | **761 行**（只做 build / init / render 编排） |
-| 模块数 | 23 个平铺 `.js` | **73 个模块**（含 barrel） |
+| 模块数 | 23 个平铺 `.js` | **79 个模块**（含 barrel） |
 | 死模块 | 1 个（235 行） | **0**（`structure-guard` 守可达性） |
 | 自检脚本 | 48 | **49**（新增结构守卫） |
 
@@ -67,14 +67,17 @@ main.js            装配 + rAF 主循环
   │    ├─ ui-panels.js      主面板 11 个区块的 render
   │    └─ ui-<panel>.js    量子 / 无限 / 永恒 / 暗物质 / 猫猫 / 七巧板
   ├─ engine.js     引擎门面（barrel）
-  │    └─ engine/{tick,actions,collapse,purchases,eternity}.js
+  │    ├─ engine/{tick,actions,collapse,eternity}.js
+  │    └─ engine/purchases/{misc,infinity,zpe,darkmatter}.js
   ├─ formulas.js   纯计算门面（barrel）
   │    └─ formulas/{core,global,zpe,dark-energy,dark-energy-rate,entropy,matter,costs,quantum,infinity}.js
   ├─ state.js      状态门面（barrel）
   │    └─ state/{schema,accessors,log,serialize,helpers}.js
   ├─ config.js     配置门面（barrel）
   │    ├─ config/<12 个领域模块>.js
-  │    └─ config/infinity/{tier,break,upgrades,ip}.js
+  │    ├─ config/infinity/{tier,break,upgrades,ip}.js
+  │    ├─ config/quantum/{gates,growth}.js
+  │    └─ config/zpe-engine/{config,economy}.js
   └─ domain        七巧板 / N.E.K.O（neko.js + neko/）/ 梦想 / 自动无限 / 性能 / 存档 / 格式化
 ```
 
@@ -103,7 +106,7 @@ main.js            装配 + rAF 主循环
 | `base.js` | `BASE` / `ZONE_RULES` / 页面解锁 / `COLLAPSE` / `UI_FOLDS` |
 | `upgrades.js` | `REPEATABLE` / `VOID_UPGRADES` / 虚空加成 / 相变仪/时间加成 |
 | `milestones.js` | 坍缩 / ZPE / 暗能量 / 量子四套里程碑**数据表** |
-| `zpe-engine.js` | ZPE 引擎价格、等级、五条机制、`effectiveEngineLevel` |
+| `zpe-engine.js` | 引擎门面；实现见 `zpe-engine/{config,economy}.js` |
 | `eternity.js` | 永恒门槛、EP 公式、永恒升级、8 条永恒里程碑 |
 | `dream.js` | 梦想升级、效果聚合、离线上限、`computeS`、分段价格 |
 | `dark-energy.js` | 暗能量升级、惩罚、有效量软上限 |
@@ -123,7 +126,7 @@ main.js            装配 + rAF 主循环
 | `tick.js` | `tick` / `advance`（离线闭式解）/ 层间重置钩子 |
 | `actions.js` | 点击、可重复升级、熵阱、自动获取 |
 | `collapse.js` | 大坍缩、打破无限、`resetForCollapse` |
-| `purchases.js` | 虚空 / 暗能量 / 梦想 / ∞ / ZPE 引擎 / 暗物质购买 |
+| `purchases.js` | 购买门面；实现见 `purchases/{misc,infinity,zpe,darkmatter}.js` |
 | `eternity.js` | 永恒保留规则 + `doEternity` |
 
 ### 2.3 `src/ui*.js`
@@ -216,7 +219,7 @@ main.js            装配 + rAF 主循环
 
 | 维度 | 权重 | 前 | 后 | 依据（前 → 后） |
 |---|---:|---:|---:|---|
-| 模块边界 / 职责 | 25% | 70 | **20** | 3 个 god module → **73 个模块（含 7 个 barrel）**；config / ui / engine / formulas / state / neko 全部按领域拆开 |
+| 模块边界 / 职责 | 25% | 70 | **20** | 3 个 god module → **79 个模块（含 9 个 barrel）**；config / ui / engine / formulas / state / neko 全部按领域拆开 |
 | 文件 / 函数规模 | 20% | 85 | **30** | 最大文件 4,973 → 762；最大函数 560 → 265；`render` 560 → 26；`tickBody` 298 → 30 |
 | 耦合 / 依赖方向 | 15% | 55 | **30** | import 图单向分层；结构守卫拦反向依赖；少量函数级循环（config/infinity、formulas）已确认无顶层调用 |
 | 重复 / 死代码 | 15% | 50 | **30** | 删除 235 行死模块；`ui.js` 清掉 121 个未使用 import；死代码审计修复假绿；barrel 纯度有守卫 |
@@ -254,7 +257,9 @@ main.js            装配 + rAF 主循环
 | `1ef3e09` | `config/infinity.js` 1,009 行 → `src/config/infinity/` 4 个模块（tier / break / upgrades / ip） |
 | `76fc94d` | `ui-core.js` 437 → 134 行：DOM 缓存/去重下沉到 `ui-cache.js`；七巧板面板与自动无限面板的长绘制函数拆成命名子函数 |
 | `0befb22` | `config/quantum.js` 740 行 → `quantum/` 2 个模块（gates / growth） |
-| 本轮末 | 冻结 N.E.K.O 协同代码（§0.5）；收紧结构预算；ARCHITECTURE 同步为 73 模块、加权 27.8% |
+| `5c5b9d2` | `engine/purchases.js` 512 行 → `purchases/` 4 个模块（misc / infinity / zpe / darkmatter） |
+| `cbde401` | `config/zpe-engine.js` 624 行 → `zpe-engine/` 2 个模块（config / economy） |
+| 本轮末 | 冻结 N.E.K.O 协同代码（§0.5）；收紧结构预算；ARCHITECTURE 同步为 79 模块、加权 27.8% |
 
 **验收基线**：`npm test` → **49/49 全绿**（默认批跑；`--strict` 仍有 6 个已知失败，
 见 [`TODO.md`](TODO.md) M 段，属过期断言/坏工具/数值漂移，非坏实现）；`node tools/dom-smoke.mjs` 全绿；

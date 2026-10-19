@@ -123,14 +123,14 @@ test-034/
 │   ├── config.js                配置门面（22 行 barrel，只 re-export）
 │   ├── config/                  ★ 12 个领域模块（base / upgrades / milestones / zpe-engine /
 │   │                              eternity / dream / dark-energy / quantum / infinity /
-│   │                              dark-matter / zones / neko）+ infinity/、quantum/ 子模块
+│   │                              dark-matter / zones / neko）+ infinity/、quantum/、zpe-engine/ 子模块
 │   ├── state.js                 状态门面（16 行 barrel）
 │   ├── state/                   ★ schema / serialize / accessors / log / helpers
 │   ├── formulas.js              计算门面（19 行 barrel）
 │   ├── formulas/                ★ core / global / zpe / dark-energy / dark-energy-rate / entropy /
 │   │                              matter / costs / quantum / infinity
 │   ├── engine.js                引擎门面（17 行 barrel）
-│   ├── engine/                  ★ tick / actions / collapse / purchases / eternity
+│   ├── engine/                  ★ tick / actions / collapse / eternity + purchases/ 4 个子模块
 │   ├── neko.js                  N.E.K.O 门面（17 行 barrel，公开 API 不变）
 │   ├── neko/                    ★ log / snapshot / actions / bridge
 │   ├── save.js                  localStorage 存档

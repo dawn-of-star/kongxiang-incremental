@@ -32,12 +32,13 @@ const notes = [];
 const add = (kind, msg) => problems.push({ kind, msg });
 
 // ── ① 文件预算 ──
-const BARRELS = ["config.js", "engine.js", "formulas.js", "state.js", "neko.js", "config/infinity.js", "config/quantum.js"];
+const BARRELS = ["config.js", "engine.js", "formulas.js", "state.js", "neko.js", "config/infinity.js", "config/quantum.js", "config/zpe-engine.js", "engine/purchases.js"];
 const budget = (rel) => {
   if (BARRELS.includes(rel)) return 80;
   if (rel === "ui.js") return 850;
   if (rel.startsWith("config/infinity/")) return 500;
   if (rel.startsWith("config/quantum/")) return 500;
+  if (rel.startsWith("config/zpe-engine/")) return 500;
   if (rel.startsWith("config/")) return 800;
   if (rel.startsWith("engine/")) return 600;
   if (rel.startsWith("formulas/")) return 300;
