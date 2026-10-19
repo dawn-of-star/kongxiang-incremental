@@ -10,7 +10,7 @@
  * 开关语义（用户裁定）：「买下只是解锁能力，要**手动开**」⇒ `state.autoToggles[id] === true` 才生效；
  *   没买的开关是**可点的**（点了只改偏好，无副作用）—— 上一版把它 `disabled` 了，用户实测「点不动」✗
  */
-import { DREAM_UPGRADES, dreamUpgradeLevelOf, dreamUpgradeCostAt } from "./config.js";
+import { DREAM_UPGRADES, dreamUpgradeLevelOf, dreamUpgradeCostAt, hasEternityMilestone } from "./config.js";
 import { sci } from "./format.js";
 
 /** 这 7 条是「有开关」的自动化（4 条自动购物 + 自动无限 + 2 条自动购买新对象）✓ */
@@ -46,6 +46,13 @@ export function isDreamUnlocked(state, d) {
     return (state?.darkEnergy ?? 0) > 0 || state?.phaseTransmuterUnlocked === true
       || Object.values(state?.deMilestones ?? {}).some(Boolean);
   }
+  // ★ 2026（用户裁定）：暗能量层自动化 ⇒ **有量子时**解锁 ✓
+  if (when === "quantum") {
+    const q = state?.quantum ?? 0;
+    return (typeof q === "object" && q.gt ? q.gt(0) : Number(q) > 0) || (state?.quantumPairs ?? 0) > 0;
+  }
+  // ★ 2026（用户裁定）：其余（除自动无限）都是 **em8** 的效果 ✓
+  if (when === "em8") return hasEternityMilestone(state, "em8");
   if (when === "breakInfinity") return state?.brokenInfinity === true || (state?.infinityCount ?? 0) >= 1;
   if (when === "eternity") return (state?.eternityCount ?? 0) >= 1;
   return true;

@@ -2279,7 +2279,7 @@ export function deGainBaseEffectMult(state) {
 export const DREAM_UPGRADES = [
   {
     // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
-    unlockWhen: "de",
+    unlockWhen: "quantum",
     id: "autoPhase",
     name: "相变自动化",
     cost: 1,
@@ -2288,7 +2288,7 @@ export const DREAM_UPGRADES = [
     effect: { kind: "autoBuy", deUpgrade: "phaseShift" } },
   {
     // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
-    unlockWhen: "de",
+    unlockWhen: "quantum",
     id: "autoVacuum",
     name: "加速自动化",
     cost: 1,
@@ -2299,7 +2299,7 @@ export const DREAM_UPGRADES = [
   //   用户要求：梦想点经济要覆盖全部五条暗能量升级。
   {
     // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
-    unlockWhen: "de",
+    unlockWhen: "quantum",
     id: "autoDeGainBase",
     name: "增幅自动化",
     cost: 1,
@@ -2308,7 +2308,7 @@ export const DREAM_UPGRADES = [
     effect: { kind: "autoBuy", deUpgrade: "deGainBase" } },
   {
     // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
-    unlockWhen: "de",
+    unlockWhen: "quantum",
     id: "autoConvOutput",
     name: "斜率自动化",
     cost: 1,
@@ -2332,7 +2332,7 @@ export const DREAM_UPGRADES = [
   //     梦想点收入在后期是充裕的，但 8190 是个真实门槛 ⇒ 这是长期目标 ✓
   {
     // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
-    unlockWhen: "always",
+    unlockWhen: "em8",
     id: "offlineCap",
     name: "离线时长扩展",
     cost: 2,                 // 第 1 级价格（梦想点）
@@ -2346,7 +2346,7 @@ export const DREAM_UPGRADES = [
   //   **永恒自动化组**（`group: "emauto"`）：买下只是解锁能力，还要点右侧开关才生效 ✓
   //   代价一律「梦想点」；`effect.kind` 决定 UI 与实现（autoBuy / autoInfinities / keep*）✓
   {
-    unlockWhen: "eternity",   // 2026: 自动无限 ⇒ 至少要永恒过一次 ✓
+    unlockWhen: "breakInfinity",   // 2026: 自动无限 ⇒ 至少要永恒过一次 ✓
     id: "autoInfinities",
     group: "emauto",
     name: "无限自动化",
@@ -2356,7 +2356,7 @@ export const DREAM_UPGRADES = [
   },
   {
     // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
-    unlockWhen: "breakInfinity",
+    unlockWhen: "em8",
     id: "autoIpDouble",
     group: "emauto",
     name: "倍增自动化",
@@ -2365,7 +2365,7 @@ export const DREAM_UPGRADES = [
     effect: { kind: "autoBuy", target: "ipDouble" },
   },
   {
-    unlockWhen: "breakInfinity",   // ★ 2026：ZPE 引擎自动化 ⇒ 破∞后（引擎那时才解锁）
+    unlockWhen: "em8",   // ★ 2026：ZPE 引擎自动化 ⇒ 破∞后（引擎那时才解锁）
     id: "autoZpeEngine",
     group: "emauto",
     name: "引擎自动化",
@@ -2375,7 +2375,7 @@ export const DREAM_UPGRADES = [
   },
   {
     // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
-    unlockWhen: "eternity",
+    unlockWhen: "em8",
     id: "keepDeEternity",
     group: "emauto",
     name: "暗能量永存",
@@ -2385,7 +2385,7 @@ export const DREAM_UPGRADES = [
   },
   {
     // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
-    unlockWhen: "eternity",
+    unlockWhen: "em8",
     id: "engineAtStart",
     group: "emauto",
     name: "开局引擎",
@@ -2395,7 +2395,7 @@ export const DREAM_UPGRADES = [
   },
   {
     // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
-    unlockWhen: "eternity",
+    unlockWhen: "em8",
     id: "keepVoidEternity",
     group: "emauto",
     name: "虚空永存",
