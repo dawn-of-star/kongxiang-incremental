@@ -254,23 +254,24 @@ function tickBody(state, dt) {
   //      ⇒ 改成 **开根**：`1 + 0.1×√等级` ✓
   //        数学效果：`dx/dt ∝ √x` ⇒ `x ∝ t²`（**多项式**，不是指数 ✗）
   //        ⇒ 越到后期越自我减速 ✓（等级 1021 时倍率从 ×103 降到 ×4.2 ✓）
-  if (state.zpeEngineUnlocked) {
-    const lv = zpeEngineLevel(state).toNumber();
-    const engineMult = deEngineLevelBonus(lv);
-    // ★ 2026： 必须是**有限正数**（否则 .mul(Infinity) 会把 DE 变成 Infinity ⇒ UI 显示 ∞ ✗）    let a = deGrowthRate(state, engineMult);          // 阶/秒    if (!Number.isFinite(a) || a < 0) a = 0;          // 兜底：异常值一律当 0 ✓
-    // 2026: `a` must be a finite non-negative number (otherwise .mul(Infinity) makes DE Infinity -> UI shows the infinity symbol)
-    let a = deGrowthRate(state, engineMult);
-    if (!Number.isFinite(a) || a < 0) a = 0;
-    // 2026: DE self-growth is exponential in time (dDE/dt ∝ DE); apply the existing
-    // soft cap (DE_EFF_CAP, knee 40 orders / span 30) so it converges instead of exploding.
-    const _dlg = state.darkEnergy.lte(0) ? 0 : state.darkEnergy.log10().toNumber();
-    const _cap = DE_EFF_CAP;
-    const _capDecay = _dlg <= _cap.kneeLog10 ? 1 : Math.pow(2, -(_dlg - _cap.kneeLog10) / _cap.span);
-    const deSelf = state.darkEnergy.max(1).mul(a).mul(Math.LN10).mul(dt).mul(_capDecay);
-    state.darkEnergy = state.darkEnergy.add(deSelf);
-    state.darkEnergy = state.darkEnergy.max(0);   // ★ 每帧统一夹住 ≥0（否则任何扣款扣成负数 ⇒ log10(负数)=NaN ⇒ 全链坏死 ✗）
-    if (String(state.darkEnergy).includes("NaN")) state.darkEnergy = D(1);   // ★ NaN 守卫：NaN 无法被 max 救回 ⇒ 直接重置 ✓
-    state.darkEnergyTotal = state.darkEnergyTotal.add(deSelf);
+if (state.zpeEngineUnlocked) {
+  const lv = zpeEngineLevel(state).toNumber();
+  const engineMult = deEngineLevelBonus(lv);
+  // 2026: a must be a finite non-negative number (a Number leaking in would make DE Infinity).
+  let a = deGrowthRate(state, engineMult);
+  if (!Number.isFinite(a) || a < 0) a = 0;
+  // 2026: dDE/dt is proportional to DE, so clamp the per-frame dt to 1s --
+  // a background tab can deliver a multi-thousand-second catch-up tick that jumps DE past the limit.
+  const _dtS = Math.min(Math.max(0, dt), 1);
+  // 2026: the DE_EFF_CAP soft cap is applied to the growth rate so it converges instead of exploding.
+  const _dlg = state.darkEnergy.lte(0) ? 0 : state.darkEnergy.log10().toNumber();
+  const _cap = DE_EFF_CAP;
+  const _capDecay = _dlg <= _cap.kneeLog10 ? 1 : Math.pow(2, -(_dlg - _cap.kneeLog10) / _cap.span);
+  const deSelf = state.darkEnergy.max(1).mul(a).mul(Math.LN10).mul(_dtS).mul(_capDecay);
+  state.darkEnergy = state.darkEnergy.add(deSelf);
+  state.darkEnergy = state.darkEnergy.max(0);
+  if (String(state.darkEnergy).includes("NaN")) state.darkEnergy = D(1);
+  state.darkEnergyTotal = state.darkEnergyTotal.add(deSelf);
   }
 
   // ── 4c. ★★ 2026：**第一台相变仪速率的快照**（暗物质机制的输入）──

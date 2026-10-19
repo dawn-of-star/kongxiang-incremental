@@ -2279,7 +2279,7 @@ export function deGainBaseEffectMult(state) {
 export const DREAM_UPGRADES = [
   {
     // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
-    unlockWhen: "quantum",
+    unlockWhen: "always",   // ★ 2026（用户：判定太严，卡看不到）⇒ 先一律可见 ✓
     id: "autoPhase",
     name: "相变自动化",
     cost: 1,
@@ -2288,7 +2288,7 @@ export const DREAM_UPGRADES = [
     effect: { kind: "autoBuy", deUpgrade: "phaseShift" } },
   {
     // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
-    unlockWhen: "quantum",
+    unlockWhen: "always",   // ★ 2026（用户：判定太严，卡看不到）⇒ 先一律可见 ✓
     id: "autoVacuum",
     name: "加速自动化",
     cost: 1,
@@ -2299,7 +2299,7 @@ export const DREAM_UPGRADES = [
   //   用户要求：梦想点经济要覆盖全部五条暗能量升级。
   {
     // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
-    unlockWhen: "quantum",
+    unlockWhen: "always",   // ★ 2026（用户：判定太严，卡看不到）⇒ 先一律可见 ✓
     id: "autoDeGainBase",
     name: "增幅自动化",
     cost: 1,
@@ -2308,7 +2308,7 @@ export const DREAM_UPGRADES = [
     effect: { kind: "autoBuy", deUpgrade: "deGainBase" } },
   {
     // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
-    unlockWhen: "quantum",
+    unlockWhen: "always",   // ★ 2026（用户：判定太严，卡看不到）⇒ 先一律可见 ✓
     id: "autoConvOutput",
     name: "斜率自动化",
     cost: 1,
