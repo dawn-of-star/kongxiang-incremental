@@ -2346,6 +2346,7 @@ export const DREAM_UPGRADES = [
   //   **永恒自动化组**（`group: "emauto"`）：买下只是解锁能力，还要点右侧开关才生效 ✓
   //   代价一律「梦想点」；`effect.kind` 决定 UI 与实现（autoBuy / autoInfinities / keep*）✓
   {
+    unlockWhen: "eternity",   // 2026: 自动无限 ⇒ 至少要永恒过一次 ✓
     id: "autoInfinities",
     group: "emauto",
     name: "无限自动化",
@@ -2364,6 +2365,7 @@ export const DREAM_UPGRADES = [
     effect: { kind: "autoBuy", target: "ipDouble" },
   },
   {
+    unlockWhen: "breakInfinity",   // ★ 2026：ZPE 引擎自动化 ⇒ 破∞后（引擎那时才解锁）
     id: "autoZpeEngine",
     group: "emauto",
     name: "引擎自动化",
