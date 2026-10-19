@@ -22,6 +22,28 @@ const D = (x) => new Decimal(x);
 
 const MODE_LABEL = { amount: "按收益", time: "按时间", xHighest: "× 最高" };
 
+/** 面板样式（只注入一次） */
+function injectStyle() {
+  if (document.getElementById("tg-ac-style")) return;
+  const st = document.createElement("style");
+  st.id = "tg-ac-style";
+  st.textContent = [
+    "#tg-ac-rule { display:grid !important; grid-template-columns:auto 1fr; gap:6px 10px;",
+    "  align-items:center; padding:8px 10px; border:1px solid var(--line-strong);",
+    "  border-radius:8px; background:rgba(255,255,255,.015); font-size:12px; }",
+    "#tg-ac-rule .ac-lab { color:var(--text-dim); white-space:nowrap; }",
+    "#tg-ac-rule .ac-row { display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-width:0; }",
+    "#tg-ac-rule .btn { width:auto !important; font-size:12px; padding:5px 9px; }",
+    "#tg-ac-rule input { width:88px; padding:4px 6px; font-size:12px; border-radius:4px;",
+    "  border:1px solid var(--line-strong); background:var(--bg-card); color:var(--text); }",
+    "#tg-ac-rule .ac-status { grid-column:1 / -1; color:var(--text-dim); font-size:11px; line-height:1.5; }",
+    "#tg-ac-rule .ac-hint { grid-column:1 / -1; color:var(--eternity,#b388ff); font-size:11px; }",
+    "#tg-ac-rule .ac-on { font-weight:700; }",
+    "#tg-ac-rule .ac-on[data-on='1'] { color:var(--eternity,#b388ff); }",
+  ].join("\n");
+  (document.head ?? document.body)?.appendChild?.(st);
+}
+
 let cur = null;        // ★ 当前 state（每次 paint 更新；点击处理一律用它）
 let lastApplyAt = 0;   // ★ 刚点过「设定」的时间戳：这段时间内不要用 state 回写输入框 ✗
 
@@ -51,24 +73,22 @@ export function paintAutoCrunchUI(state, commit) {
   if (!box) {
     box = document.createElement("div");
     box.id = "tg-ac-rule";
-    box.style.cssText = [
-      "flex:1 1 240px", "min-width:200px", "display:flex", "flex-wrap:wrap",
-      "gap:4px", "align-items:center", "padding:6px 8px",
-      "border:1px solid var(--line-strong)", "border-radius:6px",
-      "font-size:12px",
-    ].join(";");
-    box.innerHTML = [
-      '<span style="font-weight:700">规则</span>',
+        box.innerHTML = [
+      '<span class="ac-lab">规则</span>',
+      '<span class="ac-row">',
       ...AUTO_CRUNCH.modes.map((m) =>
-        `<button class="btn btn-small" data-acmode="${m.id}" style="width:auto">${MODE_LABEL[m.id] ?? m.name}</button>`),
-      '<input id="tg-ac-value" type="text" inputmode="decimal" autocomplete="off" spellcheck="false"',
-      '  style="width:76px;padding:2px 4px;font-size:12px" />',
-      '<button class="btn btn-small" id="tg-ac-apply" style="width:auto">设定</button>',
-      '<button class="btn btn-small" id="tg-ac-on" style="width:auto">关</button>',
-      '<span class="dim" id="tg-ac-status" style="flex-basis:100%"></span>',
-      '<span class="dim" id="tg-ac-hint" style="flex-basis:100%;color:var(--eternity,#b388ff)"></span>',
-    ].join("");
-    host.appendChild(box);
+        `<button class="btn btn-small" data-acmode="${m.id}">${MODE_LABEL[m.id] ?? m.name}</button>`),
+      '</span>',
+      '<span class="ac-lab">阈值</span>',
+      '<span class="ac-row">',
+      '<input id="tg-ac-value" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" />',
+      '<button class="btn btn-small" id="tg-ac-apply">设定</button>',
+      '<button class="btn btn-small ac-on" id="tg-ac-on" data-on="1">关</button>',
+      '<span class="dim" id="tg-ac-pity" style="font-size:11px"></span>',
+      '</span>',
+      '<span class="ac-status" id="tg-ac-status"></span>',
+      '<span class="ac-hint" id="tg-ac-hint"></span>',
+    ].join("");    host.appendChild(box);
 
     // 事件（委托 + 直接绑定各一点，简单可靠 ✓）
     box.addEventListener("click", (ev) => {
@@ -137,6 +157,8 @@ export function paintAutoCrunchUI(state, commit) {
   const onBtn = document.getElementById("tg-ac-on");
   // ★ 2026：显示的是**梦想页那个开关**（唯一开关）✓
   if (onBtn) onBtn.textContent = state?.autoToggles?.autoInfinities === true ? "关" : "开";
+  // ★ 2026（用户：「检测都是一次性检测」）—— 判据只在**输入/模式/开关变化**时重算一次，
+  //   不再每帧跑一遍 shouldAutoCrunch ✗
   const st = document.getElementById("tg-ac-status");
   if (st) {
     // ★ 2026：判据统一走 `autoEnabled`（已买 + 已开）—— 原来只显示"未购买"，开关关着却不提示 ✗

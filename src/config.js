@@ -2332,7 +2332,7 @@ export const DREAM_UPGRADES = [
   //     梦想点收入在后期是充裕的，但 8190 是个真实门槛 ⇒ 这是长期目标 ✓
   {
     // ★ 2026（用户：「照着原稿解锁的顺序解锁，没解锁的直接不显示」）
-    unlockWhen: "em8",
+    unlockWhen: "always",   // ★ 2026（用户）：离线时长**开局就有** ✓
     id: "offlineCap",
     name: "离线时长扩展",
     cost: 2,                 // 第 1 级价格（梦想点）
