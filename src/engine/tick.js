@@ -93,11 +93,8 @@ export function tick(state, dt) {
 }
 
 /** tick 的主体（拆出来只为把「步首快照」用 try/finally 包住 ✓） */
-export function tickBody(state, dt) {
-  if (!(dt > 0) || !Number.isFinite(dt)) return state;
-
-
-
+/** 计时：本轮时长 / 本次无限时长 / ④ 无限长河的实时产点。 */
+function applyTimedIncome(state, dt) {
   // ★ ∞ 层 ④「无限长河」的计量口径：本次无限已经过去了多少秒。
   //   用 dt 累加而不是读 wall clock —— 离线结算（advance）走的是同一个 tick，
   //   所以挂机 4 小时回来，这段时间也会被如实计入。
@@ -126,7 +123,10 @@ export function tickBody(state, dt) {
   state.ipTimeAccrued = (state.ipTimeAccrued instanceof Decimal ? state.ipTimeAccrued : D(state.ipTimeAccrued ?? 0)).add(gain);
     }
   }
+}
 
+/** 第 1 阶段：熵产出 → 按阈值转成粒子（返回本片起始粒子数与本片粒子增量）。 */
+function advanceEntropyToParticle(state, dt) {
   const P0 = state.resources.particle;
 
   // ── 1. 熵产出，然后转成粒子 ──
@@ -162,6 +162,11 @@ export function tickBody(state, dt) {
   state.resources.entropy = entropy;
   state.stats.totalEntropy = state.stats.totalEntropy.add(eGain);
 
+  return { P0, particleGain };
+}
+
+/** 第 2 阶段：粒子 & 物质（闭式解；过载/爬升已含在 matterCoeff 里）。 */
+function advanceParticleToMatter(state, dt, P0, particleGain) {
   // ── 2. 粒子 & 物质（闭式解 + 量子的指数项）──
   // ★★ 2025：传入**本片的粒子数** `P0` —— 过载的触发量是「未削减的速率」`P0 × coeff`，
   //   而 `matterCoeff` 需要它才能算出这个速率（`state.resources.particle` 此刻还是旧值）。
@@ -190,12 +195,18 @@ export function tickBody(state, dt) {
   //   ⇒ 现在 `matterGain = k × (闭式积分项)`，衰减只出现一次 ✓
 
   state.resources.matter = state.resources.matter.add(matterGain);
+}
 
+/** 第 3 阶段：ZPE 产出。 */
+function advanceZpe(state, dt) {
   // ── 3. ZPE ──
   const zGain = zpeRate(state).mul(dt);
   state.zpe = state.zpe.add(zGain);
   state.zpeTotal = state.zpeTotal.add(zGain);
+}
 
+/** 第 4 阶段：暗能量（相变仪 + 自增长 + 每帧非有限值净化）。 */
+function advanceDarkEnergy(state, dt) {
   // ── 4. 暗能量（相变仪解锁后）──
   //
   // ★ 唯一入口原则：这里**必须**调用 darkEnergyRate()，
@@ -269,7 +280,10 @@ if (state.zpeEngineUnlocked) {
   if (String(state.darkEnergy).includes("NaN")) state.darkEnergy = D(1);
   state.darkEnergyTotal = state.darkEnergyTotal.add(deSelf);
   }
+}
 
+/** 第 4c 阶段：第一台相变仪速率的 log10 快照（暗物质机制的输入）。 */
+function snapshotTransmuterRate(state) {
   // ── 4c. ★★ 2026：**第一台相变仪速率的快照**（暗物质机制的输入）──
   //
   //   为什么必须存快照、不能现算（完整理由见 `state.js` 的 `v1Log10` 字段说明）：
@@ -288,7 +302,10 @@ if (state.zpeEngineUnlocked) {
     const lg = v1.gt(0) ? v1.log10().toNumber() : -323;
     state.v1Log10 = Number.isFinite(lg) ? lg : -323;
   }
+}
 
+/** 第 5 阶段：ZPE / 量子 / 暗能量里程碑（含 dm0 解锁相变仪）。 */
+function checkMilestones(state) {
   // ── 5. 里程碑 ──
   for (const m of checkZpeMilestones(state)) {
     pushLog(state, `🏆 达成虚空里程碑：${m.desc}`);
@@ -311,7 +328,10 @@ if (state.zpeEngineUnlocked) {
       pushLog(state, "🌌 相变仪已解锁！");
     }
   }
+}
 
+/** 第 6 阶段：历史最高物质 + 量子页面永久解锁。 */
+function updatePeakMatterAndPages(state) {
   // ── 6. 历史最高物质（第四层解锁条件 + 坍缩进度）──
   if (state.resources.matter.gt(state.peakMatter)) {
     state.peakMatter = state.resources.matter;
@@ -321,7 +341,10 @@ if (state.zpeEngineUnlocked) {
   if (state.peakMatter.gte(COLLAPSE.unlockMatter) && markPageUnlocked(state, "quantum")) {
     pushLog(state, "⚛ 量子涨落已解锁！");
   }
+}
 
+/** 第 7 阶段：相变环的显示累加器（不改实际转换）。 */
+function updateTransmuterAccumulator(state, dt) {
   // ── 7. 相变仪进度（只为显示那个环，不改实际转换）──
   //     实际转换是连续除法（zpeRate/1e8），这里维护一个
   //     「距离下一次 1e8 ZPE 还差多少」的累加器，纯粹给玩家看。
@@ -332,13 +355,10 @@ if (state.zpeEngineUnlocked) {
     state.deAccum = acc.lt(th) ? acc : acc.sub(floorDiv(acc, th).mul(th));
     if (state.deAccum.lt(0)) state.deAccum = D(0);
   }
+}
 
-  // ── 8. 层间重置（**由外到内**）──
-  phaseResets(state);
-
-  // ── 9. 层内奖励 ──
-  phaseQuantumCapture(state);
-
+/** 第 10 阶段：自动获取（v9）+ 梦想自动化 + ZPE 引擎自动解锁。 */
+function runAutomation(state) {
   // ── 10. 自动化 ──
   if (state.voidUpgrades.v9) autoAcquire(state);
   autoAcquireDream(state);   // 独立于 v9，见函数注释
@@ -351,6 +371,10 @@ if (state.zpeEngineUnlocked) {
     const hasInf = (state.infinityCount ?? 0) >= 1 || (state.bigCrunchCount ?? D(0)).gte(1);
     if (hasInf) unlockZpeEngine(state);
   }
+}
+
+/** ∞ 溯源守卫：任何资源变成 Infinity/NaN 时点名字段（每字段只报一次）。 */
+function checkInfinityGuard(state) {
   // ★★★ 2026（用户：「无限符号还是出现了」）—— **∞ 溯源守卫**：
   //   任何资源变成 Infinity/NaN 时，立刻在控制台点名是**哪个字段** ✗
   //   （只报一次/字段，不刷屏 ✓）
@@ -371,6 +395,10 @@ if (state.zpeEngineUnlocked) {
       }
     }
   }
+}
+
+/** 自动无限 + 七巧板被动 IP + 本永恒 IP 峰值。 */
+function runAutoCrunchAndPassive(state, dt) {
   maybeAutoCrunch(state, doBigCrunch, bigCrunchGain);   // ★ 2026：×最高 用**本次收益** ✓
   // ★★★ 2026：**每秒 1% 本次无限可获得的 IP**（中间难度全清奖励；未解锁 ⇒ 恰好 0 ✓）
   //   ⚠️ 收益源走 bigCrunchGain（唯一数据源），当参数传进去避免循环 import ✓
@@ -383,11 +411,37 @@ if (state.zpeEngineUnlocked) {
     const prev = state.maxIpThisEternity instanceof Decimal ? state.maxIpThisEternity : D(state.maxIpThisEternity ?? 0);
     if (ipNow.gt(prev)) state.maxIpThisEternity = ipNow;
   }
-  // ⚠️ 2026：这里原来有 icAutoAdvance(state, dt)（em7 自动完成无限挑战）——
-  //   **IC 整个系统已删除**（用户裁定）⇒ 那行移除；em7 本身退回 pending ✓
+}
 
+export function tickBody(state, dt) {
+  if (!(dt > 0) || !Number.isFinite(dt)) return state;
 
-  // ── 11. 捕获的**登记**在 `phaseQuantumCapture` 里完成（写回留到**下一个 tick 的开头** ✓）──
+  // ★ 2026：11 个阶段各自成函数（顺序 = 原 tickBody 的执行顺序）
+  applyTimedIncome(state, dt);
+
+  // ── 1~2. 熵 → 粒子 → 物质 ──
+  const { P0, particleGain } = advanceEntropyToParticle(state, dt);
+  advanceParticleToMatter(state, dt, P0, particleGain);
+
+  // ── 3~4c. ZPE / 暗能量 / 速率快照 ──
+  advanceZpe(state, dt);
+  advanceDarkEnergy(state, dt);
+  snapshotTransmuterRate(state);
+
+  // ── 5~7. 里程碑 / 峰值 / 相变环显示 ──
+  checkMilestones(state);
+  updatePeakMatterAndPages(state);
+  updateTransmuterAccumulator(state, dt);
+
+  // ── 8. 层间重置（**由外到内**）──
+  phaseResets(state);
+  // ── 9. 层内奖励：量子捕获（必须在重置之后）──
+  phaseQuantumCapture(state);
+
+  // ── 10. 自动化 + 守卫 ──
+  runAutomation(state);
+  checkInfinityGuard(state);
+  runAutoCrunchAndPassive(state, dt);
 
   return state;
 }
