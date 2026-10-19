@@ -642,5 +642,33 @@ export function deserialize(raw) {
     ? raw.log.slice(-LOG_MAX).map((e) => ({ t: num(e?.t, Date.now()), text: String(e?.text ?? "") }))
     : [];
 
+  // ★★★ 2026（用户：∞ 又回来咬人了，守卫点名 `darkEnergy` 与 `zpe`）——
+  //   **读档自愈**：资源若不是有限值（旧档被炸坏 / Infinity 落盘），直接夹回 1e308 ✓
+  //   （break_eternity 能表示 1e308 以上的有限值；夹到 1e308 是"接近上限但不越界"的恢复值 ✓）
+  {
+    const LIMIT = new Decimal("1e308");
+    const clampField = (obj, key) => {
+      const v = obj?.[key];
+      if (v == null) return false;
+      let d;
+      try { d = v instanceof Decimal ? v : new Decimal(v); } catch { return false; }
+      if (d.isFinite() && !d.isNaN?.()) return false;
+      obj[key] = LIMIT;
+      return true;
+    };
+    const repaired = [];
+    if (clampField(s, "darkEnergy")) repaired.push("darkEnergy");
+    if (clampField(s, "zpe")) repaired.push("zpe");
+    if (clampField(s, "infinityPoints")) repaired.push("infinityPoints");
+    if (clampField(s, "eternityPoints")) repaired.push("eternityPoints");
+    if (clampField(s, "quantum")) repaired.push("quantum");
+    if (clampField(s, "matter")) repaired.push("matter");
+    if (clampField(s, "entropy")) repaired.push("entropy");
+    if (clampField(s, "particles")) repaired.push("particles");
+    if (repaired.length) {
+      console.warn("[读档自愈] 以下字段原本是非有限值，已夹回 1e308：", repaired.join(", "));
+    }
+  }
+
   return { state: s, ok: true };
 }
