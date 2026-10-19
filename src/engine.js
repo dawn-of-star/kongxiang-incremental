@@ -281,7 +281,13 @@ if (state.zpeEngineUnlocked) {
         globalThis.__KI_INF_SEEN ??= {};
         if (!globalThis.__KI_INF_SEEN[k]) {
           globalThis.__KI_INF_SEEN[k] = true;
-          console.error("[inf-sanitise] state." + k + " was non-finite; clamped to 1e308");
+          // ★ 2026：**带栈**——只在第一次时打印调用栈，直接指认"是谁把它推成 ∞ 的" ✓
+          if (!globalThis.__KI_INF_TRACED) {
+            globalThis.__KI_INF_TRACED = true;
+            console.error("[inf-sanitise] state." + k + " became non-finite; clamped to 1e308. Stack:", new Error("infinity-source").stack);
+          } else {
+            console.error("[inf-sanitise] state." + k + " was non-finite; clamped to 1e308");
+          }
         }
       }
     }
