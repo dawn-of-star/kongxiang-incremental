@@ -255,30 +255,45 @@ if (state.zpeEngineUnlocked) {
   const deSelf = state.darkEnergy.max(1).mul(a).mul(Math.LN10).mul(_dtS).mul(_capDecay);
   state.darkEnergy = state.darkEnergy.add(deSelf);
   state.darkEnergy = state.darkEnergy.max(0);
+  state.darkEnergyTotal = state.darkEnergyTotal.add(deSelf);   // ★ 先累加再净化（否则 total 漏检）
   // 2026: per-frame sanitiser -- any resource that turns non-finite is clamped back to 1e308
   // so the UI can never render the infinity glyph (README convention #4: infinity = fatal error).
+  //
+  // ⚠️ 2026 修正：旧清单里 `matter/entropy/particles` 是**不存在的字段名**
+  //   （真实位置是 `state.resources.*`），而且漏了 `darkEnergyTotal` / `zpeTotal` 等
+  //   **会反过来喂公式的累计量** ⇒ 一旦它们变成 ∞，每帧都会重新污染 darkEnergy/zpe。
+  //   ⇒ 清单必须覆盖"实际存在的字段 + 所有会进公式的累计量"。
   {
     const LIMIT = D("1e308");
-    for (const k of ["darkEnergy", "zpe", "infinityPoints", "eternityPoints", "quantum", "matter", "entropy", "particles"]) {
-      const v = state[k];
-      if (v && typeof v.isFinite === "function" && !v.isFinite()) {
-        state[k] = LIMIT;
-        globalThis.__KI_INF_SEEN ??= {};
-        if (!globalThis.__KI_INF_SEEN[k]) {
-          globalThis.__KI_INF_SEEN[k] = true;
-          // ★ 2026：**带栈**——只在第一次时打印调用栈，直接指认"是谁把它推成 ∞ 的" ✓
-          if (!globalThis.__KI_INF_TRACED) {
-            globalThis.__KI_INF_TRACED = true;
-            console.error("[inf-sanitise] state." + k + " became non-finite; clamped to 1e308. Stack:", new Error("infinity-source").stack);
-          } else {
-            console.error("[inf-sanitise] state." + k + " was non-finite; clamped to 1e308");
-          }
+    const targets = [
+      [state, "darkEnergy"], [state, "darkEnergyTotal"],
+      [state, "zpe"], [state, "zpeTotal"],
+      [state, "infinityPoints"], [state, "eternityPoints"], [state, "eternityPointsTotal"],
+      [state, "quantum"], [state, "quantumPairs"], [state, "peakQuantumRun"],
+      [state, "dreamPoints"], [state, "peakMatter"], [state, "maxIpThisEternity"],
+      [state, "ipTimeAccrued"], [state, "deAccum"], [state, "zpeAccumulator"],
+      [state.resources, "matter"], [state.resources, "entropy"],
+      [state.resources, "particle"], [state.resources, "traps"],
+    ];
+    for (const [obj, k] of targets) {
+      const v = obj?.[k];
+      if (!v || typeof v.isFinite !== "function" || v.isFinite()) continue;
+      obj[k] = LIMIT;
+      globalThis.__KI_INF_SEEN ??= {};
+      if (!globalThis.__KI_INF_SEEN[k]) {
+        globalThis.__KI_INF_SEEN[k] = true;
+        // ★ 2026：**带栈**——只在第一次时打印调用栈，直接指认"是谁把它推成 ∞ 的" ✓
+        if (!globalThis.__KI_INF_TRACED) {
+          globalThis.__KI_INF_TRACED = true;
+          console.error("[inf-sanitise] state." + k + " became non-finite; clamped to 1e308. Stack:", new Error("infinity-source").stack);
+        } else {
+          console.error("[inf-sanitise] state." + k + " was non-finite; clamped to 1e308");
         }
       }
     }
+    if (!Number.isFinite(Number(state.v1Log10))) state.v1Log10 = -323;
   }
   if (String(state.darkEnergy).includes("NaN")) state.darkEnergy = D(1);
-  state.darkEnergyTotal = state.darkEnergyTotal.add(deSelf);
   }
 }
 

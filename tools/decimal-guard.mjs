@@ -17,6 +17,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 // ★ 2026 模块化：递归 src/（含 src/config/），否则新子目录不在守卫范围内
 import { walkFiles } from "./lib/walk.mjs";
+// ★ 2026 运行时回归：Decimal 不能被 JS 的 `*` 强制成 Number（>1e308 ⇒ Infinity/NaN）
+import Decimal from "../dist/break_eternity.esm.js";
+import { newState } from "../src/state.js";
+import { advance } from "../src/engine.js";
+import { effectiveDarkEnergyGain } from "../src/formulas.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = path.join(ROOT, "src");
@@ -62,4 +67,34 @@ if (!problems.length) {
   for (const p of problems) console.log(`     ${p.file}:${p.line}  [${p.field}]  ${p.text}`);
 }
 console.log("=".repeat(100));
-process.exitCode = problems.length ? 1 : 0;
+// ── 运行时回归：JS 的 `*` 会把 Decimal 先 valueOf() 成 Number ──
+// 2026 实测：`darkEnergyGainPerConversion` > 1e308 时，`g * 1` = Infinity（层 2 值则是 NaN）
+// ⇒ 离线结算里 darkEnergy / zpe 变 ∞，sanctifier 只能事后夹回。
+// 这条断言用"相变等级 2000"造出一个 >1e308 的合法 Decimal，守住 `.mul()` 的唯一写法。
+let runtimeFail = 0;
+{
+  const D = (v) => new Decimal(v);
+  const s = newState();
+  Object.assign(s, {
+    phaseTransmuterUnlocked: true,
+    zpeEngineUnlocked: true,
+    brokenInfinity: true,
+    zpe: D("1e100"),
+    darkEnergy: D("1e10"),
+    darkEnergyTotal: D("1e10"),
+    quantum: D(100),
+  });
+  s.resources.traps = D(50);
+  s.deUpgradeLevels.phaseShift = D(2000);   // 1.5^2000 ≈ 1e352 > 1e308
+  const gain = effectiveDarkEnergyGain(s);
+  const finite = gain instanceof Decimal && gain.isFinite();
+  const big = finite && gain.gt(new Decimal("1e308"));
+  advance(s, 60);   // 离线结算路径：advance → tick（5s 分块）
+  const bad = ["zpe", "zpeTotal", "darkEnergy", "darkEnergyTotal"].filter((k) => !s[k].isFinite());
+  const ok = finite && big && bad.length === 0;
+  console.log(`  ${ok ? "✅" : "❌"} 大数路径：>1e308 的 Decimal 必须走 .mul（不得被 * 转成 Number）`);
+  console.log(`     暗能量收益 = ${String(gain)}（有限=${finite}，>1e308=${big}）｜结算后非有限字段：${bad.join(", ") || "无"}`);
+  if (!ok) runtimeFail++;
+}
+console.log("=".repeat(100));
+process.exitCode = problems.length || runtimeFail ? 1 : 0;

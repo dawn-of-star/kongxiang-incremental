@@ -24,7 +24,10 @@ export function effectiveDarkEnergyGain(state) {
   const _dlg = (state?.darkEnergy ?? new Decimal(0)).lte(0) ? 0 : state.darkEnergy.log10().toNumber();
   const _cap = DE_EFF_CAP;
   const deCapDecay = _dlg <= _cap.kneeLog10 ? 1 : Math.pow(2, -(_dlg - _cap.kneeLog10) / _cap.span);
-  return ((g) * _deKnee) * deCapDecay;
+  // ⚠️ 必须走 `.mul()`：`g` 可能是 >1e308 或 `ee…` 层的 Decimal，
+  //   而 JS 的 `g * 数字` 会先 `valueOf()` 成 Number ⇒ Infinity/NaN ✗
+  //   （README 数值约定 #3；这正是 2026 离线结算里 darkEnergy/zpe 变 ∞ 的根因）
+  return g.mul(_deKnee).mul(deCapDecay);
 }
 
 /**

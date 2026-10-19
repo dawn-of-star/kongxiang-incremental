@@ -1,4 +1,4 @@
-# 交接：当前已知问题（2026-10-19，供重写参考）
+# 交接：当前已知问题（2026-10-19，P0 已修复）
 
 > **状态：待同步**（交接清单 —— 记录 2026-10-19 时点的问题，重写完成后作废）
 > 基线：`HEAD = a9baa5d`，`npm test` → **48 个脚本全绿**；注意 `--strict` 下仍有 **7 项已知失败**（见 §7）
@@ -8,50 +8,67 @@
 
 ## 0. 一句话现状
 
-主流程能玩、七巧板与自动无限能跑通，但**离线补帧路径上仍会产生真正的 `Infinity`**（`darkEnergy` / `zpe`），
-目前靠**三道创可贴**把它夹住（见 §2）。**根因未定位** ✗ —— 重写时请优先解决，别把创可贴当设计 ✓。
+主流程能玩、七巧板与自动无限能跑通。**P0「离线补帧产生 Infinity（`darkEnergy` / `zpe`）」已定位并修复**：
+根因是 `effectiveDarkEnergyGain()` 用 JS 的 `*` 乘 `Decimal`，数值 > `1e308` 时被强制转成 Number ⇒ `Infinity` / `NaN`。
+修复见 §1.1；§2 的三道守卫**保留为安全网**，但不再承担"根因"职责 ✓。
 
 ---
 
-## 1. 未解决的真问题（P0）
+## 1. P0（**已解决**，保留定位记录）
 
-### 1.1 离线补帧会产生 `Infinity`（`darkEnergy` / `zpe`）
+### 1.1 离线补帧会产生 `Infinity`（`darkEnergy` / `zpe`）—— **已修复**
 
-**证据**（用户控制台，2026-10-19）：
+**根因（2026-10-19 定位）**：
 ```
+src/formulas/dark-energy-rate.js 的 effectiveDarkEnergyGain()
+  return ((g) * _deKnee) * deCapDecay;     ← g 是 Decimal
+```
+- JS 的 `*` 会先对 Decimal 调 `valueOf()` → **Number**：
+  - `g > 1e308` ⇒ `Infinity`
+  - `g` 是 `ee…` 层 ⇒ `NaN`
+- 于是 `darkEnergyRate()` 变 `Infinity/NaN` ⇒ `darkEnergy` 变 `Infinity/NaN`；
+  下一帧 `darkEnergyTotal` 继续被污染 ⇒ 每帧复发，sanitizer 只能事后夹回。
+- 这正是 README「数值约定 #3」禁止的写法（大数必须全程 Decimal）。
+
+**修复**：
+```js
+return g.mul(_deKnee).mul(deCapDecay);
+```
+（只改这一处；不改变任何数值语义。）
+
+**回归断言**（`tools/decimal-guard.mjs` 的运行时段）：
+- 造一个 `deUpgradeLevels.phaseShift = 2000` 的状态 ⇒ `effectiveDarkEnergyGain = 4.57e352`（>1e308）
+- 断言：收益是**有限 Decimal**，且 `advance(state, 60)` 后 `zpe/zpeTotal/darkEnergy/darkEnergyTotal` 全部有限 ✓
+- 旧写法会得到 `Infinity`；这条断言会当场报红。
+
+**历史证据（定位前，2026-10-19 用户控制台）**：
+```text
 [inf-sanitise] state.darkEnergy became non-finite; clamped to 1e308. Stack:
-    at tickBody   (engine.js:287)
-    at tick       (engine.js:115)
-    at advance    (main.js:7?)
-[inf-sanitise] state.zpe was non-finite; clamped to 1e308   (engine.js:289)
+    at advanceDarkEnergy (src/engine/tick.js)
+    at tickBody ...
+    at tick ...
+    at advance ...
+[inf-sanitise] state.zpe was non-finite; clamped to 1e308
 ```
-
-**已知事实**：
-- ∞ **在进入 `tick` 时就已经存在**（栈里没有上游帧）⇒ 是 tick 之外/之间产生的 ✗
-- 触发时机 = **刷新页面后的离线结算**（`main.js` 的 `advance(state, capped)`）
-- **不是** `advance` 的 dt 过大：`advance(state, seconds, chunkSeconds = 5)` **本来就按 5 秒分块** ✓
-  （我一度误判为「一次算 4 小时」✗，改动后回滚 ✓）
 
 **已排除**：
 - 不是渲染层（`format.js` 的 `toNumber()` 全部有量级守卫 ✓）
-- 不是存档残留（读档自愈已在 `deserialize` 末尾夹回 ✓，但**仍会复发** ⇒ 运行时产生 ✗）
-
-**下一步该查的地方**（重写时重点）：
-1. `advance()` 的**分块循环体**（我还没读完它 ✗——它可能在块与块之间做了别的写入）
-2. `zpeRate(state)` / `effectiveDarkEnergyGain(state)` 里有没有 `toNumber()` / `Math.*` 混入
-3. 离线结算**是否还有第二条路径**（`offlineReport` / `neko` 桥 / `ui.js` 的 `showOfflineBanner`）
+- 不是存档残留（读档自愈已在 `deserialize` 末尾夹回 ✓）
+- 不是 `advance` 的 dt 过大（按 5 秒分块 ✓；自增长另有 1 秒上限）
 
 ---
 
-## 2. 现在的三道创可贴（**不是根因**，重写时应替换成结构性约束）
+## 2. 现在的守卫（**是安全网，不是根因**）
+
+> 根因已由 §1.1 的 `.mul()` 修复；下面这些**保留**，用于防止未来的新路径再次把 ∞ 显示到界面。
 
 | # | 位置 | 做法 |
 |---|---|---|
-| 1 | `engine.js` 暗能量自增长块 | 单帧 `dt` 限 1 秒（`Math.min(Math.max(0, dt), 1)`）|
-| 2 | `state.js` `deserialize` 末尾 | 非有限资源夹回 `1e308`（`darkEnergy/zpe/ip/ep/quantum/matter/entropy/particles`）|
-| 3 | `engine.js` 每帧净化 | 同样 8 个字段，变非有限就夹回 `1e308`，并**首次打印调用栈** |
+| 1 | `engine/tick.js` 暗能量自增长块 | 单帧 `dt` 限 1 秒（`Math.min(Math.max(0, dt), 1)`）|
+| 2 | `state/serialize.js` `deserialize` | `dec()` 对每个读入字段做 `isFinite` 检查；末尾另有非有限资源夹回 `1e308` |
+| 3 | `engine/tick.js` 每帧净化 | 覆盖**实际字段 + 会反喂公式的累计量**（`darkEnergyTotal` / `zpeTotal` / `resources.*` 等），变非有限就夹回 `1e308`，并首次打印调用栈 |
 
-⚠️ 三处都只保「界面不出现 ∞」，**没有消除上游** ✗
+⚠️ 守卫只保「界面不出现 ∞」；**真正防复发的是 §1.1 的 Decimal 算术**。
 
 ---
 

@@ -7,6 +7,38 @@
 
 ---
 
+### ★ 修复：离线结算时 `darkEnergy` / `zpe` 变成 ∞（根因 = Decimal 被 JS 的 `*` 转成 Number）
+
+**症状**（用户控制台）：
+```
+[inf-sanitise] state.darkEnergy became non-finite; clamped to 1e308
+[inf-sanitise] state.zpe was non-finite; clamped to 1e308
+```
+发生在刷新页面后的离线结算（`advance → tick → advanceDarkEnergy`）。
+
+**根因**：
+- `src/formulas/dark-energy-rate.js` 的 `effectiveDarkEnergyGain()` 最后一行是
+  `return ((g) * _deKnee) * deCapDecay;`，而 `g` 是 `Decimal`。
+- JS 的 `*` 会先 `valueOf()` 成 Number：`g > 1e308 ⇒ Infinity`；`g` 为 `ee…` 层 ⇒ `NaN`。
+- 于是 `darkEnergyRate()` 变成非有限值，`darkEnergy` 被污染；下一帧累计量继续污染 ⇒ 每帧复发。
+- 这正是 README「数值约定 #3」禁止的写法。
+
+**修复**：
+```js
+return g.mul(_deKnee).mul(deCapDecay);   // 全程 Decimal
+```
+只改这一处，不改变数值语义。
+
+**同时补齐守卫**：
+- `engine/tick.js` 每帧净化清单改为**真实字段**（`state.resources.*`）并加入
+  `darkEnergyTotal` / `zpeTotal` 等会反喂公式的累计量。
+- `tools/decimal-guard.mjs` 新增运行时回归：`phaseShift = 2000` ⇒ 收益 `4.57e352`，
+  `advance(state, 60)` 后四个资源字段必须全部有限。
+
+**验证**：`npm test` 49/49 全绿；`consistency` 速率 8/8；该回归在旧写法下会报红。
+
+---
+
 ### ★ 改名为「量子共振」+ 新增**硬上限**（用户：「跨度层重命名为量子共振，效果不变，但设立大于 1e100000 基础物质不再生效的硬上限」）
 
 **一、改名：跨度层 → **量子共振**（机制/数值完全不变）**
