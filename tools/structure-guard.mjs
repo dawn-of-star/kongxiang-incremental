@@ -32,13 +32,18 @@ const notes = [];
 const add = (kind, msg) => problems.push({ kind, msg });
 
 // ── ① 文件预算 ──
+const BARRELS = ["config.js", "engine.js", "formulas.js", "state.js", "neko.js", "config/infinity.js"];
 const budget = (rel) => {
-  if (rel === "config.js" || rel === "engine.js") return 80;
+  if (BARRELS.includes(rel)) return 80;
   if (rel === "ui.js") return 850;
-  if (rel.startsWith("config/")) return 1150;
-  if (rel.startsWith("engine/")) return 700;
+  if (rel.startsWith("config/infinity/")) return 500;
+  if (rel.startsWith("config/")) return 800;
+  if (rel.startsWith("engine/")) return 600;
+  if (rel.startsWith("formulas/")) return 300;
+  if (rel.startsWith("state/")) return 350;
+  if (rel.startsWith("neko/")) return 500;
   if (rel.startsWith("ui-")) return 700;
-  return 1150;
+  return 850;
 };
 let maxFile = { rel: "", lines: 0 };
 for (const f of files) {
@@ -48,7 +53,7 @@ for (const f of files) {
   const b = budget(rel);
   if (lines > b) add("文件预算", `${rel} = ${lines} 行 > 预算 ${b} 行（拆小它，或把纯注释移到 docs/）`);
 }
-for (const barrel of ["config.js", "engine.js"]) {
+for (const barrel of BARRELS) {
   const text = fs.readFileSync(path.join(SRC, barrel), "utf8");
   const body = text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
   if (/\b(function|const|let)\s+[A-Za-z_$]/.test(body)) {
@@ -70,7 +75,7 @@ for (const f of files) {
     if (depth <= 0 && i > cur.start && lines[i].trim() === "}") {
       const len = i - cur.start + 1;
       if (len > maxFn.lines) maxFn = { rel, name: cur.name, lines: len };
-      if (len > 320) add("函数预算", `${rel} 的 ${cur.name}() = ${len} 行 > 320 行`);
+      if (len > 300) add("函数预算", `${rel} 的 ${cur.name}() = ${len} 行 > 300 行`);
       cur = null;
     }
   }

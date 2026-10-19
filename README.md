@@ -123,11 +123,15 @@ test-034/
 │   ├── config.js                配置门面（22 行 barrel，只 re-export）
 │   ├── config/                  ★ 12 个领域模块（base / upgrades / milestones / zpe-engine /
 │   │                              eternity / dream / dark-energy / quantum / infinity /
-│   │                              dark-matter / zones / neko）
-│   ├── state.js                 状态工厂 + 序列化（纯数据）
-│   ├── formulas.js              全部计算（纯函数，不碰 DOM）
-│   ├── engine.js                引擎门面（18 行 barrel）
+│   │                              dark-matter / zones / neko）+ infinity/ 下 4 个子模块
+│   ├── state.js                 状态门面（16 行 barrel）
+│   ├── state/                   ★ schema / serialize / accessors / log / helpers
+│   ├── formulas.js              计算门面（19 行 barrel）
+│   ├── formulas/                ★ core / global / zpe / dark-energy / entropy / matter / costs / quantum / infinity
+│   ├── engine.js                引擎门面（17 行 barrel）
 │   ├── engine/                  ★ tick / actions / collapse / purchases / eternity
+│   ├── neko.js                  N.E.K.O 门面（17 行 barrel，公开 API 不变）
+│   ├── neko/                    ★ log / snapshot / actions / bridge
 │   ├── save.js                  localStorage 存档
 │   ├── ui.js                    装配层：静态结构构建 + `render()` 编排（不再堆面板逻辑）
 │   ├── ui-core.js               DOM 缓存 / 写入去重 / 乘区上色 / 格式化
@@ -313,7 +317,7 @@ Windows 本地不敏感，所以 `import "./Formulas.js"` 这种错在你机器�
 ### 2026 模块化（当前 `src/`）
 
 2026-10-19 评估：**加权不可维护性 60%**（> 50% 阈值）⇒ 已执行模块化重构；
-重构后 **31.8%**。模块清单、结构预算、剩余债务（`tickBody` 298 行等）见
+重构后 **27.8%**。模块清单、结构预算、剩余债务（`createNekoBridge` 265 行等）见
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)。
 
 ### 历史：0.3.4 原稿（`legacy/`）
