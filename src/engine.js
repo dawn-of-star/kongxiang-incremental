@@ -354,6 +354,26 @@ function tickBody(state, dt) {
     const hasInf = (state.infinityCount ?? 0) >= 1 || (state.bigCrunchCount ?? D(0)).gte(1);
     if (hasInf) unlockZpeEngine(state);
   }
+  // ★★★ 2026（用户：「无限符号还是出现了」）—— **∞ 溯源守卫**：
+  //   任何资源变成 Infinity/NaN 时，立刻在控制台点名是**哪个字段** ✗
+  //   （只报一次/字段，不刷屏 ✓）
+  if (globalThis.__KI_INF_GUARD !== false) {
+    const _chk = {
+      matter: state.matter, entropy: state.entropy, particles: state.particles,
+      zpe: state.zpe, darkEnergy: state.darkEnergy,
+      infinityPoints: state.infinityPoints, eternityPoints: state.eternityPoints,
+      quantum: state.quantum, bigCrunchCount: state.bigCrunchCount,
+    };
+    for (const [k, v] of Object.entries(_chk)) {
+      if (v && typeof v.isFinite === "function" && !v.isFinite()) {
+        globalThis.__KI_INF_SEEN ??= {};
+        if (!globalThis.__KI_INF_SEEN[k]) {
+          globalThis.__KI_INF_SEEN[k] = true;
+          console.error(`[∞ 溯源] state.${k} 变成了非有限值（Infinity/NaN）——请把这个字段名报给开发者`);
+        }
+      }
+    }
+  }
   maybeAutoCrunch(state, doBigCrunch, bigCrunchGain);   // ★ 2026：×最高 用**本次收益** ✓
   // ★★★ 2026：**每秒 1% 本次无限可获得的 IP**（中间难度全清奖励；未解锁 ⇒ 恰好 0 ✓）
   //   ⚠️ 收益源走 bigCrunchGain（唯一数据源），当参数传进去避免循环 import ✓
