@@ -256,7 +256,10 @@ function tickBody(state, dt) {
   if (state.zpeEngineUnlocked) {
     const lv = zpeEngineLevel(state).toNumber();
     const engineMult = deEngineLevelBonus(lv);
-    const a = deGrowthRate(state, engineMult);          // 阶/秒（随 DE 衰减但有下限）
+    // ★ 2026： 必须是**有限正数**（否则 .mul(Infinity) 会把 DE 变成 Infinity ⇒ UI 显示 ∞ ✗）    let a = deGrowthRate(state, engineMult);          // 阶/秒    if (!Number.isFinite(a) || a < 0) a = 0;          // 兜底：异常值一律当 0 ✓
+    // 2026: `a` must be a finite non-negative number (otherwise .mul(Infinity) makes DE Infinity -> UI shows the infinity symbol)
+    let a = deGrowthRate(state, engineMult);
+    if (!Number.isFinite(a) || a < 0) a = 0;
     // 2026: DE self-growth is exponential in time (dDE/dt ∝ DE); apply the existing
     // soft cap (DE_EFF_CAP, knee 40 orders / span 30) so it converges instead of exploding.
     const _dlg = state.darkEnergy.lte(0) ? 0 : state.darkEnergy.log10().toNumber();

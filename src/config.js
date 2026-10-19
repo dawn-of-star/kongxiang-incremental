@@ -4577,7 +4577,10 @@ export function ipDoubleMult(state) {
 //   根因 = 「暗能量自增长」是**自指**的（收益 ∝ 自身存量）⇒ 时间上指数 ✗
 //   而 `DE_EFF_CAP` 的 knee = 300 阶 **永远够不到** ⇒ 等于没开 ✗
 //   ⇒ 把 knee 压到 **40 阶**、span 30 ⇒ 收益在 40 阶之后按 2^(-x/30) 衰减 ⇒ 收敛 ✓
-export const DE_EFF_CAP = { kneeLog10: 40, span: 30 };   // ⏸ 暂等效关闭（knee 高于可达 DE ⇒ 不生效 ✓）待定位第二个限制器 ✓
+// ★★★ 2026（用户裁定）：「允许暗能量**超越 e308.25**，但到那时被**超载机制**压制」——
+//   ⇒ knee 就设在 **e308.25**（= 双精度上限，UI 里出现 ∞ 视为致命错误 ✗）
+//   span 60 ⇒ 超过 knee 后每 60 阶减半 ⇒ 永远压得住，但**数值本身**仍可以 >1e308（break_eternity ✓）
+export const DE_EFF_CAP = { kneeLog10: 308.25, span: 60 };
 
 export function effectiveDarkEnergyLog10(state) {
   const de = state?.darkEnergy ?? new Decimal(0);
