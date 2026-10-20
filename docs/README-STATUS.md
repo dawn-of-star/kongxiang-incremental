@@ -61,6 +61,8 @@
 | 文档 | 需要同步的点 |
 |---|---|
 | **BONUS-INVENTORY.md** | 逐行读公式的产物 ⇒ 公式改过之后条目会漂移（见文首状态头） |
+| **SPACE-EXPANSION.md** | ⚠️ **设计稿（未实装）**：空间膨胀 du1~du11 的落点与 IP→EP 核算；落点表见 `BONUS-POSITIONS.md` §2.2 |
+| **TIMESPACE.md** | ⚠️ **设计稿（未实装）**：空间膨胀 / 时空层的另一版（三升级）方案；与 SPACE-EXPANSION 需二选一/合并 |
 | **IP-ECONOMY.md** | IP 公式与量子转 IP 的现役形态；含已删体系（`铸币`/`CRUNCH_ACCEL`）的历史表述 |
 | **INFINITY-UPGRADES.md** | **`ipTime` 不是"待删"、而是活的**（见文首纠正）｜`unspentBoost` 才是真删了 |
 | **TODO.md** | **工作台账**（保留"当时怎么想的"）⇒ **不要**当"当前还剩什么"的清单 ✗ |
