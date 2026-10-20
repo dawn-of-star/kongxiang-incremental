@@ -191,6 +191,8 @@ export function tangramAdvanceChallenge(state) {
   const d = Math.max(0, Math.min(5, Math.floor(Number(t?.d ?? 0))));
   state.tangramCleared ??= [0, 0, 0, 0, 0, 0];
   state.tangramCleared[d] = Math.max(0, Math.floor(Number(state.tangramCleared[d] ?? 0))) + 1;
+  // ★ 2026：**本次永恒完成数**（d3 奖励「每对量子」的输入 ✓）—— 永恒时归零 ✓
+  state.tangramChallengeThisEternity = Math.max(0, Math.floor(Number(state.tangramChallengeThisEternity ?? 0))) + 1;
   return true;
 }
 

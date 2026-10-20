@@ -126,6 +126,7 @@ export function doEternity(state) {
   state.peakQuantumRun = D(0);
   state.quantum = D(0);
   state.quantumPairs = D(0);
+  state.tangramChallengeThisEternity = 0;   // ★ 2026：d3 奖励按**本次永恒**计 ✓
   // ZPE 引擎（它在 ∞ 层之下）
   state.zpeEngineUnlocked = false;
   state.zpeEngineLevel = D(0);

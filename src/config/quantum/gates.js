@@ -1,3 +1,4 @@
+import { TANGRAM_CHALLENGE_REWARDS } from "../../tangram.js";
 /**
  * config/quantum/gates.js —— 量子门槛 / 捕获 / 量子加成（熵、暗能量、ZPE、IP）
  *
@@ -82,7 +83,13 @@ export function quantumStepMult(state) {
 /** 每次捕获得到几个量子（涨落增幅：2 → 3） */
 export function quantumPerPair(state) {
   const base = state.pairBoostBought ? 3 : QUANTUM.perPair;   // ★ cm6：每对 +1（见下一行）
-  return base + (hasCollapse(state, "cm6") ? 1 : 0);
+  const raw = base + (hasCollapse(state, "cm6") ? 1 : 0);
+  // ★★★ 2026（用户裁定）：**基于本次永恒完成的拼装挑战数量**，增幅**每对量子的实际数量** ✓
+  //   每完成 1 个 ⇒ ×(1 + 0.10)；本次永恒内累计，永恒后归零 ✓
+  //   ⚠️ 唯一入口仍是这里（tick.js:471 只读它）⇒ 显示与实发同源 ✓
+  const n = Math.max(0, Math.floor(Number(state?.tangramChallengeThisEternity ?? 0)));
+  const mult = 1 + n * TANGRAM_CHALLENGE_REWARDS.perClearQuantumPairMult;
+  return raw * mult;
 }
 
 /**
