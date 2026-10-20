@@ -110,7 +110,8 @@ test-034/
 │   ├── IP-ECONOMY.md            无限点 → 永恒（24 小时档 · 各机制提速表）
 │   ├── R-REPLACEMENT.md         ★ R 退役方案底图（暗能量跨度层 + 量子提供幂 k）
 │   ├── QUANTUM-MILESTONES.md     ★ 量子里程碑草案（7 条；承担阶梯加速）
-│   ├── ZONES.md                 ★ 乘区总表（改乘区前的底图：11 格 / 50 词条 / 现状观察）
+│   ├── ZONES.md                 ★ 乘区归属（改乘区前看；计数见 CONFIG-FACTS）
+│   ├── BONUS-POSITIONS.md       ★ 全增益落点（a区 / b区 / c区 / 斜率）与中期指数缺口
 │   ├── PROGRESSION.md           ★ 主流程设计（层间门槛/重置关系 + 实测时长 + 已知缺口 G1~G7）
 │   └── NEKO.md                  ★ neko 接入说明（待办：等对方回问题后做最小可接集）
 ├── electron/

@@ -28,9 +28,9 @@ export function matterCoeff(state, particleCount = undefined) {
     .mul(globalMultiplier(state))
     .mul(zf)
     .mul(v3)
-    // ★★ 2025 B8：**b区** —— 对 a区括号整体取幂，指数由引擎等级给
+    // ⚠️ 局部幂：不是正式 b区（见 docs/BONUS-POSITIONS.md）
     .pow(matterTotalExponent(state))
-    // ★ 跨度层在**指数之外**：它是"第二路产物质"（ZPE→DE→物质）的独立机制
+    // ★ 量子共振在**指数之外**：它是"第二路产物质"（ZPE→DE→物质）的独立机制
     .mul(matterSpanMult(state));
 
   //   ⚠️ 过载的触发量是「**未经削减的速率**」= `particle × coeff`

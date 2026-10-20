@@ -351,10 +351,11 @@ export function renderZpeEnginePanel(state) {
         on: unlocked,
         now: `暗能量倍率 ×${fmtMult(multBonus)}（= 2^等级）` },
       {
-        // ★★ 2025 B8：第 5 条 —— b区（指数区）。**前四条都只是高度，这条才改形状**
+        // ★ 2026 语义修正：第 5 条是**物质系数**的局部幂，不是正式 b区
+        //   （取幂的是 matterCoeff，不是资源整体；见 docs/BONUS-POSITIONS.md）
         on: matterTotalExponent(state) > 1 + 1e-9,
         now: matterTotalExponent(state) > 1 + 1e-9
-          ? `物质产出 = { 前四条 } ^ ${matterTotalExponent(state).toFixed(3)}（斜率 ×${matterTotalExponent(state).toFixed(2)}）`
+          ? `物质系数 = { 前四条 } ^ ${matterTotalExponent(state).toFixed(3)}（局部幂：主要提高高度，不改长期斜率）`
           : `k = 1（引擎等级 0 ⇒ 不生效）｜${MATTER_B_KNEE} 级饱和到 k = ${(1 + MATTER_B_KMAX).toFixed(0)}` },
     ];
     mech.forEach((m, i) => {

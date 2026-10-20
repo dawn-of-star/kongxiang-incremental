@@ -285,19 +285,11 @@ function buildZpeMechanisms() {
       name: "④ 引擎倍率也作用于暗能量倍率",
       at: `饱和式：×${ENGINE_MECH.de.A + 1} 为上限（x = 等级/${ENGINE_MECH.de.knee}）⇒ 有终点 ✓` },
     {
-      // ★★ 2025 B8：**b区（指数区）** —— 用户裁定"b区的成员由引擎控制"
-      //
-      //   为什么需要这一条（结合前四条一起读）：
-      //     ①②③④ 全都落在 **a区**（加法池 × 乘法池）⇒ 它们只改曲线的**高度**。
-      //     但**物质层的成长速率由基础公式决定**：`d log10(物质)/dt = b`（b 由量子线给），
-      //     a区 再怎么乘都改不了这个斜率 ✗
-      //     ⇒ 实测：引擎从 0 涨到 100 多级，a区 加成翻了几十倍，物质峰值只从
-      //        1e879 挪到 1e1134 —— **翻不过"每轮只推进几阶"那道墙** ✗
-      //     ⑤ 的作用是**对整个 a区括号取幂**：
-      //         `物质产出 = { ①…④ 那一整块 } ^ k`，`k = 1 + kMax·x/(1+x)`
-      //     ⇒ 斜率被放大 k 倍 ⇒ 这才是唯一能改**形状**（而不只是高度）的落点 ✓
-      name: "⑤ b区（指数区）：引擎给物质产出一个指数",
-      at: `整块 a区括号取幂：物质产出 = { 前四条 } ^ k，k = 1 → ${1 + MATTER_B_KMAX}（${MATTER_B_KNEE} 级后饱和）` },
+      // ★ 2026 语义修正：这是**物质系数的局部幂**，不是正式 b区。
+      //   正式 b区必须包住整个资源值；这里取幂的是 `matterCoeff`（系数）
+      //   ⇒ 主要改高度，不改长期斜率。完整落点见 docs/BONUS-POSITIONS.md。
+      name: "⑤ 物质系数幂（局部指数）：引擎给物质系数一个指数",
+      at: `对物质系数取幂（不是资源整体）：k = 1 → ${1 + MATTER_B_KMAX}（${MATTER_B_KNEE} 级后饱和）；主要提高高度` },
   ];
   box.innerHTML = cards.map((c, i) => `
       <div class="btn zone zone-zpe" id="zpe-mech-${i}" style="cursor:default">
@@ -484,7 +476,7 @@ function buildDynamicText() {
         + `（${ZPE_ENGINE.steepAfter.level} 级起**每级再 ×${(ZPE_ENGINE.steepAfter.mult ?? 1e5).toExponential(0)}**）`
       : ""));
   set("zpe-price-anchor", `｜标定：1e28 无限点 ≈ 100 级`);
-  // ZPE 页：b区幂 k 的真实形状（**不是** 1→26）
+  // ZPE 页：物质系数幂 k 的真实形状（**不是** 1→26；也不是正式 b区）
   set("zpe-k-shape",
     `k = 1 + ${MATTER_B_KMAX}·x/(1+x)（x = 等级/${MATTER_B_KNEE}）` +
     ` ⇒ **1 → ${(1 + MATTER_B_KMAX).toFixed(0)}** 单调饱和` +

@@ -268,7 +268,7 @@ export function bCapMult(state) {
 }
 
 /**
- * ★★ 2025 B8：**物质层的 b区（指数区）成员 —— 由引擎等级控制**
+ * ★★ 2025 B8：**物质系数幂（口语常称“b区”，但不是正式 b区）—— 由引擎等级控制**
  *
  * ── 为什么是这里（用户给的框架 + 用户裁定）──
  *   规范：`资源_next = { [ … ] ^ 指数区 } × 最终倍率区`
@@ -318,6 +318,11 @@ export function bCapMult(state) {
  */
 export const MATTER_B_KNEE = 100;
 export const MATTER_B_KMAX = 5;
+/**
+ * ⚠️ 2026 语义修正：本函数常被口语叫作「b区」，但 `matterCoeff.pow(k)` 的底数是
+ * **系数**，不是资源 `M` ⇒ 按 `ZONE_RULES` 仍是 a区局部幂，主要改高度。
+ * 正式 b区（包住整个资源值）当前是 0 处。完整落点表见 docs/BONUS-POSITIONS.md。
+ */
 export function matterTotalExponent(state) {
   const lv = effectiveEngineLevel(state).toNumber();
   if (!Number.isFinite(lv) || lv <= 0) return 1;
