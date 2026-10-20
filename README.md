@@ -112,8 +112,9 @@ test-034/
 │   ├── QUANTUM-MILESTONES.md     ★ 量子里程碑草案（7 条；承担阶梯加速）
 │   ├── ZONES.md                 ★ 乘区归属（改乘区前看；计数见 CONFIG-FACTS）
 │   ├── BONUS-POSITIONS.md       ★ 全增益落点（a区 / b区 / c区 / 斜率）与中期指数缺口
-│   ├── SPACE-EXPANSION.md       ★ 空间膨胀（设计稿，未实装）：du1~du11 与 IP→EP 阶梯
-│   ├── TIMESPACE.md             ★ 空间膨胀 / 时空层（设计稿，未实装；另一版三升级）
+│   ├── SPACE-EXPANSION-FINAL.md ★ 空间膨胀合并终稿（设计，未实装）：du1~du11 / SE / ST
+│   ├── SPACE-EXPANSION.md       ☆ 空间膨胀原始逐字稿（历史输入，已合并）
+│   ├── TIMESPACE.md             ☆ 空间膨胀 / 时空层旧稿（只保留时空外层）
 │   ├── PROGRESSION.md           ★ 主流程设计（层间门槛/重置关系 + 实测时长 + 已知缺口 G1~G7）
 │   └── NEKO.md                  ★ neko 接入说明（待办：等对方回问题后做最小可接集）
 ├── electron/

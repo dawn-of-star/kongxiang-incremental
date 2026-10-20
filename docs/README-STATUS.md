@@ -48,6 +48,7 @@
 | **[CONFIG-FACTS.md](CONFIG-FACTS.md)** | ✅ 权威（**机器生成**） | ★ **所有计数/常量的唯一出处** —— 由 `tools/config-facts.mjs` 生成并校验，与代码不同步会**测试失败** ✓ |
 | **ZONES.md** | ✅ 权威 | 乘区归属（**改乘区必看**）。计数见 `CONFIG-FACTS.md` |
 | **[BONUS-POSITIONS.md](BONUS-POSITIONS.md)** | ✅ 权威 | ★ **全增益落点总表（a区 / b区 / c区 / 斜率）** + 中期为什么进不了指数区；加中期增益前必看 |
+| **[SPACE-EXPANSION-FINAL.md](SPACE-EXPANSION-FINAL.md)** | ✅ 权威（设计合并终稿，**未实装**） | ★ **空间膨胀**：du1~du11 / SE / ST / `^0.5` 挑战 / 目标 EP 重算；实现前以本文为准 |
 | **ZPE-ENGINE.md** | ✅ 权威 | ZPE 引擎（含第 5 条机制：基于自身倍数提升前 8 个虚空升级） |
 | **QUANTUM-MILESTONES.md** | ✅ 权威 | 量子里程碑（qm1~qm7）的定义与阈值 |
 | **COLLAPSE-MILESTONES-8.md** | ✅ 已落地 | `cm1`~`cm8` **全部实装并接线**；本文保留**设计依据与理由** |
@@ -61,8 +62,8 @@
 | 文档 | 需要同步的点 |
 |---|---|
 | **BONUS-INVENTORY.md** | 逐行读公式的产物 ⇒ 公式改过之后条目会漂移（见文首状态头） |
-| **SPACE-EXPANSION.md** | ⚠️ **设计稿（未实装）**：空间膨胀 du1~du11 的落点与 IP→EP 核算；落点表见 `BONUS-POSITIONS.md` §2.2 |
-| **TIMESPACE.md** | ⚠️ **设计稿（未实装）**：空间膨胀 / 时空层的另一版（三升级）方案；与 SPACE-EXPANSION 需二选一/合并 |
+| **SPACE-EXPANSION.md** | ⚠️ **设计输入（原始逐字稿）**：已被 `SPACE-EXPANSION-FINAL.md` 合并；保留用户原文与推导历史 |
+| **TIMESPACE.md** | ⚠️ **设计输入（时空外层保留）**：空间膨胀三升级已被合并稿取代；时空层（TP/重置）仍有效 |
 | **IP-ECONOMY.md** | IP 公式与量子转 IP 的现役形态；含已删体系（`铸币`/`CRUNCH_ACCEL`）的历史表述 |
 | **INFINITY-UPGRADES.md** | **`ipTime` 不是"待删"、而是活的**（见文首纠正）｜`unspentBoost` 才是真删了 |
 | **TODO.md** | **工作台账**（保留"当时怎么想的"）⇒ **不要**当"当前还剩什么"的清单 ✗ |
