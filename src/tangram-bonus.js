@@ -71,3 +71,24 @@ export function tangramEngineBonusLevels(state) {
 export function tangramConvRateMult(state) {
   return tangramAxisParams(state).convRate / TANGRAM_AXES_RANGE.convRate.lo;
 }
+
+/**
+ * ★★★ 2026（用户：「把掉线的两条接上」）—— **ZPE 引擎等级的"实际生效值"**
+ *
+ * = 裸等级 + 纵轴覆盖加成（`tangramEngineBonusLevels`）+ 挑战奖励（`freeZpeEngineLevels`，全清 +185）
+ *
+ * ⚠️ 为什么三样都做成**参数**而不在这里 import：
+ *   本文件是 `formulas/` 与 `config/` 都反向依赖的**底层纯函数模块** ✗
+ *   在这里 import engine/config 会造**循环依赖** ✗（ESM 拿未初始化绑定 ⇒ ReferenceError）
+ *   ⇒ 由**上层**把三样算好传进来 ✓ 本文件保持纯 ✓
+ *
+ * @param {number|import("break_eternity").Decimal} rawLevel 裸等级
+ * @param {{covBonus?: number, rewardLevels?: number}} extra
+ * @returns {number} 实际生效等级（用于**效果侧**；价格侧仍读裸等级 ✗）
+ */
+export function effectiveEngineLevel(rawLevel, extra = {}) {
+  const base = Math.max(0, Number(rawLevel) || 0);
+  const cov = Math.max(0, Number(extra?.covBonus) || 0);
+  const rew = Math.max(0, Number(extra?.rewardLevels) || 0);
+  return base + cov + rew;
+}
