@@ -62,8 +62,16 @@ function wrapEl(node) {
   //   `?nowrap=1` 或控制台 `window.__NO_DOM_WRAP = true` ⇒ 完全跳过拦截器。
   //   用途：A/B 判断"拦截器是否制造了 V8 性能悬崖"（用户报 150ms/帧）
   if (globalThis.__NO_DOM_WRAP === true) return node;
-  /** 给一个属性装"值没变就不写"的拦截器 */
-  const dedupe = (prop, desc, bucket) => {
+  /**
+   * 给一个属性装"值没变就不写"的拦截器。
+   *
+   * ⚠️ 2026（用户截图：梦想页分组/开关**重复**）：
+   *   `textContent=""` / `innerHTML=""` 是**清空结构**的操作，不能去重 ✗
+   *   第一次清空后 `last` 记为 `""`；第二次再清空会被跳过 ⇒ 旧的 `<div>` 分组
+   *   留在 DOM 里，新的一整套又 append 进去 ⇒ 看起来就是“上面和下面重复”。
+   *   ⇒ 空字符串**永远放行**；只有非空文本才允许去重。
+   */
+  const dedupe = (prop, desc, bucket, clearIsStructural = false) => {
     if (!desc) return;
     let last;
     let first = true;
@@ -75,7 +83,10 @@ function wrapEl(node) {
         // ⚠️ 第一次必须放行：`last` 初值 `undefined` 与真实初值可能相同，
         //    但那不影响正确性（反正要写的是同一个值）；这里放行是为了
         //    让"首帧一定把 DOM 写对"这条更直观 ✓
-        if (!first && last === v) { domWriteStats.skipped++; return; }
+        if (!first && last === v && !(clearIsStructural && v === "")) {
+          domWriteStats.skipped++;
+          return;
+        }
         first = false;
         last = v;
         domWriteStats[bucket]++;
@@ -83,8 +94,8 @@ function wrapEl(node) {
       },
     });
   };
-  dedupe("textContent", TEXT_DESC, "text");
-  dedupe("innerHTML", HTML_DESC, "html");
+  dedupe("textContent", TEXT_DESC, "text", true);
+  dedupe("innerHTML", HTML_DESC, "html", true);
   dedupe("className", CLASS_DESC, "cls");
   dedupe("hidden", HIDDEN_DESC, "bool");
   dedupe("disabled", DISABLED_DESC, "bool");

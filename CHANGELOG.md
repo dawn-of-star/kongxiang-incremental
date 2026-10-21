@@ -26,6 +26,8 @@
 - `dream-ui.js`：模块级 `cardCache` 缓存**全部 11 张卡**；锁定卡只“不 append”，解锁时取回同一节点；
   重排不再预先清空，由 `arrange` 统一清空后重建；分组 wrap 加稳定 id；事件委托只绑一次；
   分组按 2 / 3 列分开（永恒保留 3 列，其余 2 列）；
+- `ui-cache.js`：`textContent=""` / `innerHTML=""` 是**清空结构**，空字符串永不被去重跳过
+  （否则第二次清空被 dedupe 吞掉，旧分组残留 ⇒ “上面和下面重复”）；
 - `ui.js`：先 `renderDreamPage()` 再画自动无限面板；绑定点击时走 `getDreamCard()`（缓存节点）；
 - `autocrunch-ui.js`：规则条只认 `dream-wrap-autoInfinities`，卡不可见时移除，不再 fallback；
 - `dream-page-badge` 改为「已实装」；`dream-badge` 初值改为 `0 / 11`；
