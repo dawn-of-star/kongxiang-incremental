@@ -426,6 +426,25 @@ ck("④f 定点手算：只放大三角 II ⇒ 左边缘 100%、上边缘 0%",
   );
 }
 
+// ══════════════════════════════════════════════════════════
+// ⑪ 2026 用户裁定：`ipDoubleKneeMult`（d5/d6 清满 ×2/×3）必须**真生效**
+//    knee 倍率 = 软上限右移 ⇒ 同一等级**价格下降**（提速 ✓，不是涨价 ✗）
+// ══════════════════════════════════════════════════════════
+{
+  const { ipDoubleLogCost } = await import("../src/config/infinity/ip.js");
+  const { rewardIpDoubleKneeMult } = await import("../src/tangram-reward.js");
+  const base = ipDoubleLogCost(40, 1);
+  const k2 = ipDoubleLogCost(40, 2);
+  const k3 = ipDoubleLogCost(40, 3);
+  const rb = rewardIpDoubleKneeMult({ tangramCleared: [0, 0, 0, 0, 0, 0] });
+  const rf = rewardIpDoubleKneeMult({ tangramCleared: [6, 6, 6, 6, 6, 6] });
+  ck(
+    "⑪ ipDouble knee：×2/×3 价格单调下降；全清=3",
+    base > k2 && k2 > k3 && rb === 1 && rf === 3,
+    `log价 1×=${base.toFixed(1)} ｜ 2×=${k2.toFixed(1)} ｜ 3×=${k3.toFixed(1)} ｜ 奖励 ${rb}→${rf}`,
+  );
+}
+
 console.log();
 console.log("=".repeat(96));
 console.log(`  ${fails === 0 ? `全部通过 ✅（${ckCount} 条断言）` : `${fails} / ${ckCount} 项失败 ❌`}`);

@@ -53,7 +53,7 @@
 
 ---
 
-## 5. ⚠️ 现在**有两条是死代码**（重构后掉线 ✗）
+## 5. ⚠️ ~~两条死代码~~ → **已全部接通 ✓**（2026-10-21 修正）
 
 | 项 | 有没有消费者 | 说明 |
 |---|---|---|
@@ -62,9 +62,9 @@
 | `countFreqMult` | ✅ `formulas/global.js:25` | 生效 ✓ |
 | `epDiscount` / `pityFloor` | ✅ `tangram-game.js:45 / :61` | 生效 ✓ |
 | `passiveIpFrac` / `allClear` | ✅ `tangram-passive.js` / `config/dark-energy.js` | 生效 ✓ |
-| **`freeZpeEngineLevels`** | ❌ **无** | 重构后 `effectiveEngineLevel()` 不存在 ⇒ **185 级空转** ✗ |
-| **`ipDoubleKneeMult`** | ❌ **无** | `ipDouble` 的 knee 函数不带 `state` ⇒ **×3 空转** ✗ |
-| 附：**纵轴覆盖加成** `tangramEngineBonusLevels` | ❌ **无调用方** | 覆盖面的纵向加成**整体不生效** ✗ |
+| **`freeZpeEngineLevels`** | ✅ `config/zpe-engine/config.js::effectiveEngineLevel`（**一直存在** ✓，我 2026-10-20 误报为掉线 ✗）| 已接通 ✓ |
+| **`ipDoubleKneeMult`** | ✅ 2026-10-21 接通（`ipDoubleLogCost/PriceAt/AffordableIn` 加 `kneeMult` 参数 ✓）| 已接通 ✓（knee=3 时第 40 级 log 价 131 → 110.3 ✓）|
+| 附：**纵轴覆盖加成** `tangramEngineBonusLevels` | ✅ 同一个 `effectiveEngineLevel` 里 ✓ | 已接通 ✓ |
 
 ---
 
