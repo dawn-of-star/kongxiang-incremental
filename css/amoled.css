@@ -174,7 +174,24 @@ body {
         而按比例改反而让"名义尺寸 ↔ 线宽"的对应关系多一个无意义的数字 ⇒ 有意为之 ✓
      （`vector-effect: non-scaling-stroke` 看着更省事，但它会把 `stroke-dasharray` 也变成
        屏幕像素 ⇒ 覆盖率高亮的 dash 数学会**算错** ⇒ 不能用 ✗）*/
-.tangram-board { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.tangram-board { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; position: relative; }
+
+/* ★★★ 2026-10-22（用户：「拼装挑战的提示做成**悬浮页面**在右侧/左侧」）——
+   预览从文档流里拿出来，**悬浮在棋盘右上角** ✓
+   · 不占布局空间（右栏 15% 不再被预览挤压 ✓）
+   · 点「看题目」展开 / 收起（`hidden` 由 JS 控制 ✓）
+   · 半透明底 + 细边框，压在棋盘上也能看清 ✓ */
+.tg-preview-float {
+  position: absolute; right: 8px; top: 8px; z-index: 6;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+  padding: 8px; border-radius: 10px;
+  background: rgba(8, 8, 12, 0.78);
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+}
+.tg-preview-float > .btn { width: auto !important; white-space: nowrap; }
+.tg-preview-float #tangram-chal-preview { display: block; border-radius: 6px; }
 .tangram-svg {
   /* ★★★ 2026（用户：「正方形显然小了，但区域又这么大 ⇒ **拓展可见区域**」）——
      让 svg **吃满左侧那一列**（原来是 min(855px,100%) ⇒ 大屏上白留一大片 ✗）
