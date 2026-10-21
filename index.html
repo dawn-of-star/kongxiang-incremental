@@ -957,27 +957,32 @@
                 <div class="tangram-slot">正方形</div>
                 <div class="tangram-slot">平行四边形</div>
               </div>
-          </div>
+            </div>
+
+            <!-- ★★★ 2026-10-22（用户：「题目预览移动到巧板托盘下方」）——
+                 从「拼装挑战」节移到这里：托盘正下方
+                 id 全部保持不变 ⇒ paintChallengePreview() 不用改 -->
+            <div class="tag-preview-box" style="width:100%;margin-top:8px">
+              <button class="btn btn-small" id="tg-chal-preview-btn" style="width:auto">看题目</button>
+              <span id="tg-chal-preview-wrap" hidden>
+                <svg id="tangram-chal-preview" width="180" height="180" viewBox="-2 -2 104 104"
+                  style="vertical-align:middle;background:rgba(255,255,255,.03);border-radius:6px;margin-top:6px"></svg>
+              </span>
             </div>
           </div>
 
           <h2>三条轴（覆盖率 → 加成）</h2>
           <div class="detail" style="margin-bottom:12px">
-            <div><span>纵轴 · 左边缘</span><b>免费 ZPE 引擎 10 → 10000 级</b></div>
-            <div><span>横轴 · 下边缘</span><b>熵→粒子 10:1 → 1:1e13</b></div>
-            <div><span>斜轴 · 主对角线</span><b>计数频率 每级 +5% → 5000%</b></div>
+            <div><span>纵轴 · 左边缘</span><b>免费 ZPE 引擎 10 → <b>1e7</b> 级</b></div>
+            <div><span>横轴 · 下边缘</span><b>熵→粒子 10:1 → <b>1:1e16</b></b></div>
+            <div><span>斜轴 · 主对角线</span><b>计数频率 每级 +5% → <b>+5e4%</b></b></div>
+            <div><span>说明</span><b>三处读数现在 = 「覆盖 ｜ <b>对数进度</b> ｜ 当前加成」（2026-10-22）</b></div>
           </div>
 
           <h2>拼装挑战</h2>
           <div class="detail" style="margin-bottom:12px">
             <div><span>当前题目</span><b id="tangram-chal-need">—</b></div>
-            <div><span>题目预览</span><b>
-              <button class="btn btn-small" id="tg-chal-preview-btn" style="width:auto">看题目</button>
-              <span id="tg-chal-preview-wrap" hidden>
-                <svg id="tangram-chal-preview" width="180" height="180" viewBox="-2 -2 104 104"
-                     style="vertical-align:middle;background:rgba(255,255,255,.03);border-radius:6px"></svg>
-              </span>
-            </b></div>
+            <div><span>题目预览</span><b class="dim">已移到右侧「巧板托盘」下方</b></div>
             <div><span>进度</span><b id="tangram-chal-progress">—</b></div>
           </div>
 

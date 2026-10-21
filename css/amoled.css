@@ -1043,13 +1043,16 @@ button { font: inherit; cursor: pointer; }
    ══════════════════════════════════════════════════════════ */
 
 /* ── 获取巧板：标题一行、进度条、两个并排按钮、保底计数一行 ── */
-#tg-acq-card .tg-acq-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* ★★★ 2026-10-22（用户截图：「抽…」「直…」被截断 ⇒ **文字必须显示完整**）——
+   原来 `.tg-acq-row > .btn` 带 `min-width: 0` + `overflow: hidden` + `ellipsis` ✗
+   ⇒ 长价格（抽（1.00e10））就被吃掉 ✗ ⇒ 现在：**允许换行**、按钮按内容撑开、不省略 ✓ */
+#tg-acq-card .tg-acq-title { white-space: normal; overflow: visible; text-overflow: clip; }
 .tg-acq-bar { height: 6px; margin: 4px 0 6px; }
-.tg-acq-row { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; }
+.tg-acq-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .tg-acq-row > .btn {
-  width: auto !important; flex: 0 1 auto; min-width: 0;
+  width: auto !important; flex: 0 0 auto; min-width: max-content;
   font-size: 11px; padding: 5px 8px; white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis;
+  overflow: visible; text-overflow: clip;
 }
 .tg-acq-row > span.dim { font-size: 11px; white-space: nowrap; }
 
