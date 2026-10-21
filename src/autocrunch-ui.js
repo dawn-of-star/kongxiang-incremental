@@ -11,18 +11,19 @@
  * ⚠️ 面板**带版本号**：结构或样式改了必须 bump `PANEL_VER`，否则旧 DOM 会被一直沿用 ✗
  */
 import Decimal from "../dist/break_eternity.esm.js";
-import { AUTO_CRUNCH, autoCrunchThreshold, shouldAutoCrunch } from "./autocrunch.js";
+import { AUTO_CRUNCH, autoCrunchThreshold, setAutoCrunchActive, shouldAutoCrunch } from "./autocrunch.js";
 import { bigCrunchGain } from "./formulas.js";
 
 const D = (x) => new Decimal(x);
 const MODE_LABEL = { amount: "按收益", time: "按时间", xHighest: "× 最高" };
-const PANEL_VER = "4";
+const PANEL_VER = "5";
 const BTN_CSS = "width:auto !important;display:inline-block !important;flex:0 0 auto;"
   + "font-size:12px;padding:5px 10px;margin:0;line-height:1.2;border-radius:6px";
 const LAB_CSS = "color:var(--text-dim);white-space:nowrap;font-size:12px;flex:0 0 auto";
 
 let cur = null;
 let lastApplyAt = 0;
+let lastInputAt = 0;
 
 function mkBtn(text, id, mode) {
   const b = document.createElement("button");
@@ -53,7 +54,7 @@ function buildAutoCrunchPanel(host, commit) {
       + "background:rgba(255,255,255,.015);font-size:12px";
 
     box.appendChild(mkLab("规则"));
-    for (const m of AUTO_CRUNCH.modes) box.appendChild(mkBtn(MODE_LABEL[m.id] ?? m.name, null, m.id));
+    for (const m of AUTO_CRUNCH.modes) box.appendChild(mkBtn(MODE_LABEL[m.id] ?? m.name, `tg-ac-mode-${m.id}`, m.id));
 
     box.appendChild(mkLab("阈值"));
     const inp = document.createElement("input");
@@ -64,6 +65,16 @@ function buildAutoCrunchPanel(host, commit) {
     inp.spellcheck = false;
     inp.style.cssText = "width:84px;padding:4px 6px;font-size:12px;border-radius:6px;"
       + "border:1px solid var(--line-strong);background:var(--bg-card);color:var(--text)";
+    // ★ 2026：输入框初始值 + **输入期间不要被每帧 sync 覆盖**。
+    //   旧实现只看 `document.activeElement`；在某些布局/重排下输入框会短暂失焦，
+    //   sync 立刻把刚敲的字覆盖回旧值 ⇒ 用户感觉“数据无法输入”。
+    const initA = cur?.autoCrunch ?? {};
+    const initMode = AUTO_CRUNCH.modes.some((m) => m.id === initA.mode) ? initA.mode : AUTO_CRUNCH.defaultMode;
+    inp.value = initMode === "time"
+      ? String(initA.time ?? AUTO_CRUNCH.defaults.time)
+      : String(initMode === "amount" ? (initA.amount ?? AUTO_CRUNCH.defaults.amount) : (initA.xHighest ?? AUTO_CRUNCH.defaults.xHighest));
+    inp.addEventListener("input", () => { lastInputAt = Date.now(); });
+    inp.addEventListener("focus", () => { lastInputAt = Date.now(); });
     box.appendChild(inp);
 
     box.appendChild(mkBtn("设定", "tg-ac-apply"));
@@ -95,6 +106,7 @@ function handleAutoCrunchClick(ev, commit) {
         st.autoCrunch ??= {};
         st.autoCrunch.mode = b.dataset.acmode;
         if (b.dataset.acmode === "time" && !(Number(st.autoCrunch.time) > 0)) st.autoCrunch.time = 0.1;
+        lastInputAt = 0;                 // 切模式后允许 sync 立刻把输入框换成该模式的阈值
         commit?.();
         return;
       }
@@ -124,8 +136,10 @@ function handleAutoCrunchClick(ev, commit) {
       }
 
       if (b.id === "tg-ac-on") {
-        st.autoCrunch ??= {};
-        st.autoCrunch.isActive = st.autoCrunch.isActive === false;
+        // ★ 2026 修 bug：这里原来只翻 `autoCrunch.isActive`，而引擎只认
+        //   `autoToggles.autoInfinities`（`autoEnabled`）⇒ 面板的开/关是**死的** ✗
+        //   现在直接走 `setAutoCrunchActive()`（唯一写入点），和梦想页开关同源 ✓
+        setAutoCrunchActive(st, st?.autoToggles?.autoInfinities !== true);
         commit?.();
       }
 }
@@ -135,8 +149,10 @@ function syncAutoCrunchPanel(box, state) {
   const a = state?.autoCrunch ?? {};
   const mode = a.mode ?? AUTO_CRUNCH.defaultMode;
 
-  for (const b of box.querySelectorAll("[data-acmode]")) {
-    const on = b.dataset.acmode === mode;
+  for (const m of AUTO_CRUNCH.modes) {
+    const b = document.getElementById(`tg-ac-mode-${m.id}`);
+    if (!b) continue;
+    const on = m.id === mode;
     b.style.background = on ? "var(--eternity,#b388ff)" : "transparent";
     b.style.color = on ? "#101014" : "var(--text-dim)";
     b.style.borderColor = on ? "var(--eternity,#b388ff)" : "var(--line-strong)";
@@ -144,13 +160,15 @@ function syncAutoCrunchPanel(box, state) {
   }
 
   const val = document.getElementById("tg-ac-value");
-  if (val && document.activeElement !== val && Date.now() - lastApplyAt > 1500) {
+  if (val && document.activeElement !== val
+      && Date.now() - Math.max(lastApplyAt, lastInputAt) > 1500) {
     val.value = mode === "time" ? String(a.time ?? 0.1) : String(mode === "amount" ? (a.amount ?? "1") : (a.xHighest ?? "2"));
   }
 
   const onBtn = document.getElementById("tg-ac-on");
   if (onBtn) {
-    const on = a.isActive !== false;
+    // ★ 唯一开关键是 `autoToggles.autoInfinities`（与梦想页卡右侧开关同一个）
+    const on = state?.autoToggles?.autoInfinities === true;
     onBtn.textContent = on ? "开" : "关";
     onBtn.style.background = on ? "var(--eternity,#b388ff)" : "transparent";
     onBtn.style.color = on ? "#101014" : "var(--text-dim)";
@@ -158,7 +176,8 @@ function syncAutoCrunchPanel(box, state) {
 
   const st = document.getElementById("tg-ac-status");
   if (st) {
-    const owned = state?.dreamUpgrades?.autoInfinities === true;
+    const owned = state?.dreamUpgrades?.autoInfinities === true
+      || (typeof state?.dreamUpgrades?.autoInfinities === "number" && state.dreamUpgrades.autoInfinities > 0);
     const sig = [mode, a.amount, a.time, a.xHighest, a.isActive, owned, state?.brokenInfinity].join("|");
     if (st.dataset.sig !== sig) {
       st.dataset.sig = sig;

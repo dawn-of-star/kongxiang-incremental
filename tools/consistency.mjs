@@ -54,7 +54,7 @@ import { BASE, COLLAPSE, DE_MILESTONES, DE_UPGRADES, REPEATABLE, VOID_UPGRADES, 
   zpeEngineTotalCostLoop, zpeEngineAffordableInLoop } from "../src/config.js";
 import { newState, deLevelOf } from "../src/state.js";
 // ★★★ 2026：梦想自动化的"效果侧"断言要它（`autoInfinities` 是否尊重开关）✓
-import { shouldAutoCrunch } from "../src/autocrunch.js";
+import { setAutoCrunchActive, setAutoCrunchMode, setAutoCrunchValue, shouldAutoCrunch } from "../src/autocrunch.js";
 import {
   conversion, darkEnergyRate, deUpgradeCost, entropyRate, globalMultiplier, globalMultiplierParts,
   matterRateOver, particleRate, repeatableCost, trapCost, zpeRate,
@@ -845,12 +845,38 @@ console.log();
     };
   const on = shouldAutoCrunch(mk(true), { gain: D("3e10") });   // 2026: xHighest 比"收益 vs 持有IP" ⇒ 给足收益 ✓
   const off = shouldAutoCrunch(mk(false), { gain: D("3e10") });
-    return {
-      ok: on === true && off === false,
-      detail: on === true && off === false
-        ? `开关开 ⇒ 判据 true ✓｜开关关 ⇒ false ✓（旧字段 isActive 不再参与）`
-        : `开关开=${on}（应 true）｜开关关=${off}（应 false）`,
-    };
+
+  // ★ 2026：三种模式 + 面板开关/时间输入的最小回归
+  const mode = (id, patch = {}) => {
+    const s = mk(true);
+    s.autoCrunch = { ...s.autoCrunch, mode: id, ...patch };
+    return s;
+  };
+  const amt = mode("amount", { amount: "5" });
+  const amtOn = shouldAutoCrunch(amt, { gain: D(6) });
+  const amtOff = shouldAutoCrunch(amt, { gain: D(4) });
+  const tim = mode("time", { time: 0.1 });
+  const timOff = shouldAutoCrunch({ ...tim, runElapsed: 0.05 }, {});
+  const timOn = shouldAutoCrunch({ ...tim, runElapsed: 0.1 }, {});
+  const xhi = mode("xHighest", { xHighest: "2" });
+  xhi.maxIpThisEternity = D(10);
+  const xhiOff = shouldAutoCrunch(xhi, { gain: D(19) });
+  const xhiOn = shouldAutoCrunch(xhi, { gain: D(20) });
+  const ui = mk(true);
+  const uiT = setAutoCrunchValue(ui, "time", 0.1) && ui.autoCrunch.time === 0.1;
+  const uiMode = setAutoCrunchMode(ui, "amount") && ui.autoCrunch.mode === "amount";
+  const uiA = setAutoCrunchActive(ui, true) === true && ui.autoToggles.autoInfinities === true;
+  const uiB = setAutoCrunchActive(ui, false) === false && ui.autoToggles.autoInfinities !== true;
+  const modesOk = amtOn && !amtOff && timOn && !timOff && xhiOn && !xhiOff && uiT && uiMode && uiA && uiB;
+
+  return {
+    ok: on === true && off === false && modesOk,
+    detail: on === true && off === false && modesOk
+      ? `开关开 ⇒ 判据 true ✓｜开关关 ⇒ false ✓（旧字段 isActive 不再参与）`
+        + `｜amount 5/6/4 ✓｜time 0.1/0.1/0.05 ✓｜×最高 10×2/20/19 ✓｜面板开关/模式/0.1s 输入 ✓`
+      : `开关开=${on}（应 true）｜开关关=${off}（应 false）｜`
+        + `amount=${amtOn}/${amtOff}｜time=${timOn}/${timOff}｜×最高=${xhiOn}/${xhiOff}｜UI=${uiT}/${uiA}/${uiB}`,
+  };
   });
 
   check("★ 梦想自动化③：三条「永恒保留」（被动）必须在永恒后真的保留", () => {

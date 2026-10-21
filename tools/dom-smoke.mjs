@@ -1435,6 +1435,16 @@ let zoneGuard = "未跑";
         autoAcquireDream(s);
         const buyAuto = Number(s.ipDoubleLevel ?? 0) > ip0 && Number(s.zpeEngineLevel ?? 0) > z0;
 
+        // ★ 2026：输入框不能每帧被 sync 覆盖；input 事件后 1.5s 内必须保留用户输入
+        const inputEl = byId.get("tg-ac-value");
+        let inputOk = false;
+        if (inputEl) {
+          inputEl.value = "7";
+          inputEl._handlers?.input?.[0]?.({ target: inputEl });
+          renderDm(s);                         // 再跑一帧 sync
+          inputOk = inputEl.value === "7" && byId.get("tg-ac-value") === inputEl;
+        }
+
         // ★ 2026：缓存卡的 click handler 也必须还在（否则 em8 解锁后卡是“死”的）
         //   ⚠️ 不能真点：`onBuyDream` 闭包的是 main 的 state，不是本测试的合成 state；
         //      只验 handler 已挂到缓存节点上 ✓
@@ -1450,12 +1460,12 @@ let zoneGuard = "未跑";
         clearBox.textContent = "";
         const clearOk = !(clearBox._children ?? []).includes(probe);
 
-        const ok = missing.length === 0 && wrapHasCard && ruleInWrap && groupLabels === 5 && colsOk && buyAuto && clickOk && clearOk && /已实装/.test(badge);
+        const ok = missing.length === 0 && wrapHasCard && ruleInWrap && groupLabels === 5 && colsOk && buyAuto && clickOk && clearOk && inputOk && /已实装/.test(badge);
         console.log(`  梦想页 em8 动态解锁  ${ok
           ? `✅ ${emauto.length} 张 emauto 卡都出现（含 wrap + 卡节点）✓｜自动无限规则条在 autoInfinities wrap 内 ✓｜分组 ${groupLabels} 个不重复、列数 2/3 ✓`
-            + `｜IP/引擎自动买生效（Lv${ip0}→${s.ipDoubleLevel}/Lv${z0}→${s.zpeEngineLevel}）✓｜缓存卡已挂 handler ✓｜textContent 清空不被去重 ✓｜徽标「${badge}」✓`
+            + `｜IP/引擎自动买生效（Lv${ip0}→${s.ipDoubleLevel}/Lv${z0}→${s.zpeEngineLevel}）✓｜缓存卡已挂 handler ✓｜输入不被覆盖 ✓｜textContent 清空不被去重 ✓｜徽标「${badge}」✓`
           : `❌ 缺卡=${missing.join(",") || "无"}｜卡在 wrap=${wrapHasCard}｜规则条在 wrap=${ruleInWrap}｜分组=${groupLabels}/列数=${colsOk}`
-            + `｜自动买=${buyAuto}（Lv${ip0}→${s.ipDoubleLevel}/Lv${z0}→${s.zpeEngineLevel}）｜handler=${clickOk}｜清空=${clearOk}｜徽标「${badge}」`}`);
+            + `｜自动买=${buyAuto}（Lv${ip0}→${s.ipDoubleLevel}/Lv${z0}→${s.zpeEngineLevel}）｜handler=${clickOk}｜输入=${inputOk}｜清空=${clearOk}｜徽标「${badge}」`}`);
         console.log();
         if (!ok) process.exitCode = 1;
       }

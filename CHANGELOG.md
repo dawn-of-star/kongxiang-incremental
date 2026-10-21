@@ -36,6 +36,28 @@
    永远收不到）、成功判据兼容引擎三种返回约定、快照日志只留"系统解锁 + 转生层"
    （1,799 → 496 字符），并加了第 1–3 次大坍缩 / 首次永恒 / 七巧板解锁的**主动问话**。
 
+### ★ 修复：自动无限面板——开/关是死的、阈值输入被每帧覆盖、时间阈值被抬到 1s
+
+**症状**：
+- 梦想页「无限自动化」卡里的规则条，开/关按钮点了不生效；
+- 阈值输入框很难输入，刚敲的数字会被重置；
+- 时间模式填 `0.1` 会被改成 `1`。
+
+**根因**：
+- 面板的 `tg-ac-on` 只翻 `autoCrunch.isActive`，而引擎只认 `autoToggles.autoInfinities`
+  （`autoEnabled()` 唯一判据）⇒ 开关是**死的**；
+- `syncAutoCrunchPanel()` 只看 `document.activeElement`，输入框短暂失焦就被旧 state 覆盖；
+- `setAutoCrunchValue('time')` 用 `Math.max(1, ...)`，把默认 `0.1s` 抬成 `1s`。
+
+**修复**：
+- 面板开关改走 `setAutoCrunchActive()`（与梦想页卡右侧开关同一个状态）；
+- 输入框加 `input` / `focus` 时间戳，1.5s 内不被 sync 覆盖；初始值从当前 state 填；
+- 时间模式允许 `0.1`，与 `deserialize` 的下限一致；
+- 模式按钮加稳定 id `tg-ac-mode-*`，sync 不再依赖 `querySelectorAll`；
+- `consistency` 新增三模式 / 开关 / 时间输入的断言。
+
+---
+
 ### ★ 修复：梦想（自动化）页——em8 新卡不出现 / 分组与开关重复 / 自动无限规则条嵌错位置
 
 **症状**（用户截图）：

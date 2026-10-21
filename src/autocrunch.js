@@ -153,7 +153,8 @@ export function setAutoCrunchMode(state, mode) {
 }
 export function setAutoCrunchValue(state, mode, value) {
   state.autoCrunch ??= defaultAutoCrunch();
-  if (mode === "time") { state.autoCrunch.time = Math.max(1, Number(value) || 1); return true; }
+  // ★ 时间阈值允许 0.1s（与 `AUTO_CRUNCH.defaults.time` 一致）；旧实现 `Math.max(1)` 会把 0.1 改成 1 ✗
+  if (mode === "time") { state.autoCrunch.time = Math.max(0.1, Number(value) || 0.1); return true; }
   if (mode === "amount") { state.autoCrunch.amount = String(value ?? "1"); return true; }
   if (mode === "xHighest") { state.autoCrunch.xHighest = String(value ?? "2"); return true; }
   return false;
