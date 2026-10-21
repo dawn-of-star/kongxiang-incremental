@@ -285,6 +285,14 @@ export const TANGRAM_CHALLENGE_REWARDS = {
   perClearQuantumPairMult: 0.10,
   /** 每档需要清满几个 */
   perTier: 6,
+  /**
+   * ★★★ 2026-10-22（用户：「完成**前两组**拼装挑战后，neko 好感度系统提供的**指数**对 **ZPE 产量**生效」）
+   *   d1 + d2 各清满 6 个 ⇒ 解锁（读 `tangramCleared[0] >= 6 && tangramCleared[1] >= 6` ✓）
+   *   效果：`zpeRate = zpeRate ^ nekoGlobalExponent(state)`（指数 1.000 ~ 1.0221）
+   *   ⚠️ 这是**指数**作用在资源产出上 ⇒ `p` 会被抬起一点点（≈ +2.2% 相对，0.301 → ≈0.307）
+   *      仍在红线内 ✓ 但若以后把 neko 指数做大，**必须重算 p** ✗
+   */
+  nekoExponentOnZpeAfterTiers: 2,
   /** 结构性奖励（不等价于任何乘区）✓ */
   structural: {
     midAllClearPassiveIp: 0.01,
@@ -339,6 +347,17 @@ export function tangramRewardEffects(clearedByDifficulty) {
     countFreqMult,
     pityFloor,
     passiveIpFrac: midAll ? R.structural.midAllClearPassiveIp : 0,
+    /**
+     * ★ 2026-10-22（用户新增）：完成**前两组**（d1 + d2 各清满）⇒
+     *   `nekoGlobalExponent` 对 **ZPE 产量**生效（指数作用 ✓）
+     *   判定**按档**而不是按总数（总数 12 也可能来自 d1+d5 ✗ 不符合"前两组" ✓）
+     */
+    nekoZpeExponent: (() => {
+      const need = Math.max(0, Math.floor(Number(R.nekoExponentOnZpeAfterTiers) || 0));
+      if (need <= 0) return false;
+      for (let d = 0; d < need; d++) if (n(d) < R.perTier) return false;
+      return true;
+    })(),
     allClear,
   };
 }

@@ -124,3 +124,12 @@
 - 计数：`state.tangramChallengeThisEternity`（过关 +1 ✓）
 - **永恒时归零**（`engine/eternity.js` ✓）
 - 系数在 `TANGRAM_CHALLENGE_REWARDS.quantumPairDoublePerGroup`（默认 2 ✓）与 `quantumPairAllClearBonus`（默认 2 ✓）
+### 3.2 新增（2026-10-22 用户裁定）：**neko 指数 → ZPE 产量**
+
+| 项 | 条件 | 效果 | 落点 |
+|---|---|---|---|
+| `nekoZpeExponent` | **前两组（d1 + d2）各清满** | `zpeRate = zpeRate ^ nekoGlobalExponent(state)`（1.000 ~ 1.0221）| `src/formulas/zpe.js::zpeRate()` ✓ |
+
+- 判定按**档位**而非总数（`606000` 不算 ✓ 断言 ⑫ 盯着）
+- 指数作用于资源产出 ⇒ `p` 会被抬起约 2.2%（0.301 → ≈0.307）⇒ 仍在红线内，但**再放大 neko 指数就必须重算 p** ✗
+- 这是**唯一**一条直接改指数形状的挑战奖励 ✓

@@ -9,6 +9,8 @@ import { D } from "./core.js";
 import { countFreqAddTerm, globalMultiplier } from "./global.js";
 import { deLevelOf, hasDe, hasV9, hasVoid, hasZpe } from "../state.js";
 import Decimal from "../../dist/break_eternity.esm.js";
+import { tangramRewardEffects } from "../tangram.js";   // ★ 2026-10-22：前两组清满 ⇒ neko 指数作用于 ZPE ✓
+import { nekoGlobalExponent } from "../config/neko.js";
 
 export function zpeMultiplier(state) {
   const z = state.zpe.gt(0) ? state.zpe : D(0);
@@ -197,7 +199,7 @@ export function effectiveTraps(state) {
 export function zpeRate(state) {
   let prodMult = hasVoid(state, "v6") ? zpeMultiplier(state) : D(1);
   if (state.zpeFixedMultiplier) prodMult = prodMult.mul(state.zpeFixedMultiplier);
-  return effectiveTraps(state)
+  const out = effectiveTraps(state)
     .mul(globalMultiplier(state))
     // ★ 方案 1：全局加成再进一次（见上方说明）
     .mul(globalMultiplier(state))
@@ -208,6 +210,16 @@ export function zpeRate(state) {
     //   它只改常数速率 c，不碰自反馈指数 a —— 见 docs/ZPE-ENGINE.md。
     .mul(zpeEngineProdMult(state))
     .mul(zpeProductionPenalty(state));
+
+  // ★★★ 2026-10-22（用户新增）：「完成**前两组**拼装挑战后，
+  //   neko 好感度系统提供的**指数**对 **ZPE 产量**生效」 ✓
+  //   ⇒ `out ^ nekoGlobalExponent(state)`（指数 1.000 ~ 1.0221，来自 `config/neko.js`）
+  //   ⚠️ 唯一入口仍是 `zpeRate()`（`tick` 与界面都读它 ⇒ 显示 == 实发 ✓）
+  //   ⚠️ 是指数 ⇒ 会抬 `p` 一点点（≈ +2.2% 相对）；若以后把 neko 指数做大，**必须重算 p** ✗
+  const rw = tangramRewardEffects(state?.tangramCleared);
+  if (!rw.nekoZpeExponent) return out;
+  const exp = nekoGlobalExponent(state);
+  return exp === 1 ? out : out.pow(exp);
 }
 
 /**

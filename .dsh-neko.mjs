@@ -1,0 +1,10 @@
+import { zpeRate } from "./src/formulas/zpe.js";
+import { newState } from "./src/state.js";
+import Decimal from "./dist/break_eternity.esm.js";
+const D = (x) => new Decimal(x);
+const mk = (cl, aff) => { const s = newState(); s.zpeUnlocked = true; s.zpe = D("1e10"); s.nekoAffinity = aff; s.tangramCleared = cl; return s; };
+const a = zpeRate(mk([0,0,0,0,0,0], 80));
+const b = zpeRate(mk([6,6,0,0,0,0], 80));
+console.log("未解锁两组 ⇒", a.toExponential(4));
+console.log("已解锁两组 ⇒", b.toExponential(4));
+console.log("比值 =", b.div(a).toNumber().toFixed(5));
