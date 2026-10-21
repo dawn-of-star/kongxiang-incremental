@@ -19,12 +19,14 @@ import { placedVertices } from "./tangram.js";
 
 /** 三条轴的端点（唯一数据源）✓ */
 export const TANGRAM_AXES_RANGE = {
-  /** 纵轴：免费 ZPE 引擎等级 10 → 10000 */
-  engineLevel: { lo: 10, hi: 10000 },
-  /** 横轴：熵→粒子速率 0.1 → 1e13 */
-  convRate: { lo: 0.1, hi: 1e13 },
-  /** 斜轴：计数频率每级系数 0.05 → 50 */
-  countFreqPerLevel: { lo: 0.05, hi: 50 },
+  // ★★★ 2026-10-22（用户：「七巧板系统给的数值还是保守了 ⇒ **所有最高值 ×1e3**」）
+  //   三轴的 hi 全部乘 1000 ⇒ 满覆盖的收益放大 3 个数量级 ✓
+  /** 纵轴：免费 ZPE 引擎等级 10 → **1e7**（原 1e4）*/
+  engineLevel: { lo: 10, hi: 1e7 },
+  /** 横轴：熵→粒子速率 0.1 → **1e16**（原 1e13）*/
+  convRate: { lo: 0.1, hi: 1e16 },
+  /** 斜轴：计数频率每级系数 0.05 → **5e4**（原 50）*/
+  countFreqPerLevel: { lo: 0.05, hi: 5e4 },
   /** 软上限：log 空间的 knee（覆盖率到这个比例之后开始饱和）✓ */
   knee: 0.85,
 };

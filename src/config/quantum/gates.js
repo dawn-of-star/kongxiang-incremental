@@ -90,11 +90,25 @@ export function quantumPerPair(state) {
   // ★★★ 2026（用户裁定，更激进）：**每完成 1 组（= 6 个挑战）⇒ 每对量子翻倍** ✓
   //   全清（36 个 = 6 组）⇒ ×2^6 = ×64，再叠一个"全清额外 ×2" ⇒ **×128** ✓
   //   基线每对 2 ⇒ 全清 **256 个量子/对** ✓（与用户口径一致 ✓）
+  // ★★★ 2026（用户裁定，更激进）：**每完成 1 组（= 6 个挑战）⇒ 每对量子翻倍** ✓
+  //   全清（36 个 = 6 组）⇒ ×2^6 = ×64，再叠一个"全清额外 ×2" ⇒ **×128** ✓
+  //   基线每对 2 ⇒ 全清 **256 个量子/对** ✓（与用户口径一致 ✓）
+  //   ⚠️ 倍率本身抽到 `quantumPairMult()`（面板要显示它 ⇒ 同源 ✓，不写第二遍 ✗）
+  return raw * quantumPairMult(state);
+}
+
+/**
+ * ★★★ 2026-10-22（用户：「实时数值得做」）—— **每对量子的倍率本身**
+ *
+ * 面板要显示"当前是几倍" ✓ ⇒ 拆出来，与 `quantumPerPair()` **同源**
+ * （后者 = 裸值 × 本函数 ⇒ 显示 == 实发 ✓，不是第二条路 ✓）
+ */
+export function quantumPairMult(state) {
+  const R = TANGRAM_CHALLENGE_REWARDS;
   const n = Math.max(0, Math.floor(Number(state?.tangramChallengeThisEternity ?? 0)));
-  const groups = Math.floor(n / TANGRAM_CHALLENGE_REWARDS.perTier);          // 0..6
-  const allClearBonus = n >= TANGRAM_CHALLENGE_REWARDS.perTier * 6 ? 2 : 1;  // 全清再 ×2 ✓
-  const mult = Math.pow(2, groups) * allClearBonus;
-  return raw * mult;
+  const groups = Math.floor(n / R.perTier);
+  const allClearBonus = n >= R.perTier * 6 ? (R.quantumPairAllClearBonus ?? 2) : 1;
+  return Math.pow(R.quantumPairDoublePerGroup ?? 2, groups) * allClearBonus;
 }
 
 /**

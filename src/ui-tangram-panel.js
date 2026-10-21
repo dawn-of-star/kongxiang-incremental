@@ -11,6 +11,9 @@ import { D } from "./formulas.js";
 import { updateTabLocks } from "./lock-ui.js";
 import { paintTangramBoard } from "./tangram-board.js";
 import { TANGRAM_PIECES, autoPlaceTangram, cellsFromFingerprint, drawTangramPiece, exchangeTangramPiece, flipTangramPlacement, moveTangramPlacement, resetTangramBoard, rotateTangramPlacement, takeTangramBack, tangramAdvanceChallenge, tangramChallengeSolved, tangramChallengeTarget, tangramCoverage, tangramPieceAtStep, tangramPriceFactor, tangramPricesAt } from "./tangram-game.js";
+import { TANGRAM_AXES_RANGE, tangramAxisParams } from "./tangram-bonus.js";   // ★ 2026：三轴端点 + 实时数值 ✓
+import { fmtMult } from "./format.js";
+import { quantumPairMult } from "./config/quantum/gates.js";   // ★ 2026：每对量子实时倍率（与引擎同源 ✓）
 import { tangramRewardEffects } from "./tangram.js";
 import { el, safePaint, sci, uiHandlers } from "./ui-core.js";
 
@@ -158,16 +161,42 @@ safePaint("tangram-preview", () => paintChallengePreview(st));
     rl.textContent = "挑战奖励：EP 折扣 " + (rw.epDiscount * 100).toFixed(0) + "%"
       + " ｜ 免费引擎 " + rw.freeZpeEngineLevels + " 级"
       + " ｜ 暗能量 knee ×" + rw.deKneeMult.toFixed(2)
-      + " ｜ IP 倍增 knee ×" + rw.ipDoubleKneeMult.toFixed(2) + "（仅显示）"
+      + " ｜ IP 倍增 knee ×" + rw.ipDoubleKneeMult.toFixed(2) + "（已生效 ✓）"
       + " ｜ 转化斜率 ×" + (rw.convSlopeMult ?? 1).toFixed(0)
       + " ｜ 计数系数 ×" + (rw.countFreqMult ?? 1).toFixed(0)
       + " ｜ 保底 " + (rw.pityFloor ?? 150)
+      + " ｜ 每对量子 ×" + quantumPairMult(st).toFixed(0) + "（" + Math.floor(Number(st?.tangramChallengeThisEternity ?? 0)) + " 个挑战）"
       + (rw.passiveIpFrac > 0 ? " ｜ 每秒 " + (rw.passiveIpFrac * 100).toFixed(0) + "% 本次无限 IP" : "")
       + (rw.allClear ? " ｜ 全清 ✓" : "");
   }
-  for (const pair of [["vert", cov.vert], ["horz", cov.horz], ["diag", cov.diag]]) {
-    const node = el["tangram-cov-" + pair[0]];
-    if (node) node.textContent = (pair[1] * 100).toFixed(1) + "%";
+
+  // ══════════════════════════════════════════════════════════
+  // ★★★ 2026-10-22（用户：「加成进度条按照对数的形式计算并实现」+「实时数值得做」）——
+  //   三条轴的读数**不再只写覆盖率** ✗，改成三段：
+  //     `覆盖 42.0% ｜ 对数进度 63% ｜ 当前加成 +1.2e3 级 / ×4.4 / ×12`
+  //   对数进度 = `log10(当前/lo) / log10(hi/lo)`（0~1）
+  //     ⇒ 因为 `mixLog` 的收益在 log 空间分布，**线性覆盖率看不出强度** ✗
+  //   端点一律从 `TANGRAM_AXES_RANGE` 取（唯一数据源 ✓，不写死 ✗）
+  // ══════════════════════════════════════════════════════════
+  {
+    const ax = tangramAxisParams(st);
+    const R = TANGRAM_AXES_RANGE;
+    const rows = [
+      { id: "vert", cov: cov.vert, lo: R.engineLevel.lo, hi: R.engineLevel.hi, cur: ax.engineLevel,
+        txt: (v) => "+" + Math.round(v - R.engineLevel.lo) + " 级" },
+      { id: "horz", cov: cov.horz, lo: R.convRate.lo, hi: R.convRate.hi, cur: ax.convRate,
+        txt: (v) => "×" + fmtMult(v / R.convRate.lo) },
+      { id: "diag", cov: cov.diag, lo: R.countFreqPerLevel.lo, hi: R.countFreqPerLevel.hi, cur: ax.countFreqPerLevel,
+        txt: (v) => "×" + fmtMult(v / R.countFreqPerLevel.lo) },
+    ];
+    for (const r of rows) {
+      const node = el["tangram-cov-" + r.id];
+      if (!node) continue;
+      const prog = Math.log10(Math.max(r.cur, r.lo) / r.lo) / Math.log10(r.hi / r.lo);
+      node.textContent = "覆盖 " + (r.cov * 100).toFixed(1) + "%"
+        + " ｜ 对数进度 " + (Math.max(0, Math.min(1, prog)) * 100).toFixed(0) + "%"
+        + " ｜ " + r.txt(r.cur);
+    }
   }
 
   paintTangramSlots(st);
