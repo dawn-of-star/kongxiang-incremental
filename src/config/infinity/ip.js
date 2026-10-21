@@ -8,6 +8,7 @@ import { BREAK_INFINITY } from "./break.js";
 import { powExactInt } from "../dark-matter.js";
 import { INFINITY_UPGRADES } from "./upgrades.js";
 import Decimal from "../../../dist/break_eternity.esm.js";
+import { rewardIpDoubleKneeMult } from "../../tangram-reward.js";   // ★ 2026：d5/d6 清满 ⇒ knee 倍率 ✓
 
 export function infinityPointGain(matter, broken, state = null) {
   const m = matter instanceof Decimal ? matter : new Decimal(matter ?? 0);
@@ -130,16 +131,17 @@ export const IP_DOUBLE_AD = {
  *   ⇒ 本函数改为**直接调 `ipDoublePriceAt`**（单一实现，两处不会再脱节 ✓）
  *   ⚠️ 踩过同一类坑多次：「显示 ≠ 实发」几乎都源于**同一个公式写了两遍**。
  */
-export function ipDoubleLogCost(level) {
+export function ipDoubleLogCost(level, kneeMult = 1) {
   const n = Math.max(0, Number(level) || 0);
+  const KNEE = Math.max(1, Number(kneeMult) || 1);   // ★ 2026：挑战奖励的 knee 倍率（d5/d6 清满 ×2/×3）
   // ★ 第 1 级（count=0）：固定 1 点（用户裁定）
   if (n <= 0) return 0;                                                // 10^0 = 1 ✓
-  // ⚠️ 2026：ipDouble 的 knee 奖励（d6 全清 ×3）**尚未接** —— 这两个函数没有 state 形参，
-  //   硬塞会 ReferenceError ✗ 要接必须先改签名（会连锁到 6 个以上调用点）⇒ 记入 TODO ✓
   const inc = IP_DOUBLE_AD.purchasesAtIncrease;
   // ★ 第 2 级起：`10^(n−1)` ⇒ n=1→1、n=2→10、n=3→100 …（与用户给的序列一致 ✓）
   if (n < inc) return Math.log10(10) * (n - 1);
-  const thr = IP_DOUBLE_AD.costIncreaseThreshold.log10().toNumber();
+  // ★ 2026：knee 倍率 = **软上限右移** ⇒ 门槛**除以**倍率（更快到高位、更便宜 ✓）
+  //   ⚠️ 乘上去是**变慢**（实测 knee=3 时第 40 级 log 价 131 → 193 ✗）⇒ 方向必须是除 ✓
+  const thr = IP_DOUBLE_AD.costIncreaseThreshold.log10().toNumber() / KNEE;
   return thr + (n - inc) * Math.log10(1e10);                           // AD: 门槛 × 1e10^超出
 }
 
@@ -166,9 +168,9 @@ export function ipDoubleLogCost(level) {
  *         而 `Decimal.pow` 自己处理 e308 以上；可达等级 ≈ `log10(池)/10`，
  *         价格上限远在 `Decimal` 的 e9e15 内）⇒ 它**唯一的作用就是砍可买级数** ✗
  */
-export function ipDoublePriceAt(level) {
+export function ipDoublePriceAt(level, kneeMult = 1) {
   const n = Math.max(0, Number(level) || 0);
-  return new Decimal(10).pow(ipDoubleLogCost(n));
+  return new Decimal(10).pow(ipDoubleLogCost(n, kneeMult));
 }
 
 /**
@@ -197,14 +199,14 @@ export function ipDoublePriceAt(level) {
  *        且在体内乘会让 `audit.mjs` 的 `quantumDeMultBonus(q)===10000` 类断言失效、
  *        并污染 UI 量子面板的显示）⇒ 在 `formulas.js` 的**调用处**乘 ✓
  */
-export function ipDoubleAffordableIn(level, poolDecimal) {
+export function ipDoubleAffordableIn(level, poolDecimal, kneeMult = 1) {
   const lv0 = Math.max(0, Number(level) || 0);
   // ⚠️ 2026：ipDouble 的 knee 奖励（d6 全清 ×3）**尚未接** —— 这两个函数没有 state 形参，
   //   硬塞会 ReferenceError ✗ 要接必须先改签名（会连锁到 6 个以上调用点）⇒ 记入 TODO ✓
   const inc = IP_DOUBLE_AD.purchasesAtIncrease;
   // ★ `costCap` 已删除（用户裁定）⇒ 这里不再读它 ✓
   const pool = poolDecimal instanceof Decimal ? poolDecimal : new Decimal(poolDecimal ?? 0);
-  if (!pool.gte(ipDoublePriceAt(lv0))) return 0;
+  if (!pool.gte(ipDoublePriceAt(lv0, kneeMult))) return 0;
 
   /**
    * ★★★ 2025 修正（用户报「永恒增幅价格消耗不对」后连带排查）：
@@ -290,7 +292,7 @@ export function ipDoubleCostFor(state, k) {
     //   后来我改成"平台"（`min(cap)`）⇒ **仍然被钉住**（池 < 1e320 时一级都买不了）✗
     //   ⇒ `costCap` 现已**彻底删除**：价格不封顶，逐级累加**真价**，
     //     与 `ipDoubleAffordableIn` 完全同源 ✓
-    total = total.add(ipDoublePriceAt(lv + i));
+    total = total.add(ipDoublePriceAt(lv + i, rewardIpDoubleKneeMult(state)));
   }
   return total;
 }
@@ -335,7 +337,7 @@ export function ipDoubleCostFor(state, k) {
  */
 export function ipDoubleCost(state) {
   const count = Math.max(0, Number(state?.ipDoubleLevel ?? 0) || 0);
-  return ipDoublePriceAt(count);
+  return ipDoublePriceAt(count, rewardIpDoubleKneeMult(state));
 }
 
 /** 效果 —— 照抄 AD 的 `effect: () => DC.D2.pow(player.IPMultPurchases)`（×2/级） */

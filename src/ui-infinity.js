@@ -1,3 +1,4 @@
+import { rewardIpDoubleKneeMult } from "./tangram-reward.js";   // ★ 2026：knee 奖励（显示=实发 ✓）
 /**
  * ui-infinity.js —— 无限面板：大坍缩 / ∞ 升级 / 悬浮重置窗
  *
@@ -148,7 +149,7 @@ export function renderInfinityUpgrades(state) {
           ? `无限点收益 ×${sci(effIpD.mult)}（下一级 ×${sci(effIpD.mult.mul(cfg.effectMult))}）`
           : cfg.desc;
       }
-      const nIpD = ipDoubleAffordableIn(lvIpD.toNumber(), state.infinityPoints);
+      const nIpD = ipDoubleAffordableIn(lvIpD.toNumber(), state.infinityPoints, rewardIpDoubleKneeMult(state));   // ★ 显示=实发 ✓
       if (el["max-ipDouble-n"]) el["max-ipDouble-n"].textContent = fmt(nIpD, 0);
       const bbIpD = el["inf-btn-ipDouble"];
       if (bbIpD) {

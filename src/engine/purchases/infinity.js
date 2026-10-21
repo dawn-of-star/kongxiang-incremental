@@ -1,3 +1,4 @@
+import { rewardIpDoubleKneeMult } from "../../tangram-reward.js";
 /**
  * engine/purchases/infinity.js —— ∞ 层购买：无限升级 / 无限增幅 / 永恒增幅 / 效果文本 / 快照
  *
@@ -88,7 +89,7 @@ export function buyInfinityUpgrade(state, id) {
  */
 export function buyIpDoubleMax(state) {
   const before = (state.ipDoubleLevel ?? D(0)).toNumber();
-  const k = ipDoubleAffordableIn(before, state.infinityPoints);
+  const k = ipDoubleAffordableIn(before, state.infinityPoints, rewardIpDoubleKneeMult(state));   // ★ 2026：knee 奖励 ✓
   if (!(k > 0)) return 0;
   const total = ipDoubleCostFor(state, k);
   if (state.infinityPoints.lt(total)) return 0;      // 兜底：探针与总价必须同源
