@@ -48,7 +48,7 @@
 | **[CONFIG-FACTS.md](CONFIG-FACTS.md)** | ✅ 权威（**机器生成**） | ★ **所有计数/常量的唯一出处** —— 由 `tools/config-facts.mjs` 生成并校验，与代码不同步会**测试失败** ✓ |
 | **ZONES.md** | ✅ 权威 | 乘区归属（**改乘区必看**）。计数见 `CONFIG-FACTS.md` |
 | **[BONUS-POSITIONS.md](BONUS-POSITIONS.md)** | ✅ 权威 | ★ **全增益落点总表（a区 / b区 / c区 / 斜率）** + 中期为什么进不了指数区；加中期增益前必看 |
-| **[SPACE-EXPANSION-FINAL.md](SPACE-EXPANSION-FINAL.md)** | ✅ 权威（设计合并终稿，**未实装**） | ★ **空间膨胀**：du1~du11 / SE / ST / `^0.5` 挑战 / 目标 EP 重算；实现前以本文为准 |
+| **[SPACE-EXPANSION-FINAL.md](SPACE-EXPANSION-FINAL.md)** | ⚠️ 设计合并终稿（**1e3600 未通过；未实装，禁止上线**） | ★ **空间膨胀**：du1~du11 / SE / ST / `^0.5` 挑战；目标 EP 只验收 1e10，1e3600 见 §2.7 |
 | **ZPE-ENGINE.md** | ✅ 权威 | ZPE 引擎（含第 5 条机制：基于自身倍数提升前 8 个虚空升级） |
 | **QUANTUM-MILESTONES.md** | ✅ 权威 | 量子里程碑（qm1~qm7）的定义与阈值 |
 | **COLLAPSE-MILESTONES-8.md** | ✅ 已落地 | `cm1`~`cm8` **全部实装并接线**；本文保留**设计依据与理由** |
