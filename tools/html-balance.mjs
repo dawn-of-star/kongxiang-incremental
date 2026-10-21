@@ -46,8 +46,8 @@ const count = (re) => (html.match(re) ?? []).length;
 // ② panel 容器配平
 {
   const panels = count(/class="tab-panel"/g);
-  const tabs = count(/data-tab="/g);   // 标签按钮数（应与面板数一致 ✓）
-  ck("② `.tab-panel` 数量 = 标签按钮数", panels === tabs, `面板=${panels} 标签=${tabs}`);
+  const ids = count(/id="panel-/g);   // 每个面板都应带 `id="panel-xxx"` ✓
+  ck("② 每个 `.tab-panel` 都有 id", panels === ids && panels >= 12, `面板=${panels} 带id=${ids}`);
 
 }
 
