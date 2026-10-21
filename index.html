@@ -970,6 +970,11 @@
               </span>
             </div>
           </div>
+          <!-- ⚠️ 2026-10-22 修：`tangram-wrap` 的闭合曾被漏掉 ✗
+               ⇒ 托盘/预览/两个 detail 块都被塞进右栏、整个 panel 也没关
+               ⇒ 连「永恒」面板一起被吞（用户截图：面板全空）✗
+               现在：这里关掉 `.tangram-wrap`，下面的 h2/detail 才是**整行**的全宽内容 ✓ -->
+          </div>
 
           <h2>三条轴（覆盖率 → 加成）</h2>
           <div class="detail" style="margin-bottom:12px">
