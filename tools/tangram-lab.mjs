@@ -408,6 +408,24 @@ ck("④f 定点手算：只放大三角 II ⇒ 左边缘 100%、上边缘 0%",
   }
 }
 
+// ══════════════════════════════════════════════════════════
+// ⑩ 2026 用户裁定：**每完成 1 组（= 6 个挑战）⇒ 每对量子翻倍**
+//    全清（6 组）再叠"全清 ×2" ⇒ ×128 ⇒ 每对 2 → 256 ✓
+// ══════════════════════════════════════════════════════════
+{
+  const { quantumPerPair } = await import("../src/config/quantum/gates.js");
+  const mk = (n) => ({ pairBoostBought: false, bigCrunchCount: 0, tangramChallengeThisEternity: n });
+  const p0 = quantumPerPair(mk(0));
+  const p6 = quantumPerPair(mk(6));
+  const p18 = quantumPerPair(mk(18));
+  const pAll = quantumPerPair(mk(36));
+  ck(
+    "⑩ 每对量子：0组=2 ｜ 1组=4 ｜ 3组=16 ｜ 全清=256",
+    p0 === 2 && p6 === 4 && p18 === 16 && pAll === 256,
+    `0=${p0} ｜ 6=${p6} ｜ 18=${p18} ｜ 36=${pAll}`,
+  );
+}
+
 console.log();
 console.log("=".repeat(96));
 console.log(`  ${fails === 0 ? `全部通过 ✅（${ckCount} 条断言）` : `${fails} / ${ckCount} 项失败 ❌`}`);

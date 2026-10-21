@@ -87,8 +87,13 @@ export function quantumPerPair(state) {
   // ★★★ 2026（用户裁定）：**基于本次永恒完成的拼装挑战数量**，增幅**每对量子的实际数量** ✓
   //   每完成 1 个 ⇒ ×(1 + 0.10)；本次永恒内累计，永恒后归零 ✓
   //   ⚠️ 唯一入口仍是这里（tick.js:471 只读它）⇒ 显示与实发同源 ✓
+  // ★★★ 2026（用户裁定，更激进）：**每完成 1 组（= 6 个挑战）⇒ 每对量子翻倍** ✓
+  //   全清（36 个 = 6 组）⇒ ×2^6 = ×64，再叠一个"全清额外 ×2" ⇒ **×128** ✓
+  //   基线每对 2 ⇒ 全清 **256 个量子/对** ✓（与用户口径一致 ✓）
   const n = Math.max(0, Math.floor(Number(state?.tangramChallengeThisEternity ?? 0)));
-  const mult = 1 + n * TANGRAM_CHALLENGE_REWARDS.perClearQuantumPairMult;
+  const groups = Math.floor(n / TANGRAM_CHALLENGE_REWARDS.perTier);          // 0..6
+  const allClearBonus = n >= TANGRAM_CHALLENGE_REWARDS.perTier * 6 ? 2 : 1;  // 全清再 ×2 ✓
+  const mult = Math.pow(2, groups) * allClearBonus;
   return raw * mult;
 }
 

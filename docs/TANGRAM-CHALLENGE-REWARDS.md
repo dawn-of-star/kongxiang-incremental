@@ -107,20 +107,20 @@
 
 | 项 | 条件 | 效果 | 落点 |
 |---|---|---|---|
-| **`perClearQuantumPairMult = 0.10`** | **本次永恒**每完成 1 个拼装挑战 | 每对量子 **×(1 + 0.10·n)** | `config/quantum/gates.js::quantumPerPair` ✓（`tick.js:471` 的唯一入口 ✓）|
+| **每组翻倍**（2026 用户改档 ✓）| **本次永恒**每完成 **1 组（= 6 个挑战）** | 每对量子 **×2^组数**；全清再 **×2** | `config/quantum/gates.js::quantumPerPair` ✓（`tick.js:471` 的唯一入口 ✓）|
 
 **曲线**（实跑）：
 
 | 本次永恒完成数 | 每对量子（基线 2）|
 |---|---|
-| 0 | 2.00 |
-| 6 | 3.20 |
-| 12 | 4.40 |
-| 18 | 5.60 |
-| 24 | 6.80 |
-| 30 | 8.00 |
-| **36（全清）** | **9.20** |
+| 0（0 组）| 2 |
+| 6（1 组）| 4 |
+| 12（2 组）| 8 |
+| 18（3 组）| 16 |
+| 24（4 组）| 32 |
+| 30（5 组）| 64 |
+| **36（6 组，全清）** | **256** |
 
 - 计数：`state.tangramChallengeThisEternity`（过关 +1 ✓）
 - **永恒时归零**（`engine/eternity.js` ✓）
-- 系数在 `TANGRAM_CHALLENGE_REWARDS.perClearQuantumPairMult`（改一个数就能调 ✓）
+- 系数在 `TANGRAM_CHALLENGE_REWARDS.quantumPairDoublePerGroup`（默认 2 ✓）与 `quantumPairAllClearBonus`（默认 2 ✓）
