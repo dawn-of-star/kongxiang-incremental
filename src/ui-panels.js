@@ -396,11 +396,9 @@ export function renderAutomationStatus(state) {
         : `未开启（需梦想升级，共 4 条）`;
     }
   }
-  // 梦想子页的徽标：有自动化在跑就标"部分实装"，否则"壳子" ✓
+  // 梦想子页徽标：11 条效果都已接线（自动买 / 自动无限 / 永恒保留 / 离线）
   if (el["dream-page-badge"]) {
-    const anyAuto = isAutoAcquire(state, "upgrade") || isAutoAcquire(state, "trap")
-      || (dreamUpgradeEffects(state).autoBuyDe ?? []).length > 0;
-    el["dream-page-badge"].textContent = anyAuto ? "自动化部分实装" : "壳子";
+    el["dream-page-badge"].textContent = "已实装";
   }
 }
 

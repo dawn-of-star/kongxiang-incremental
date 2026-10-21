@@ -160,7 +160,14 @@ function makeEl(tag = "div", id = "") {
   let _t = "";
   Object.defineProperty(node, "textContent", {
     get() { return _t; },
-    set(v) { _t = String(v); stats.textWrites++; },
+    // ★ 2026：真实 DOM 的 textContent setter 会**清空子节点**；
+    //   旧桩只改文本 ⇒ `box.textContent=""` 看似清空、实际子节点还在，
+    //   于是"重排后分组/开关重复"这类 bug 在桩上永远抓不到 ✗
+    set(v) {
+      _t = String(v);
+      this._children = [];
+      stats.textWrites++;
+    },
     configurable: true,
   });
   return node;
@@ -1375,6 +1382,72 @@ let zoneGuard = "未跑";
             + `｜买过后文字=「${ownedTxt}」｜可重复升级 Lv3=「${lvTxt}」/「${costTxt4}」（期望 ${cost4}）`}`);
         console.log();
         if (!okDm) process.exitCode = 1;
+      }
+
+      // ══════════════════════════════════════════════════════════
+      // ★★★ 2026 新增（用户报：「解锁 em8 后应该出现的永恒相关自动化
+      //   没出来；页面分组/开关也重复」）
+      // ══════════════════════════════════════════════════════════
+      // 根因：`arrangeDreamPage()` 首次构建时没有 state ⇒ 只显示 always 的卡，
+      //   然后 `box.textContent=""` 把其余 10 张卡**物理删除**；之后 em8 解锁，
+      //   `getElementById("dream-btn-…")` 找不到它们 ⇒ 永远不出现。
+      // 本断言：em8 + 破∞ 后，5 张 emauto 卡和自动无限规则条都必须回到 DOM。
+      {
+        const { newState: nsDm } = await import(new URL("../src/state.js", import.meta.url).href);
+        const { render: renderDm } = await import(new URL("../src/ui.js", import.meta.url).href);
+        const { default: DecDm } = await import(new URL("../dist/break_eternity.esm.js", import.meta.url).href);
+        const Dm = (x) => new DecDm(x);
+
+        const s = nsDm();
+        s.peakMatter = Dm("1e50");
+        s.eternityCount = Dm(8);          // em8
+        s.infinityCount = Dm(1);
+        s.brokenInfinity = true;          // autoInfinities 解锁
+        s.dreamPoints = Dm(1000);
+        renderDm(s);
+
+        const emauto = ["autoIpDouble", "autoZpeEngine", "keepDeEternity", "engineAtStart", "keepVoidEternity"];
+        const missing = emauto.filter((id) => !byId.get(`dream-btn-${id}`) || !byId.get(`dream-wrap-${id}`));
+        const wrapHasCard = emauto.every((id) => {
+          const w = byId.get(`dream-wrap-${id}`);
+          return !!w && (w._children ?? []).some((c) => c.id === `dream-btn-${id}`);
+        });
+        const autoWrap = byId.get("dream-wrap-autoInfinities");
+        const rule = byId.get("tg-ac-rule");
+        const ruleInWrap = !!autoWrap && !!rule && (autoWrap._children ?? []).includes(rule);
+        const badge = (byId.get("dream-page-badge")?.textContent ?? "").trim();
+        const frag = byId.get("dream-upgrade-list")?._children?.[0];
+        const groupLabels = (frag?._children ?? []).filter((c) => c.className === "dream-group-label").length;
+        const grids = (frag?._children ?? []).filter((c) => String(c.className).includes("dream-group-grid"));
+        const colsOk = grids.some((c) => String(c.className).includes("dream-group-grid--3"))
+          && grids.filter((c) => String(c.className).includes("dream-group-grid--2")).length >= 4;
+
+        // ★ 2026：em8 的两条「自动买满」（IP 倍增 / ZPE 引擎）不只显示，还要真的买得动
+        const { autoAcquireDream } = await import(new URL("../src/engine.js", import.meta.url).href);
+        s.dreamUpgrades.autoIpDouble = true;
+        s.dreamUpgrades.autoZpeEngine = true;
+        s.autoToggles.autoIpDouble = true;
+        s.autoToggles.autoZpeEngine = true;
+        s.zpeEngineUnlocked = true;
+        s.infinityPoints = Dm("1e100");
+        s.playTimeMs = 1000;
+        const ip0 = Number(s.ipDoubleLevel ?? 0), z0 = Number(s.zpeEngineLevel ?? 0);
+        autoAcquireDream(s);
+        const buyAuto = Number(s.ipDoubleLevel ?? 0) > ip0 && Number(s.zpeEngineLevel ?? 0) > z0;
+
+        // ★ 2026：缓存卡的 click handler 也必须还在（否则 em8 解锁后卡是“死”的）
+        //   ⚠️ 不能真点：`onBuyDream` 闭包的是 main 的 state，不是本测试的合成 state；
+        //      只验 handler 已挂到缓存节点上 ✓
+        const clickOk = (byId.get("dream-btn-keepVoidEternity")?._handlers?.click?.length ?? 0) > 0;
+
+        const ok = missing.length === 0 && wrapHasCard && ruleInWrap && groupLabels === 5 && colsOk && buyAuto && clickOk && /已实装/.test(badge);
+        console.log(`  梦想页 em8 动态解锁  ${ok
+          ? `✅ ${emauto.length} 张 emauto 卡都出现（含 wrap + 卡节点）✓｜自动无限规则条在 autoInfinities wrap 内 ✓｜分组 ${groupLabels} 个不重复、列数 2/3 ✓`
+            + `｜IP/引擎自动买生效（Lv${ip0}→${s.ipDoubleLevel}/Lv${z0}→${s.zpeEngineLevel}）✓｜缓存卡已挂 handler ✓｜徽标「${badge}」✓`
+          : `❌ 缺卡=${missing.join(",") || "无"}｜卡在 wrap=${wrapHasCard}｜规则条在 wrap=${ruleInWrap}｜分组=${groupLabels}/列数=${colsOk}`
+            + `｜自动买=${buyAuto}（Lv${ip0}→${s.ipDoubleLevel}/Lv${z0}→${s.zpeEngineLevel}）｜handler=${clickOk}｜徽标「${badge}」`}`);
+        console.log();
+        if (!ok) process.exitCode = 1;
       }
 
       // ══════════════════════════════════════════════════════════

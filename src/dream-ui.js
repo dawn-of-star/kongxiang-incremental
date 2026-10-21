@@ -21,13 +21,13 @@ export const AUTOMATION_IDS = new Set([
 
 const GROUPS = [
   {
-    name: "暗能量自动化",
+    name: "暗能量自动化", cols: 2,
     pick: (d) => ["autoPhase", "autoVacuum", "autoDeGainBase", "autoConvOutput"].includes(d.id),
   },
-  { name: "IP / ZPE 自动化", pick: (d) => ["autoIpDouble", "autoZpeEngine"].includes(d.id) },
-  { name: "无限自动化", pick: (d) => d.id === "autoInfinities" },
-  { name: "永恒保留（被动）", pick: (d) => ["keepDeEternity", "engineAtStart", "keepVoidEternity"].includes(d.id) },
-  { name: "梦想点 / 离线", pick: (d) => d.id === "offlineCap" },
+  { name: "IP / ZPE 自动化", cols: 2, pick: (d) => ["autoIpDouble", "autoZpeEngine"].includes(d.id) },
+  { name: "无限自动化", cols: 2, pick: (d) => d.id === "autoInfinities" },
+  { name: "永恒保留（被动）", cols: 3, pick: (d) => ["keepDeEternity", "engineAtStart", "keepVoidEternity"].includes(d.id) },
+  { name: "梦想点 / 离线", cols: 2, pick: (d) => d.id === "offlineCap" },
 ];
 
 /** 只排一次（构建完成后调用）✓ */
@@ -51,37 +51,57 @@ export function isDreamUnlocked(state, d) {
     try { return Number(v.toString()); } catch { return 0; }
   };
   const eternity = num(state?.eternityCount);
-  const infCount = num(state?.infinityCount);
   const quantum = num(state?.quantum) + num(state?.quantumPairs);
 
   if (when === "quantum") return quantum > 0;                    // 有量子 ⇒ 暗能量层自动化 ✓
   if (when === "em8") return eternity >= 8;                     // 第 8 次永恒 ⇒ 其余 ✓
-  if (when === "breakInfinity") return infCount >= 1 || state?.brokenInfinity === true;
+  // ★ 2026：名字叫 breakInfinity，就必须真的**打破无限**才显示；
+  //   `autoInfinities` 的效果本身也要求 `brokenInfinity`（见 autocrunch.js）✓
+  if (when === "breakInfinity") return state?.brokenInfinity === true;
   if (when === "eternity") return eternity >= 1;
   return true;
 }
 
 let stateRef = null;      // 由 renderDreamPage 每帧更新（arrange 在构建期没有 state ✓）
 
+/**
+ * ★★★ 2026：**卡片缓存** —— 分组重排时不能把未解锁的卡片丢掉。
+ *
+ * 旧实现：`arrangeDreamPage()` 首次没有 state ⇒ 只把 `offlineCap` 放进 DOM，
+ *   `box.textContent=""` 把其余 10 张卡**物理删除**；等 `em8`/破∞解锁时，
+ *   `getElementById("dream-btn-…")` 已经找不到它们 ⇒ 新卡永远不出现 ✗。
+ * 现在：第一次排布前先把**全部**卡片缓存起来；锁定卡只是“不 append”，
+ *   解锁时仍能拿回同一个 DOM 节点（id / handler 都保留）✓
+ */
+const cardCache = new Map();
+
+/** 取某张梦想卡（DOM 里的优先；锁定/已搬走的从缓存取）。 */
+export function getDreamCard(id) {
+  return document.getElementById(`dream-btn-${id}`) ?? cardCache.get(id) ?? null;
+}
+
+
 export function arrangeDreamPage(state) {
   if (state) stateRef = state;
   const box = document.getElementById("dream-upgrade-list");
   if (!box || box.dataset.arranged === "1") return;
-  box.dataset.arranged = "1";
 
-  const cards = new Map();
+  // ★ 先把**当前所有卡**收进缓存，再决定显示哪些；否则锁定卡会被清空永久丢失 ✗
   for (const d of DREAM_UPGRADES) {
-    const c = document.getElementById(`dream-btn-${d.id}`);
-    if (c) cards.set(d.id, c);
+    const id = `dream-btn-${d.id}`;
+    const card = document.getElementById(id) ?? cardCache.get(d.id);
+    if (card) cardCache.set(d.id, card);
   }
-  if (!cards.size) return;
 
   // ⚠️ stub DOM（dom-smoke）没有 createDocumentFragment ⇒ 用一个普通 div 当容器 ✓
   const frag = document.createElement("div");
   const used = new Set();
   for (const g of GROUPS) {
     // ★ 2026：未解锁的**直接不显示**（AD 的自动页面形态 ✓）
-  const items = DREAM_UPGRADES.filter((d) => !used.has(d.id) && g.pick(d) && cards.has(d.id) && isDreamUnlocked(state, d));
+    const items = DREAM_UPGRADES.filter((d) => {
+      if (used.has(d.id) || !g.pick(d) || !cardCache.has(d.id) || !isDreamUnlocked(state, d)) return false;
+      return true;
+    });
     if (!items.length) continue;
     for (const d of items) used.add(d.id);
 
@@ -91,11 +111,14 @@ export function arrangeDreamPage(state) {
     frag.appendChild(label);
 
     const grid = document.createElement("div");
-    grid.className = "dream-group-grid";
+    grid.className = `dream-group-grid dream-group-grid--${g.cols ?? 2}`;
     for (const d of items) {
-      const card = cards.get(d.id);
+      const card = cardCache.get(d.id);
+      if (!card) continue;
       const wrap = document.createElement("div");
       wrap.className = "q-card-wrap";
+      // ★ 稳定的定位锚：自动无限面板按 id 找自己的宿主，不再用 querySelectorAll
+      wrap.id = `dream-wrap-${d.id}`;
       wrap.appendChild(card);                        // 搬走原卡片（id / handler 都保留 ✓）
       if (AUTOMATION_IDS.has(d.id)) {
         const tg = document.createElement("button");
@@ -113,19 +136,24 @@ export function arrangeDreamPage(state) {
   box.appendChild(frag);
 
   // 开关：**事件委托**（列表重建/遮挡都不怕）✓
-  box.addEventListener("click", (ev) => {
-    const b = ev.target?.closest?.("button");
-    if (!b?.id) return;
-    const m = /^dream-toggle-(.+)$/.exec(b.id);
-    if (!m) return;
-    const st = stateRef;
-    if (st?.autoToggles) {
-      const on = st.autoToggles[m[1]] === true;
-      if (on) delete st.autoToggles[m[1]];
-      else st.autoToggles[m[1]] = true;
-    }
-    if (st) renderDreamPage(st);
-  });
+  // ★ 只绑一次：旧实现每次重排都 addEventListener ⇒ 点一下会切换多次 ✗
+  if (box.dataset.toggleBound !== "1") {
+    box.dataset.toggleBound = "1";
+    box.addEventListener("click", (ev) => {
+      const b = ev.target?.closest?.("button");
+      if (!b?.id) return;
+      const m = /^dream-toggle-(.+)$/.exec(b.id);
+      if (!m) return;
+      const st = stateRef;
+      if (st?.autoToggles) {
+        const on = st.autoToggles[m[1]] === true;
+        if (on) delete st.autoToggles[m[1]];
+        else st.autoToggles[m[1]] = true;
+      }
+      if (st) renderDreamPage(st);
+    });
+  }
+  box.dataset.arranged = "1";
 }
 
 /** 每帧（只改文本/属性，**不动结构**）✓ */
@@ -142,15 +170,13 @@ export function renderDreamPage(state) {
     if (box.dataset.visibleSig !== sig) {
       box.dataset.visibleSig = sig;
       box.dataset.arranged = "0";
-      // ★★★ 2026（用户截图：分组标题与开关**重复出现**）—— rrangeDreamPage 是**追加**的 ✗
-      //   ⇒ 重排前必须先**清空容器**（否则每重排一次就多一整套 ✗）
-      try { box.innerHTML = ""; } catch { /* 忽略 */ }
+      // ★ 2026：**不要**在这里 `innerHTML=""` —— 旧实现先把卡片清掉，
+      //   再让 arrangeDreamPage 去 getElementById，等于把要用的节点先删了 ✗
+      //   arrangeDreamPage 会从 cardCache 取回全部卡片，并在最后统一清空容器 ✓
       try { arrangeDreamPage(state); } catch { /* 忽略 */ }
-      if (box.dataset.arranged === "0") box.dataset.arranged = "1";
     }
   }
   if (state) stateRef = state;
-  const box2 = document.getElementById("dream-upgrade-list");   // ★ 2026：重排用（原名 box 已被上面占用）
   if (!box || box.dataset.arranged !== "1") return;
   let ownedCount = 0;
   for (const d of DREAM_UPGRADES) {

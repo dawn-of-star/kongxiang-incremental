@@ -179,20 +179,30 @@ export function paintAutoCrunchUI(state, commit) {
   if (typeof document === "undefined") return;
   if (state) cur = state;
 
-  let host = null;
-  for (const w of document.querySelectorAll("#panel-dream .q-card-wrap")) {
-    if (w.querySelector(".q-card")?.id === "dream-btn-autoInfinities") { host = w; break; }
-  }
-  if (!host) host = document.getElementById("dream-upgrade-list");
-  if (!host) return;
-
+  // ★ 2026：宿主必须是「无限自动化」卡片的 wrap —— 用稳定 id，不再 querySelectorAll，
+  //   也不再 fallback 到 dream-upgrade-list（那会把规则条挂到「梦想点 / 离线」下面 ✗）
+  const host = document.getElementById("dream-wrap-autoInfinities");
   let box = document.getElementById("tg-ac-rule");
+  if (!host) {
+    // 卡未解锁 / 被重排掉：把规则条一起移除，不留游离 DOM
+    if (box) {
+      if (typeof box.remove === "function") box.remove();
+      else box.parentNode?.removeChild?.(box);
+    }
+    return;
+  }
+
   if (box && box.dataset.ver !== PANEL_VER) {
     if (typeof box.remove === "function") box.remove();
     else box.parentNode?.removeChild?.(box);
     box = null;
   }
   if (!box) box = buildAutoCrunchPanel(host, commit);
+  // 重排后 wrap 是新的：把旧面板**搬**到新宿主，而不是重建（保留输入焦点/状态）
+  if (box._host !== host || box.parentNode !== host) {
+    host.appendChild(box);
+    box._host = host;
+  }
   box._state = state;
   syncAutoCrunchPanel(box, state);
 }

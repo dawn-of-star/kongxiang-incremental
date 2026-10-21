@@ -6,7 +6,6 @@
  *   · 只被 `ui.js` 的 render() 调用（单向依赖）
  */
 
-import { paintAutoCrunchUI } from "./autocrunch-ui.js";
 import { hasEternityMilestone } from "./config.js";
 import { D } from "./formulas.js";
 import { updateTabLocks } from "./lock-ui.js";
@@ -133,8 +132,8 @@ safePaint("tangram-board", () => paintTangramBoard(st));
   // ★ 2026（用户：「**主要是巧板托盘**」）—— 给 7 个槽位画**真实形状**缩略图
   //   ⚠️ 只往槽位里塞 SVG，**不动任何布局**（15% 右列 / 2 列网格 / 855px 坐标轴全部原样）✓
 safePaint("tangram-thumbs", () => paintTangramThumbs(st));   // ⚠️ 本函数的形参叫 st（不是 state）✗
-  // ★ 2026：自动无限的**三条规则面板**（挂在「无限自动化」卡片右侧；只建一次）✓
-safePaint("autocrunch-ui", () => paintAutoCrunchUI(st, () => uiHandlers?.onTangramCommit?.()));
+  // ★ 2026：自动无限的三条规则面板由 `ui.js` 在**梦想页排布之后**统一画
+  //   （它属于「无限自动化」卡片，不属于七巧板；放这里会在卡片重排时抢宿主 ✗）
   // ★ 2026：**挑战题目预览**（小图，画在挑战卡里；棋盘只做覆盖率 ✓）
   // ★ 2026（用户：「点一下出预览图就行了」）—— 预览默认隐藏，点「看题目」才展开 ✓
   if (!tgPrevBound && typeof document !== "undefined") {

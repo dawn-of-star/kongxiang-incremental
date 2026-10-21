@@ -12,13 +12,14 @@
 import {
   $, el, fmt, sci, fmtMult, fmtTime,
   UI_BUILD, domWriteStats, domResetStats,
-  applyZone, cache, setUIHandlers,
+  applyZone, cache, setUIHandlers, uiHandlers,
 } from "./ui-core.js";
 // 面板渲染器（单向依赖：panels → ui-core；本文件只做编排）
 import { renderDarkMatter } from "./ui-darkmatter.js";
 import { renderNeko } from "./ui-neko.js";
 import { renderQuantum, renderSpanLayer } from "./ui-quantum.js";
 import { renderInfinity, renderFloatResets } from "./ui-infinity.js";
+import { paintAutoCrunchUI } from "./autocrunch-ui.js";
 import { renderTangram } from "./ui-tangram-panel.js";
 // 主面板区块（render() 只做编排）
 import {
@@ -27,7 +28,7 @@ import {
   renderZpeMilestonesPanel, renderDarkEnergyPanel, renderLogPanel,
 } from "./ui-panels.js";
 // 静态结构 / 交互绑定（仍然集中在这一层）
-import { arrangeDreamPage, renderDreamPage } from "./dream-ui.js";
+import { arrangeDreamPage, getDreamCard, renderDreamPage } from "./dream-ui.js";
 import { bindTangramBoard } from "./tangram-board.js";
 import { setupTabLocks } from "./lock-ui.js";
 import { perfSection } from "./perf.js";
@@ -418,10 +419,12 @@ export function render(state) {
   perfSection("量子面板", () => renderQuantum(state, R));
   perfSection("量子共振", () => renderSpanLayer(state));
   perfSection("暗物质", () => renderDarkMatter(state));
+  // ★ 2026：梦想页必须先排布（分组/缓存/em8 解锁），自动无限面板才能找到宿主 ✓
+  renderDreamPage(state);
+  paintAutoCrunchUI(state, () => uiHandlers?.onTangramCommit?.());
   perfSection("七巧板", () => renderTangram(state));
   perfSection("无限面板", () => renderInfinity(state));
   renderFloatResets(state);
-  renderDreamPage(state);
   renderLogPanel(state);
 }
 
@@ -695,7 +698,9 @@ export function initUI(handlers) {
   //   旧量子升级系统已整体删除，那个数组现在是空的，循环也一并去掉）
 
   for (const d of DREAM_UPGRADES) {
-    $(`dream-btn-${d.id}`)?.addEventListener("click", () => handlers.onBuyDream(d.id));
+    // ★ 2026：锁定卡不在 DOM 里（被缓存）—— 必须绑到**缓存节点**，否则 em8 解锁后点不动 ✗
+    const card = getDreamCard(d.id) ?? $(`dream-btn-${d.id}`);
+    card?.addEventListener("click", () => handlers.onBuyDream(d.id));
   }
   for (const id of INFINITY_ORDER) {
     $(`inf-btn-${id}`)?.addEventListener("click", () => handlers.onBuyInfinity(id));

@@ -1032,7 +1032,10 @@ button { font: inherit; cursor: pointer; }
   border-bottom: 1px solid var(--line-strong);
 }
 .dream-group-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-@media (max-width: 900px) { .dream-group-grid { grid-template-columns: 1fr; } }
+/* ★ 2026：按组决定 2 / 3 列（用户：「根据种类以 3 列或 2 列的分隔标签生效」） */
+.dream-group-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.dream-group-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 900px) { .dream-group-grid, .dream-group-grid--2, .dream-group-grid--3 { grid-template-columns: 1fr; } }
 /* ══════════════════════════════════════════════════════════
    ★★★ 2026（用户：「巧板托盘 ui 再归一化优化，更直白且不要这么杂乱」）
    —— 统一尺寸 / 不折行 / 按钮并排 / 控制条压成两行 ✓

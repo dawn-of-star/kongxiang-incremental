@@ -7,6 +7,34 @@
 
 ---
 
+### ★ 修复：梦想（自动化）页——em8 新卡不出现 / 分组与开关重复 / 自动无限规则条嵌错位置
+
+**症状**（用户截图）：
+- 解锁 `em8` 后，IP 倍增 / ZPE 引擎 / 永恒保留 5 条卡不出来；
+- 页面分组标题和开关重复；「梦想点 / 离线」下面挂了一条自动无限规则条；
+- 买了 em8 自动化后不知道是否真的生效。
+
+**根因**：
+- `arrangeDreamPage()` 首次构建时没有 `state` ⇒ 只把 always 卡放进 DOM，
+  `box.textContent=""` 把其余卡**物理删除**；后续 `em8`/破∞ 解锁时 `getElementById` 找不到它们；
+- 重排时先 `innerHTML=""` 再让 arrange 去找卡片，等于先删后找；
+- 每次重排都 `addEventListener` ⇒ 开关一次点击可能切换多次；
+- `paintAutoCrunchUI()` 找不到「无限自动化」卡时 fallback 到 `dream-upgrade-list`，
+  把规则条挂到页面末尾。
+
+**修复**：
+- `dream-ui.js`：模块级 `cardCache` 缓存**全部 11 张卡**；锁定卡只“不 append”，解锁时取回同一节点；
+  重排不再预先清空，由 `arrange` 统一清空后重建；分组 wrap 加稳定 id；事件委托只绑一次；
+  分组按 2 / 3 列分开（永恒保留 3 列，其余 2 列）；
+- `ui.js`：先 `renderDreamPage()` 再画自动无限面板；绑定点击时走 `getDreamCard()`（缓存节点）；
+- `autocrunch-ui.js`：规则条只认 `dream-wrap-autoInfinities`，卡不可见时移除，不再 fallback；
+- `dream-page-badge` 改为「已实装」；`dream-badge` 初值改为 `0 / 11`；
+- `dom-smoke` 新增 em8 动态解锁断言（5 张卡 + wrap + 规则条 + 分组不重复 + IP/引擎自动买真的生效）。
+
+**验证**：`npm test` 49/49；`dom-smoke` 全绿；`consistency` 仍 8/8 + 33/33。
+
+---
+
 ### ★ 修复：物质「显示 == 实发」但实际不相等（显示用的是瞬时值）
 
 **症状**：界面 `物质 +X/s` 与物质实际增长对不上；高速凝聚时偏差可达几个数量级。
