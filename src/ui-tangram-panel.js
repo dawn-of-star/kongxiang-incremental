@@ -10,7 +10,7 @@ import { hasEternityMilestone } from "./config.js";
 import { D } from "./formulas.js";
 import { updateTabLocks } from "./lock-ui.js";
 import { paintTangramBoard } from "./tangram-board.js";
-import { TANGRAM_PIECES, autoPlaceTangram, cellsFromFingerprint, drawTangramPiece, exchangeTangramPiece, flipTangramPlacement, moveTangramPlacement, resetTangramBoard, rotateTangramPlacement, takeTangramBack, tangramAdvanceChallenge, tangramChallengeSolved, tangramChallengeTarget, tangramCoverage, tangramPieceAtStep, tangramPriceFactor, tangramPricesAt } from "./tangram-game.js";
+import { TANGRAM_PIECES, autoPlaceTangram, cellsFromFingerprint, drawTangramPiece, exchangeTangramPiece, flipTangramPlacement, moveTangramPlacement, resetTangramBoard, rotateTangramPlacement, takeTangramBack, tangramAdvanceChallenge, tangramChallengeSolved, tangramChallengeTarget, tangramCoverage, tangramPieceAtStep, tangramPriceFactor, tangramPricesAt, tangramChallengeDiff } from "./tangram-game.js";
 import { TANGRAM_AXES_RANGE, tangramAxisParams } from "./tangram-bonus.js";   // ★ 2026：三轴端点 + 实时数值 ✓
 import { fmtMult } from "./format.js";
 import { quantumPairMult } from "./config/quantum/gates.js";   // ★ 2026：每对量子实时倍率（与引擎同源 ✓）
@@ -296,6 +296,25 @@ function bindTangramChallengeButtons(st) {
   if (!tgChalBound && typeof document !== "undefined") {
     const bNext = document.getElementById(tgChalBound ? "" : "tg-chal-next");
     const bReset = document.getElementById("tg-chal-reset");
+  // ★ 2026-10-22（用户：「加个**确认完成**按钮」）—— 手动确认，并给出"还差几个小三角" ✓
+  const bConfirm = document.getElementById("tg-chal-confirm");
+  if (bConfirm && !bConfirm.dataset.bound) {
+    bConfirm.dataset.bound = "1";
+    bConfirm.addEventListener("click", () => {
+      const st = stRefForAcq;
+      const hint = document.getElementById("tg-chal-hint");
+      const diff = tangramChallengeDiff(st);
+      if (diff.ok) {
+        tangramAdvanceChallenge(st);
+        if (hint) hint.textContent = "已完成 ✓";
+        uiHandlers?.onTangramCommit?.();
+      } else if (hint) {
+        hint.textContent = diff.reason === "no-target"
+          ? "没有可判定的题目"
+          : "还差 " + diff.missing + " 个小三角" + (diff.extra ? "（多 " + diff.extra + "）" : "");
+      }
+    });
+  }
     if (bNext && bReset) {
       tgChalBound = true;
       bNext.addEventListener("click", () => { tangramAdvanceChallenge(st); uiHandlers?.onTangramCommit?.(); });

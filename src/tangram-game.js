@@ -266,3 +266,31 @@ export {
   tangramPricesAt, tangramPieceAtStep, tangramPatternsPerDifficulty,
   cellsFromFingerprint, placedCells, cellsFingerprint, polygonCells,
 };
+
+/**
+ * ★★★ 2026-10-22（用户：「加个**确认完成**按钮」）——
+ *   返回「当前摆放 vs 目标图案」的差异，用于按钮上的提示 ✓
+ *   · `missing` = 目标有、你没有的小三角数（还差多少块）
+ *   · `extra`   = 你有、目标没有的（多余/摆错）
+ *   · `ok`      = 完全一致（等价于 `tangramChallengeSolved()` ✓）
+ *   ⚠️ 与判定**同一口径**：落点取整到整格 + 8 重对称指纹 ✓
+ */
+export function tangramChallengeDiff(state) {
+  const t = tangramChallengeTarget(state);
+  if (!t) return { ok: false, missing: 0, extra: 0, reason: "no-target" };
+  const placed = state?.tangramPlaced ?? {};
+  const rounded = {};
+  for (const [id, cfg] of Object.entries(placed)) {
+    rounded[id] = { ...cfg, dx: Math.round(Number(cfg?.dx ?? 0)), dy: Math.round(Number(cfg?.dy ?? 0)) };
+  }
+  const mineCells = placedCells(rounded);
+  const tgtCells = cellsFromFingerprint(t.key);
+  const keyOf = (c) => c[0] + "," + c[1] + "," + c[2];
+  const mineSet = new Set(mineCells.map(keyOf));
+  const tgtSet = new Set(tgtCells.map(keyOf));
+  let missing = 0;
+  for (const k of tgtSet) if (!mineSet.has(k)) missing++;
+  let extra = 0;
+  for (const k of mineSet) if (!tgtSet.has(k)) extra++;
+  return { ok: missing === 0 && extra === 0, missing, extra, target: tgtCells.length, mine: mineCells.length };
+}
