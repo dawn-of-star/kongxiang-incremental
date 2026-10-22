@@ -292,5 +292,23 @@ export function tangramChallengeDiff(state) {
   for (const k of tgtSet) if (!mineSet.has(k)) missing++;
   let extra = 0;
   for (const k of mineSet) if (!tgtSet.has(k)) extra++;
-  return { ok: missing === 0 && extra === 0, missing, extra, target: tgtCells.length, mine: mineCells.length };
+  // ★ 2026-10-22（用户：「试试吧」= 把缺口画出来）——
+  //   `ghostCells` = 目标小三角，**平移**到与玩家形状同一个左下角 ✓
+  //   用途：在棋盘上画"淡红的缺口" ✓（对齐用的是包围盒左下角，够用 ✓）
+  const bboxMin = (cells) => {
+    let minX = Infinity, minY = Infinity;
+    for (const c of cells) { if (c[0] < minX) minX = c[0]; if (c[1] < minY) minY = c[1]; }
+    return [minX === Infinity ? 0 : minX, minY === Infinity ? 0 : minY];
+  };
+  const [mx, my] = bboxMin(mineCells.length ? mineCells : tgtCells);
+  const [tx, ty] = bboxMin(tgtCells);
+  const ox = Math.round(mx - tx), oy = Math.round(my - ty);
+  const ghostCells = tgtCells.map(([x, y, k]) => [x + ox, y + oy, k]);
+  return {
+    ok: missing === 0 && extra === 0,
+    missing, extra,
+    target: tgtCells.length, mine: mineCells.length,
+    ghostCells,          // ★ 供棋盘画缺口 ✓
+    holes: ghostCells.filter((c) => !mineSet.has((c[0]) + "," + (c[1]) + "," + (c[2]))),
+  };
 }

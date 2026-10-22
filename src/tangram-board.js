@@ -20,7 +20,7 @@
 import {
   TANGRAM_PIECES, placePieceVerts, placementOf, snapPoint, convexOverlap, cellsFromFingerprint,
 } from "./tangram.js";
-import { setTangramPlacement, tangramCoverage, tangramChallengeTarget, transformPieceInPlace } from "./tangram-game.js";
+import { setTangramPlacement, tangramCoverage, tangramChallengeTarget, transformPieceInPlace, tangramChallengeDiff } from "./tangram-game.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 /** 板坐标 → SVG 坐标（**唯一换算点**）✓ */
@@ -49,8 +49,13 @@ function ensureLayers(svg) {
   layerTarget.setAttribute("class", "tg-target-layer");
   layerPieces = document.createElementNS(SVG_NS, "g");
   layerPieces.setAttribute("class", "tg-piece-layer");
+  // ★ 2026-10-22：缺口层（**画在板块下方** ✓ 否则会盖住玩家的块 ✗）
+  const layerMissing = document.createElementNS(SVG_NS, "g");
+  layerMissing.setAttribute("id", "tg-missing-layer");
+  layerMissing.setAttribute("class", "tg-missing-layer");
   svg.appendChild(layerTarget);
-  svg.appendChild(layerPieces);
+  svg.appendChild(layerMissing);   // ← 缺口（最底 ✓）
+  svg.appendChild(layerPieces);    // ← 玩家块（最上 ✓）
   // ⚠️ 2026 修：**不要改 viewBox** —— 原来外扩到 −9.6..9.6 会把棋盘缩成右上角一小块 ✗
   //   设计稿 §8 定的是 950px 的 svg，viewBox 保持 index.html 的 `-3 -3 106 106` ✓
   svg.style.touchAction = "none";      // 触屏拖拽必须 ✓
@@ -142,6 +147,26 @@ export function paintTangramBoard(state) {
     poly.dataset.piece = p.id;
     layerPieces.appendChild(poly);
   }
+
+  // ★★ 2026-10-22（用户：「试试吧」）—— **把缺口画出来**（淡红小三角）✓
+  //   `tangramChallengeDiff().holes` 已经对齐到玩家形状的左下角 ✓
+  //   ⚠️ 只在有题目时画 ✓；异常一律吞掉（画图不该让棋盘挂掉 ✗）
+  try {
+    const layerMissing = svg.querySelector("#tg-missing-layer");
+    if (layerMissing) {
+      layerMissing.textContent = "";
+      const diff = tangramChallengeDiff(state);
+      if (diff && Array.isArray(diff.holes) && diff.holes.length && diff.holes.length <= 128) {
+        for (const [cx, cy, k] of diff.holes) {
+          const poly = document.createElementNS(SVG_NS, "polygon");
+          const verts = triVerts(cx, cy, k);
+          poly.setAttribute("points", verts.map(([x, y]) => toSvg(x, y).join(",")).join(" "));
+          poly.setAttribute("class", "tg-missing-cell");
+          layerMissing.appendChild(poly);
+        }
+      }
+    }
+  } catch { /* 缺口提示失败不影响棋盘 */ }
 
   // ③ 三条轴的高亮（dashoffset = 全长 × (1 − cov)）✓
   const cov = tangramCoverage(state);

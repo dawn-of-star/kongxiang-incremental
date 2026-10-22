@@ -1155,3 +1155,11 @@ button { font: inherit; cursor: pointer; }
 
 .tg-piece-poly.tg-overlap { fill: rgba(255, 80, 80, 0.45) !important; stroke: #ff5a5a !important; stroke-width: 2 !important; }
 .tg-piece-poly.tg-selected { stroke: #7cf !important; stroke-width: 2.5 !important; filter: drop-shadow(0 0 4px rgba(120,200,255,.8)); }
+
+/* ★ 2026-10-22：拼装挑战的**缺口提示**（淡红小三角，画在板块下方 ✓）*/
+.tg-missing-cell {
+  fill: rgba(255, 90, 90, 0.22);
+  stroke: rgba(255, 120, 120, 0.55);
+  stroke-width: 0.6;
+  pointer-events: none;
+}
