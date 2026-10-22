@@ -244,12 +244,12 @@ export function bindTangramBoard(state, commit) {
       const state = stRef;
       if (ev.key === "r" || ev.key === "R") {
         const cfg = placementOf(state?.tangramPlaced, targetId);
-        setTangramPlacement(state, targetId, { rot: Number(cfg.rot ?? 0) + 1 });
+        setTangramPlacement(state, targetId, { rot: Number(cfg.rot ?? 0) + 1 }, true);   // ★ 旋转强制生效 ✓
         paintTangramBoard(state);
         ev.preventDefault();
       } else if (ev.key === "f" || ev.key === "F") {
         const cfg = placementOf(state?.tangramPlaced, targetId);
-        setTangramPlacement(state, targetId, { flip: !cfg.flip });
+        setTangramPlacement(state, targetId, { flip: !cfg.flip }, true);   // ★ 翻转强制生效 ✓
         paintTangramBoard(state);
         ev.preventDefault();
       }

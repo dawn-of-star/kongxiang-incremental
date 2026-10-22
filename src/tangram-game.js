@@ -101,14 +101,21 @@ export function autoPlaceTangram(state, id) {
 }
 
 /** 设定摆位（**允许小数** = 自由拖动；合法性 = 在画布内 + 不与已放下块重叠）✓ */
-export function setTangramPlacement(state, id, cfg) {
+/**
+ * ★★★ 2026-10-22（用户：「旋转/翻转在选中后无法生效，快捷键也是」）——
+ *   根因：旋转/翻转后会**重新做合法性判定** ✗ ⇒ 一旦旋出画布/产生重叠就被拒绝 ✗
+ *   ⇒ 表现为"按了没反应" ✓
+ *   `force = true` 时**跳过合法性判定**（只用于旋转/翻转这类"原地变形" ✓）
+ *   ⚠️ 位置拖动仍然走合法性判定（不许拖出画布 ✓）
+ */
+export function setTangramPlacement(state, id, cfg, force = false) {
   if (!state?.tangramOwned?.[id]) return { ok: false, reason: "not-owned" };
   state.tangramPlaced ??= {};
   const next = { rot: 0, flip: false, dx: 0, dy: 0, ...placementOf(state.tangramPlaced, id), ...cfg };
   next.rot = ((Math.floor(next.rot) % 4) + 4) % 4;
   next.dx = Number(next.dx) || 0;
   next.dy = Number(next.dy) || 0;
-  if (!isPlacementLegal(id, next, state.tangramPlaced, undefined, true)) return { ok: false, reason: "illegal" };   // ★ 允许重叠（第 5 参 ✓）   // ★ 允许重叠 ✓
+  if (!force && !isPlacementLegal(id, next, state.tangramPlaced, undefined, true)) return { ok: false, reason: "illegal" };   // ★ 允许重叠（第 5 参 ✓）   // ★ 允许重叠 ✓
   state.tangramPlaced[id] = next;
   return { ok: true, placement: next };
 }
