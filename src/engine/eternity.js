@@ -110,7 +110,11 @@ export function doEternity(state) {
   state.infinityFromQuantumBought = false;
   state.thresholdFlatBought = false;
   state.pairBoostBought = false;
-  state.startBought = {};
+  // ★★★ 2026-10-22（用户：「无限升级不重置后效果应该自动生效了啊（特指所有的**起点跃迁**）」）——
+  //   `startBought`（起点跃迁 I~IV）**不再被永恒清空** ✓
+  //   ⇒ 效果是"每次大坍缩以 e{50..200} 物质开局"（`resetForCollapse` 读 `infinityStartLog10` ✓）
+  //     升级保留 ⇒ 效果自动持续生效 ✓
+  //   ⚠️ `speedBought`（速率解放）**仍然清空** —— 用户只点名了"所有的起点跃迁" ✓
   state.speedBought = {};
   state.brokenInfinity = false;
   // ★★★ 2026（用户：「em7 追加：初始获得一次无限次数，打破无限默认解锁」）——
@@ -126,7 +130,12 @@ export function doEternity(state) {
   state.peakQuantumRun = D(0);
   state.quantum = D(0);
   state.quantumPairs = D(0);
-  state.tangramChallengeThisEternity = 0;   // ★ 2026：d3 奖励按**本次永恒**计 ✓
+  // ★★★ 2026-10-22（用户：「七巧板系统**不随永恒重置**」）——
+  //   `tangramChallengeThisEternity`（本次永恒完成数）**不再归零** ✓
+  //   ⇒ 它变成"**累计完成数**"（上限 36）⇒ 每对量子的翻倍奖励**永久保留** ✓
+  //   ⚠️ 字段名保留旧名（存档兼容 ✓）但语义已变：不再是"本次永恒"，是"累计" ✓
+  //   ⇒ 每对量子在 36 个时停在 ×128（不会掉回 ×1 ✓）
+  // state.tangramChallengeThisEternity = 0;   // ← 2026-10-22 按用户要求停用 ✓
   // ZPE 引擎（它在 ∞ 层之下）
   state.zpeEngineUnlocked = false;
   state.zpeEngineLevel = D(0);
