@@ -106,13 +106,7 @@ function gateOpen(state, m) {
  * darkEnergyTotal 从不被坍缩/大坍缩重置，所以「累计产出过多少」才是正确语义。
  */
 export function isAutoAcquire(state, kind) {
-  // ★★★ 2026-10-22（用户：「从**永恒重置**开始查」）—— 真因就在这里 ✓
-  //   `v9`（传承启迪，1 梦想点买的）自己的描述就是「改为**达到阈值自动获取**」✓
-  //   但本函数还额外要求 ZPE 里程碑 m2/m5 ✗ ⇒ 而 `doEternity` 会清空 `zpeMilestones` ✗
-  //   ⇒ 永恒后 v9 还在（上一轮已修 ✓）但 m5 没了 ⇒ **自动熵阱关闭** ✗
-  //   ⇒ 熵阱 0 ⇒ 熵/粒子/物质产线不动 ⇒ 物质停在起点跃迁给的 e200 ✓（正是用户现象 ✓）
-  //   ⇒ 现在：**v9 独占即可开启**（它本身就是"自动获取"的解锁项 ✓）
-  if (hasV9(state)) return kind === "upgrade" || kind === "trap";
+  if (!hasV9(state)) return false;
   if (kind === "upgrade") return hasZpe(state, "m2");
   if (kind === "trap") return hasZpe(state, "m5");
   return false;
