@@ -146,6 +146,12 @@ function applyMatterStep(state, dt) {
   state.resources.entropy = step.entropy;
   state.stats.totalEntropy = state.stats.totalEntropy.add(step.eGain);
   state.resources.particle = step.P0.add(step.particleGain);
+  // ★ 2026-10-22 临时打点（定位"物质恒为 1e200"）：把物质结算的前后值直接打出来 ✓
+  if (globalThis.__KI_DIAG === true) {
+    const m0 = state.resources.matter.toString();
+    state.resources.matter = state.resources.matter.add(step.matterGain);
+    console.log("[prod] 物质 " + m0 + " + " + step.matterGain.toString() + " ⇒ " + state.resources.matter.toString() + " ｜熵写入 " + step.entropy.toString() + " ｜粒子 " + state.resources.particle.toString());
+  }
   state.resources.matter = state.resources.matter.add(step.matterGain);
 }
 
