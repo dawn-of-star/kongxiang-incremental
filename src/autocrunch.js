@@ -100,10 +100,14 @@ export function shouldAutoCrunch(state, ctx = {}) {
     //   `case X_HIGHEST: return gainedInfinityPoints().gte(highestPrevPrestige.times(xHighest));`
     //   ⇒ 比的是**本永恒持有 IP 的峰值**（不是当前余额 ✗ 也不是单次收益纪录 ✗）✓
     // ★ 2026：`maxIpThisEternity` 现在是 Decimal ⇒ 不要二次包（D(Decimal) 也行但没必要 ✓）
-    const _h = state?.maxIpThisEternity ?? state?.infinityPoints ?? 0;
-    const highest = _h instanceof Decimal ? _h : D(_h);
-    if (highest.lte(0)) return true;              // 峰值还是 0 ⇒ 立刻坍（AD 同义）✓
-    return gain.gte(highest.mul(D(thr)));
+    // ★ 2026-10-22：只看**当前持有 IP** ✓（不再看 maxIpThisEternity / 单次纪录 ✗）
+    const _h = state?.infinityPoints ?? 0;
+    // ★★★ 2026-10-22（用户明确定义）：
+    //   「如果**本次无限能获得的 IP** > **当前持有的 IP × 阈值** ⇒ 进行一次无限」✓
+    //   ⚠️ 比的是**当前持有 IP**（不是 maxIpThisEternity ✗ —— 那是我按 AD 抄的，用户否决 ✓）
+    const held = _h instanceof Decimal ? _h : D(_h);
+    if (held.lte(0)) return true;                 // 一分没有 ⇒ 立刻坍 ✓
+    return gain.gt(held.mul(D(thr)));             // **严格大于** ✓
   }
   return gain.gte(D(thr));
 }

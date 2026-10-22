@@ -859,9 +859,9 @@ console.log();
   const timOff = shouldAutoCrunch({ ...tim, runElapsed: 0.05 }, {});
   const timOn = shouldAutoCrunch({ ...tim, runElapsed: 0.1 }, {});
   const xhi = mode("xHighest", { xHighest: "2" });
-  xhi.maxIpThisEternity = D(10);
+  xhi.infinityPoints = D(10);   // ★ 2026-10-22：改为当前持有 IP ✓
   const xhiOff = shouldAutoCrunch(xhi, { gain: D(19) });
-  const xhiOn = shouldAutoCrunch(xhi, { gain: D(20) });
+  const xhiOn = shouldAutoCrunch(xhi, { gain: D(21) });
   const ui = mk(true);
   const uiT = setAutoCrunchValue(ui, "time", 0.1) && ui.autoCrunch.time === 0.1;
   const uiMode = setAutoCrunchMode(ui, "amount") && ui.autoCrunch.mode === "amount";
