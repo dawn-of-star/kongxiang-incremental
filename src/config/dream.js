@@ -114,7 +114,7 @@ export const DREAM_UPGRADES = [
     id: "keepDeEternity",
     group: "emauto",
     name: "暗能量永存",
-    desc: "永恒时**不再清空暗能量**（被动，无需开关）",
+    desc: "永恒时与**无限（大坍缩）时**都**不再清空暗能量**（被动，无需开关）",
     cost: 3,
     effect: { kind: "keep", target: "darkEnergy" },
   },

@@ -78,6 +78,30 @@ export function applyEternityKeeps(state, snapshot) {
   return done;
 }
 
+/**
+ * ★★★ 2026-10-22（用户新增）：「**暗能量永存**再添一个效果 —— **无限（大坍缩）时也不重置暗能量**」✓
+ *
+ * 与永恒那条并列（互不替代）：
+ *   · `applyEternityKeeps` ⇒ **永恒**时保留（原有 ✓）
+ *   · 本函数             ⇒ **无限（大坍缩）**时也保留（本次新增 ✓）
+ *
+ * ⚠️ 调用点**只有** `engine/collapse.js::doBigCrunch()` 一处 ✓
+ *   （快照必须在 `resetForCollapse()` **之前**取 ✓，重置之后写回 ✓）
+ * ⚠️ 保留 DE ⇒ 自增长不再被周期性清零 ⇒ 曲线更陡（用 `stage-timing` 观察 ✓）
+ *
+ * @param {object} state
+ * @param {{darkEnergy?: any}} snapshot 大坍缩**重置之前**的快照
+ * @returns {string[]} 实际保留了的字段
+ */
+export function applyCollapseKeeps(state, snapshot) {
+  const done = [];
+  if (hasMilestone(state, "keepDeEternity") && snapshot?.darkEnergy != null) {
+    state.darkEnergy = snapshot.darkEnergy;
+    done.push("darkEnergy");
+  }
+  return done;
+}
+
 /** 小工具：某条升级是否已买（不看开关 —— 被动型用）✓ */
 function hasMilestone(state, id) {
   const owned = state?.dreamUpgrades?.[id];

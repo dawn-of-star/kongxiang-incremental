@@ -8,6 +8,7 @@ import { BREAK_INFINITY, CRUNCH_AT_LABEL, INFINITY_UPGRADES, REPEATABLE, hasColl
 import { D, bigCrunchGain, canBigCrunch } from "../formulas.js";
 import { awardDream, pushLog } from "../state.js";
 import Decimal from "../../dist/break_eternity.esm.js";
+import { applyCollapseKeeps } from "../dream-effects.js";   // ★ 2026-10-22：暗能量永存 ⇒ 无限也不重置 DE ✓
 
 export function breakInfinity(state) {
   if (state.brokenInfinity) return false;
@@ -91,7 +92,13 @@ export function doBigCrunch(state) {
   // ⚠️ 2026：这里原来记录 state.fastestInfinitySec（最快一次无限的耗时）——
   //   它只服务 em7 的 IC 自动化，IC 删除后无人读取 ⇒ 一并移除 ✓
   //   （`elapsed` 本身仍用于下面的日志/显示，不要删它 ✗）
+
+  // ★★★ 2026-10-22（用户新增）：「暗能量永存」再添一个效果 —— **无限时也不重置暗能量** ✓
+  //   顺序要紧：**先快照**（重置会把它设成 1 ✗）⇒ 再 resetForCollapse ⇒ 再写回 ✓
+  //   快照只带"可能被保留"的字段（目前只有 darkEnergy ✓，将来加别的也放这里 ✓）
+  const collapseKeepSnapshot = { darkEnergy: state.darkEnergy };
   resetForCollapse(state);
+  applyCollapseKeeps(state, collapseKeepSnapshot);
   // ④ 的计时器与实时累计归零：下一次无限从 0 开始重新累计
   state.infinityElapsed = 0;
   state.ipTimeAccrued = D(0);
