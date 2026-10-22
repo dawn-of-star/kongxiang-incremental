@@ -203,7 +203,12 @@ if (state.zpeEngineUnlocked) {
   // 2026: the DE_EFF_CAP soft cap is applied to the growth rate so it converges instead of exploding.
   const _dlg = state.darkEnergy.lte(0) ? 0 : state.darkEnergy.log10().toNumber();
   const _cap = DE_EFF_CAP;
-  const _capDecay = _dlg <= _cap.kneeLog10 ? 1 : Math.pow(2, -(_dlg - _cap.kneeLog10) / _cap.span);
+  // ★★★ 2026-10-22（用户）：「DE 的削弱请类似 AD 复制器 / 物质超载 —— **继续获取有效，只是增长减缓**」✓
+    //   旧式 `2^(-over/span)` 会**指数衰减到 0** ✗ ⇒ 等于停住 ✗
+    //   新式（超载同款）：`1 / (1 + over/span)` ⇒ 越过 knee 后仍增长，但斜率按反比变小 ✓
+    //     over = 0 ⇒ 1 倍（不削弱 ✓）｜ over = span ⇒ 1/2 ｜ over = 10·span ⇒ 1/11 ✓
+    const _over = Math.max(0, _dlg - _cap.kneeLog10);
+    const _capDecay = 1 / (1 + _over / _cap.span);
   const deSelf = state.darkEnergy.max(1).mul(a).mul(Math.LN10).mul(_dtS).mul(_capDecay);
   state.darkEnergy = state.darkEnergy.add(deSelf);
   state.darkEnergy = state.darkEnergy.max(0);
