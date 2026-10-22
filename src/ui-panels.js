@@ -7,7 +7,7 @@
  *   · 仍然只通过 `./ui-core.js` 拿 DOM 地基，不反向 import ui.js
  */
 
-import { BASE, DE_MILESTONES, DE_UPGRADES, ETERNITY, MATTER_B_KMAX, MATTER_B_KNEE, PAGE_KEYS, REPEATABLE, TIER_MILESTONES, VOID_UPGRADES, ZPE_ENGINE, ZPE_MILESTONES, dreamUpgradeEffects, effectiveEngineLevel, engineBonusMult, eternityPointGain, markPageUnlocked, matterTotalExponent, pageUnlocked, qOf, quantumZpeMultBonus, tierMilestonesDone, zpeEngineAddBonus, zpeEngineCost, zpeEngineCountFreqUnlocked, zpeEngineLevel, zpeEngineMultBonus, zpeEngineProdMult, zpeEngineStepMult, zpeEngineUnlocked } from "./config.js";
+import { BASE, DE_MILESTONES, DE_UPGRADES, ETERNITY, eternityGain, MATTER_B_KMAX, MATTER_B_KNEE, PAGE_KEYS, REPEATABLE, TIER_MILESTONES, VOID_UPGRADES, ZPE_ENGINE, ZPE_MILESTONES, dreamUpgradeEffects, effectiveEngineLevel, engineBonusMult, eternityPointGain, markPageUnlocked, matterTotalExponent, pageUnlocked, qOf, quantumZpeMultBonus, tierMilestonesDone, zpeEngineAddBonus, zpeEngineCost, zpeEngineCountFreqUnlocked, zpeEngineLevel, zpeEngineMultBonus, zpeEngineProdMult, zpeEngineStepMult, zpeEngineUnlocked } from "./config.js";
 import { affordableCount, lastMatterRatePerSecond, zpeEngineAffordable } from "./engine.js";
 import { D, conversion, darkEnergyMultiplier, darkEnergyRate, deUpgradeCost, effectiveTraps, entropyRate, globalMultiplierParts, isAutoAcquire, particleRate, repeatableCost, trapCost, voidUpgradeCost, zpeBaseMultiplier, zpeMultiplier, zpeProductionPenalty, zpeRate } from "./formulas.js";
 import { deLevelOf, levelOf } from "./state.js";
@@ -230,7 +230,8 @@ export function renderEternityPanel(state) {
         : `（当前 ${sci(state.infinityPoints)}）`;
     }
     el["val-eternity"].textContent = fmt(state.eternityPoints, 0);
-    el["eternity-gain"].textContent = fmt(eternityPointGain(state.infinityPoints), 0);
+    // ★ 2026-10-22：必须走**唯一入口**（含 epMultFactor ✓），否则显示 ≠ 实发 ✗
+  el["eternity-gain"].textContent = fmt(eternityGain(state), 0);
     el["eternity-count"].textContent = String(state.eternityCount ?? 0);
     // 标签：解锁过就**永不加锁**（与量子/无限/暗能量同一套语义）
     el["tab-tag-eternity"].textContent = can ? "可永恒" : (perma ? "待推进" : "锁");

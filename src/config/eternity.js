@@ -611,3 +611,16 @@ export function eternityPointGain(infinityPoints) {
  */
 
 /** ZPE 引擎是否已解锁 */
+
+/**
+ * ★★★ 2026-10-22（用户：「本次 EP 收益」= **A: 显示 ≠ 实发**）—— **EP 收益的唯一入口**
+ *
+ *   = `eternityPointGain(IP) × epMultFactor(state)`（EP ×5 升级的因子 ✓）
+ *
+ * 踩坑（经典复刻）：结算侧乘了 `epMultFactor` ✓，界面「本次收益」却只算
+ *   `eternityPointGain(IP)` ✗ ⇒ 买了「永恒增幅」后面板显示 ×1、实际到账 ×5 ✗
+ * ⇒ 现在两边都必须调本函数 ✓（`tools/consistency.mjs` 有守卫 ✓）
+ */
+export function eternityGain(state) {
+  return eternityPointGain(state?.infinityPoints ?? 0).mul(epMultFactor(state));
+}

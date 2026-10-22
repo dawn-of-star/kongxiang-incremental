@@ -5,7 +5,7 @@
  *    对外统一从 `src/engine.js`（barrel）导入。
  */
 import { resetForCollapse } from "./collapse.js";
-import { INFINITY_ORDER, INFINITY_UPGRADES, PAGE_KEYS, canEternity, epMultFactor, eternityPointGain, hasEternityMilestone, infinityUpgradeCost, markPageUnlocked } from "../config.js";
+import { INFINITY_ORDER, INFINITY_UPGRADES, PAGE_KEYS, canEternity, epMultFactor, eternityPointGain, eternityGain, hasEternityMilestone, infinityUpgradeCost, markPageUnlocked } from "../config.js";
 import { applyEternityKeeps } from "../dream-effects.js";
 import { sci } from "../format.js";
 import { D } from "../formulas.js";
@@ -73,7 +73,7 @@ export function doEternity(state) {
     zpeMilestones: { ...(state.zpeMilestones ?? {}) },
   };
 
-  const gained = eternityPointGain(state.infinityPoints).mul(epMultFactor(state));
+  const gained = eternityGain(state);   // ★ 2026-10-22：唯一入口（含 epMultFactor）✓
   const ipBefore = state.infinityPoints;
   state.eternityPoints = (state.eternityPoints ?? D(0)).add(gained);
   // ★★ 2025：**累计 EP** —— em5 的读数源（只增不减；见 state.js 的字段说明）
@@ -231,4 +231,3 @@ export function doEternity(state) {
  *   跨度乘数 = `(DE / 此刻的 DE)^k`，所以"引擎到手 → 买到门槛压平"期间的 DE 增长
  *   会被**完整**换算成跨度 ✓（开关仍是「门槛压平」，两者必须分开，见 config 注释）
  */
-
