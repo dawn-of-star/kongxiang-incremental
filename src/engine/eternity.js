@@ -145,7 +145,16 @@ export function doEternity(state) {
   // ── 虚拟系统整体归零（★ 用户明确：**除梦想系统外，一切重置**）──
   //   虚空升级（v1~v9）、ZPE 里程碑、暗能量里程碑、暗能量升级等级、相变仪解锁：
   //   全部属于"进度"，永恒一律归零。**只留梦想系统**（梦想点 / 梦想升级 / 成就账本）。
-  for (const k of Object.keys(state.voidUpgrades ?? {})) state.voidUpgrades[k] = false;
+  // ★★★ 2026-10-22（用户：「开局因为**传承启迪**会自动购买熵阱，后者直接驱动整个流程」）——
+  //   `v9`（传承启迪）是**用梦想点买的** ✓（梦想点永不重置 ✓）
+  //   但它住在 `voidUpgrades` 里 ✗ ⇒ 每次永恒被清 ⇒ `isAutoAcquire()` 变假 ✗
+  //   ⇒ 大坍缩后**熵阱不自动购买** ⇒ 熵/粒子/物质产线起不来 ✗
+  //   ⇒ 用户看到的「物质卡在起点跃迁给的 e200 不动」就是这个 ✓
+  //   ⇒ **v9 跨永恒保留**（与 `dreamAnnihilation` 同一条规矩：梦想点买的就不重置 ✓）
+  for (const k of Object.keys(state.voidUpgrades ?? {})) {
+    if (k === "v9") continue;   // ★ 梦想点买的，跨永恒保留 ✓
+    state.voidUpgrades[k] = false;
+  }
   for (const k of Object.keys(state.zpeMilestones ?? {})) state.zpeMilestones[k] = false;
   for (const k of Object.keys(state.deMilestones ?? {})) state.deMilestones[k] = false;
   // ★★★ 2026 修 bug（用户：「梦想烬灭虚无每次永恒都会被重置，每次都要重新消耗梦想点」）——
