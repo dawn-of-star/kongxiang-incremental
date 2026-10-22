@@ -451,7 +451,7 @@ ck("④f 定点手算：只放大三角 II ⇒ 左边缘 100%、上边缘 0%",
 // ══════════════════════════════════════════════════════════
 {
   const { tangramRewardEffects } = await import("../src/tangram.js");
-  const g = (a) => tangramRewardEffects(a).nekoZpeExponent;
+  const g = (a) => tangramRewardEffects(a).nekoExponentOnZpe;
   const ok =
     g([0, 0, 0, 0, 0, 0]) === false &&
     g([6, 0, 0, 0, 0, 0]) === false &&

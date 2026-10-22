@@ -217,7 +217,7 @@ export function zpeRate(state) {
   //   ⚠️ 唯一入口仍是 `zpeRate()`（`tick` 与界面都读它 ⇒ 显示 == 实发 ✓）
   //   ⚠️ 是指数 ⇒ 会抬 `p` 一点点（≈ +2.2% 相对）；若以后把 neko 指数做大，**必须重算 p** ✗
   const rw = tangramRewardEffects(state?.tangramCleared);
-  if (!rw.nekoZpeExponent) return out;
+  if (!rw.nekoExponentOnZpe) return out;
   const exp = nekoGlobalExponent(state);
   return exp === 1 ? out : out.pow(exp);
 }

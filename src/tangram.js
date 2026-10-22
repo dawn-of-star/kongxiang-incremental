@@ -352,7 +352,7 @@ export function tangramRewardEffects(clearedByDifficulty) {
      *   `nekoGlobalExponent` 对 **ZPE 产量**生效（指数作用 ✓）
      *   判定**按档**而不是按总数（总数 12 也可能来自 d1+d5 ✗ 不符合"前两组" ✓）
      */
-    nekoZpeExponent: (() => {
+    nekoExponentOnZpe: (() => {
       const need = Math.max(0, Math.floor(Number(R.nekoExponentOnZpeAfterTiers) || 0));
       if (need <= 0) return false;
       for (let d = 0; d < need; d++) if (n(d) < R.perTier) return false;
