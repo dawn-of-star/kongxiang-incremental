@@ -1152,3 +1152,6 @@ button { font: inherit; cursor: pointer; }
 .tg-reward-table th { background: rgba(255,255,255,.04); color: var(--text-dim); font-weight: 700; white-space: nowrap; }
 .tg-reward-table td:first-child { white-space: nowrap; color: var(--eternity, #b388ff); }
 @media (max-width: 700px) { .tg-reward-table { display: block; overflow-x: auto; white-space: nowrap; } }
+
+.tg-piece-poly.tg-overlap { fill: rgba(255, 80, 80, 0.45) !important; stroke: #ff5a5a !important; stroke-width: 2 !important; }
+.tg-piece-poly.tg-selected { stroke: #7cf !important; stroke-width: 2.5 !important; filter: drop-shadow(0 0 4px rgba(120,200,255,.8)); }

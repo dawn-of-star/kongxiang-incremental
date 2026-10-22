@@ -18,7 +18,7 @@
  * ⚠️ 独立模块 ⇒ `ui.js` 只加两行（`bindTangramBoard` / `paintTangramBoard`）✓
  */
 import {
-  TANGRAM_PIECES, placePieceVerts, placementOf, snapPoint, cellsFromFingerprint,
+  TANGRAM_PIECES, placePieceVerts, placementOf, snapPoint, convexOverlap, cellsFromFingerprint,
 } from "./tangram.js";
 import { setTangramPlacement, tangramCoverage, tangramChallengeTarget } from "./tangram-game.js";
 
@@ -34,7 +34,8 @@ const PAD = 240;                       // viewBox 外扩，让 −3..7 的画布
 let layerTarget = null;
 let layerPieces = null;
 let targetKeyCache = null;
-let drag = null;                       // { id, grabDx, grabDy }
+let drag = null;                       // { id, grabDx, grabDy, moved }
+let selectedId = null;                 // ★ 2026-10-22：点击选中的板块（再点取消 ✓）
 let stRef = null;                      // 由 paintTangramBoard 每帧更新（绑定发生在构建期，那时没有 state ✓）
 
 function svgRoot() {
@@ -121,12 +122,23 @@ export function paintTangramBoard(state) {
   //   （原来把题目铺在主棋盘上 = 把两个机制混在一起，还糊住了覆盖率视野 ✗）
   // ② 玩家板块（每帧重建 —— 只有 ≤7 个多边形，成本可忽略 ✓）
   layerPieces.textContent = "";
+  const placedEntries = TANGRAM_PIECES.filter((p) => state?.tangramPlaced?.[p.id]);
   for (const p of TANGRAM_PIECES) {
     const cfg = state?.tangramPlaced?.[p.id];
     if (!cfg) continue;
+    const verts = placePieceVerts(p, cfg);
     const poly = document.createElementNS(SVG_NS, "polygon");
-    poly.setAttribute("points", placePieceVerts(p, cfg).map(([x, y]) => toSvg(x, y).join(",")).join(" "));
-    poly.setAttribute("class", "tg-piece-poly");
+    poly.setAttribute("points", verts.map(([x, y]) => toSvg(x, y).join(",")).join(" "));
+    // ★★★ 2026-10-22（用户：「**建议可覆盖（但覆盖区域红色阴影处理）**」）——
+    //   与其它已放板块**相交** ⇒ 标红（整块红，比算真实交集便宜且够醒目 ✓）
+    //   ⚠️ 覆盖率本身按**并集**算（`axisCoverageAll` 会合并区间 ✓）⇒ 叠放**不会**白送覆盖率 ✓
+    let overlap = false;
+    for (const other of placedEntries) {
+      if (other.id === p.id) continue;
+      if (convexOverlap(verts, placePieceVerts(other, state.tangramPlaced[other.id]))) { overlap = true; break; }
+    }
+    poly.setAttribute("class", "tg-piece-poly" + (overlap ? " tg-overlap" : "")
+      + (selectedId === p.id ? " tg-selected" : ""));
     poly.dataset.piece = p.id;
     layerPieces.appendChild(poly);
   }
@@ -168,11 +180,18 @@ export function bindTangramBoard(state, commit) {
   svg.addEventListener("pointerdown", (ev) => {
     const state = stRef;
     const poly = ev.target?.closest?.("polygon[data-piece]");
-    if (!poly) return;
+    if (!poly) {
+      // ★ 2026-10-22（用户：「点击一次选中，再点一次取消」，空白处同理）✓
+      if (selectedId) { selectedId = null; paintTangramBoard(state); }
+      return;
+    }
     const id = poly.dataset.piece;
     const cfg = placementOf(state?.tangramPlaced, id);
     const [bx, by] = ptToBoard(ev);
-    drag = { id, grabDx: bx - Number(cfg.dx ?? 0), grabDy: by - Number(cfg.dy ?? 0) };
+    drag = {
+      id, grabDx: bx - Number(cfg.dx ?? 0), grabDy: by - Number(cfg.dy ?? 0),
+      moved: false, sx: ev.clientX, sy: ev.clientY,
+    };
     poly.classList.add("dragging");
     svg.setPointerCapture?.(ev.pointerId);
     ev.preventDefault();
@@ -181,8 +200,9 @@ export function bindTangramBoard(state, commit) {
   svg.addEventListener("pointermove", (ev) => {
     if (!drag) return;
     const state = stRef;
+    if (Math.abs(ev.clientX - drag.sx) > 3 || Math.abs(ev.clientY - drag.sy) > 3) drag.moved = true;
     const [bx, by] = ptToBoard(ev);
-    // 自由拖动：**不吸附**（小数直接给），合法性由 `setTangramPlacement` 判（画布内 + 不重叠）✓
+    // 自由拖动：**不吸附**；合法性只判"在画布内"（**允许重叠** ✓，重叠块会标红 ✓）
     setTangramPlacement(state, drag.id, { dx: bx - drag.grabDx, dy: by - drag.grabDy });
     paintTangramBoard(state);
   });
@@ -190,10 +210,22 @@ export function bindTangramBoard(state, commit) {
   const finish = (ev) => {
     if (!drag) return;
     const state = stRef;
-    const cfg = placementOf(state?.tangramPlaced, drag.id);
+    const moved = drag.moved;
+    const id = drag.id;
+    // ★ 2026-10-22：**没移动 = 点击** ⇒ 切换选中（再点同一块取消 ✓）
+    if (!moved) {
+      selectedId = selectedId === id ? null : id;
+      drag = null;
+      svg.releasePointerCapture?.(ev?.pointerId);
+      paintTangramBoard(state);
+      commit?.();
+      return;
+    }
+    const cfg = placementOf(state?.tangramPlaced, id);
     // 松手：吸附到 0.2 格（`snapPoint` 的半径在 tangram.js 里定）✓
     const [sx, sy] = snapPoint(Number(cfg.dx ?? 0), Number(cfg.dy ?? 0));
-    setTangramPlacement(state, drag.id, { dx: sx, dy: sy });
+    setTangramPlacement(state, id, { dx: sx, dy: sy });
+    selectedId = id;                       // 拖动结束后保持选中 ✓（这样 R/F 立刻可用 ✓）
     drag = null;
     svg.releasePointerCapture?.(ev?.pointerId);
     commit?.();
@@ -201,19 +233,23 @@ export function bindTangramBoard(state, commit) {
   svg.addEventListener("pointerup", finish);
   svg.addEventListener("pointercancel", finish);
 
-  // 拖拽中按 R / F ⇒ 旋转 / 翻转（用户原话：「拖的时候也能转」）✓
+  // 拖拽中**或已选中**按 R / F ⇒ 旋转 / 翻转 ✓
+  // ★ 2026-10-22 修（用户：「快捷键旋转/翻转似乎不生效」）——
+  //   原来 `if (!drag) return;` ✗ ⇒ **只有按住拖拽时**才响应 ✗
+  //   现在：有 `selectedId` 也响应（点一下选中再按 R/F 即可 ✓）
   if (typeof window !== "undefined") {
     window.addEventListener("keydown", (ev) => {
-      if (!drag) return;
+      const targetId = drag?.id ?? selectedId;
+      if (!targetId) return;
       const state = stRef;
       if (ev.key === "r" || ev.key === "R") {
-        const cfg = placementOf(state?.tangramPlaced, drag.id);
-        setTangramPlacement(state, drag.id, { rot: Number(cfg.rot ?? 0) + 1 });
+        const cfg = placementOf(state?.tangramPlaced, targetId);
+        setTangramPlacement(state, targetId, { rot: Number(cfg.rot ?? 0) + 1 });
         paintTangramBoard(state);
         ev.preventDefault();
       } else if (ev.key === "f" || ev.key === "F") {
-        const cfg = placementOf(state?.tangramPlaced, drag.id);
-        setTangramPlacement(state, drag.id, { flip: !cfg.flip });
+        const cfg = placementOf(state?.tangramPlaced, targetId);
+        setTangramPlacement(state, targetId, { flip: !cfg.flip });
         paintTangramBoard(state);
         ev.preventDefault();
       }

@@ -180,7 +180,9 @@ export function isPlacementLegal(id, cfg, placed, pieces = TANGRAM_PIECES) {
   if (!v.every(([x, y]) => x >= CANVAS_MIN && x <= CANVAS_MAX && y >= CANVAS_MIN && y <= CANVAS_MAX)) return false;
   for (const other of pieces) {
     if (other.id === id || !placed?.[other.id]) continue;
-    if (convexOverlap(v, placePieceVerts(other, placed[other.id]))) return false;
+    // ★ 2026-10-22（用户：「可覆盖，但重叠区域红色阴影」）⇒ 玩家摆位允许重叠 ✓
+  //   （覆盖率仍按**并集**算 ⇒ 重叠不白送加成 ✓；重叠块在棋盘上标红 ✓）
+  if (!allowOverlap && convexOverlap(v, placePieceVerts(other, placed[other.id]))) return false;
   }
   return true;
 }

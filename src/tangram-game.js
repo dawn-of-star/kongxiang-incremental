@@ -108,7 +108,7 @@ export function setTangramPlacement(state, id, cfg) {
   next.rot = ((Math.floor(next.rot) % 4) + 4) % 4;
   next.dx = Number(next.dx) || 0;
   next.dy = Number(next.dy) || 0;
-  if (!isPlacementLegal(id, next, state.tangramPlaced)) return { ok: false, reason: "illegal" };
+  if (!isPlacementLegal(id, next, state.tangramPlaced, true)) return { ok: false, reason: "illegal" };   // ★ 允许重叠 ✓
   state.tangramPlaced[id] = next;
   return { ok: true, placement: next };
 }
