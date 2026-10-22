@@ -572,7 +572,17 @@ export function placePieceVerts(piece, { rot = 0, flip = false, dx = 0, dy = 0 }
  * ⚠️ 完整版还应吸到"已有板块的顶点/边"；那属于后续（见 `TANGRAM.md` §7 的 ④），
  *   本函数只做**格点吸附**这一层，够开工且可断言 ✓
  */
-export const snapPoint = ([x, y]) => [Math.round(x), Math.round(y)];
+export function snapPoint(a, b, step = 0.2) {
+  // 2026-10-22 修：同时接受 (x,y) 与 ([x,y])，并吸附到 **0.2 格**（原来只吃数组 + 整格 ✗）
+  const [x, y] = Array.isArray(a) ? a : [a, b];
+  const s = Number(step);
+  const nx = Number(x);
+  const ny = Number(y);
+  if (!Number.isFinite(nx) || !Number.isFinite(ny) || !(s > 0)) return [nx, ny];
+  const q = (v) => Math.round(v / s) * s;
+  const clean = (v) => Math.round(v * 1e6) / 1e6;
+  return [clean(q(nx)), clean(q(ny))];
+}
 
 /**
  * 一条线段落进某**凸**多边形的参数区间（`t ∈ [0,1]`，线段由 `A + t(B−A)` 给出）。
