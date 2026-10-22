@@ -925,13 +925,13 @@
 <rect class="tg-frame" x="0" y="0" width="100" height="100"></rect>
                 <!-- 三条轴：左边缘 / 下边缘 / 左下→右上 主对角线 -->
                 <line class="tg-axis" x1="0" y1="100" x2="0" y2="0"></line>
-                <line class="tg-axis" x1="0" y1="0" x2="100" y2="0"></line>
+                <line class="tg-axis" x1="0" y1="100" x2="100" y2="100"></line>
                 <line class="tg-axis" x1="0" y1="0" x2="100" y2="100"></line>
                 <!-- 覆盖率高亮：由 JS 用 stroke-dasharray / dashoffset 驱动
                      由 JS 按覆盖率驱动：stroke-dashoffset = 全长 × (1 − 覆盖率) ✓ -->
                 <line class="tg-cov" id="tg-cov-vert" x1="0" y1="100" x2="0" y2="0"
                       stroke-dasharray="100 100" stroke-dashoffset="100"></line>
-                <line class="tg-cov" id="tg-cov-horz" x1="0" y1="0" x2="100" y2="0"
+                <line class="tg-cov" id="tg-cov-horz" x1="0" y1="100" x2="100" y2="100"
                       stroke-dasharray="100 100" stroke-dashoffset="100"></line>
                 <line class="tg-cov" id="tg-cov-diag" x1="0" y1="0" x2="100" y2="100"
                      stroke-dasharray="141.42 141.42" stroke-dashoffset="141.42"></line>
