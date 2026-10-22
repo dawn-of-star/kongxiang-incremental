@@ -268,6 +268,28 @@ export function deserialize(raw) {
     }
   }
 
+  // ★★★ 2026-10-22 修（用户：「**刷新网页后七巧板系统进度丢失**」）——
+  //   根因：`deserialize` 是**逐字段显式还原**（55 个 ✓），而七巧板那 6 个字段**一个都没写** ✗
+  //   ⇒ 刷新后它们回落到 `newState()` 的空默认值 ⇒ 进度全丢 ✗
+  //   （这是"模块化拆分时漏字段"的典型事故：serialize 是全量 ✓，deserialize 是白名单 ✗）
+  s.tangramOwned = raw.tangramOwned && typeof raw.tangramOwned === "object"
+    ? Object.fromEntries(Object.entries(raw.tangramOwned).filter(([, v]) => v === true))
+    : {};
+  s.tangramPity = raw.tangramPity && typeof raw.tangramPity === "object"
+    ? Object.fromEntries(Object.entries(raw.tangramPity).map(([k, v]) => [k, num(v, 0)]))
+    : {};
+  s.tangramPlaced = raw.tangramPlaced && typeof raw.tangramPlaced === "object"
+    ? Object.fromEntries(Object.entries(raw.tangramPlaced).filter(([, v]) => v && typeof v === "object"))
+    : {};
+  s.tangramCleared = Array.isArray(raw.tangramCleared)
+    ? [0, 0, 0, 0, 0, 0].map((_, i) => num(raw.tangramCleared[i], 0))
+    : [0, 0, 0, 0, 0, 0];
+  s.tangramChallenge = raw.tangramChallenge && typeof raw.tangramChallenge === "object"
+    ? { solved: num(raw.tangramChallenge.solved, 0) }
+    : { solved: 0 };
+  s.tangramChallengeThisEternity = num(raw.tangramChallengeThisEternity, 0);
+  s.tangramSeed = raw.tangramSeed == null ? null : num(raw.tangramSeed, 0);
+
   return { state: s, ok: true };
 }
 
