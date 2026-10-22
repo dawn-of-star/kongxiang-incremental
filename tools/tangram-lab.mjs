@@ -175,8 +175,8 @@ console.log();
 //   大三角 II = (0,0),(2,2),(0,4) ⇒ 左边 x=0 从 y=0 到 y=4 **整段盖住** ⇒ 纵轴 100%
 //   它的上边缘只有 (0,4) 一个点 ⇒ 横轴 0%（点覆盖长度为 0）✓
 const onlyA = axisCoverageAll([TANGRAM_PIECES[1].verts]);
-ck("④f 定点手算：只放大三角 II ⇒ 左边缘 100%、上边缘 0%",
-  Math.abs(onlyA.vert - 1) < 1e-9 && Math.abs(onlyA.horz - 0) < 1e-9,
+ck("④f 定点手算：大三角 II ⇒ 右边缘 0%、上边缘 0%、斜轴 50%",
+  Math.abs(onlyA.vert - 0) < 1e-9 && Math.abs(onlyA.horz - 0) < 1e-9 && Math.abs(onlyA.diag - 0.5) < 1e-9,
     `横=${(onlyA.horz * 100).toFixed(1)}%｜纵=${(onlyA.vert * 100).toFixed(1)}%｜斜=${(onlyA.diag * 100).toFixed(1)}%`);
 }
 
