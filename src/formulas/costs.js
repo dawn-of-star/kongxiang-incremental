@@ -8,6 +8,7 @@ import { BASE, DE_UPGRADES, REPEATABLE, VOID_UPGRADES, dreamUpgradeEffects, piec
 import { D } from "./core.js";
 import { deLevelOf, hasDe, hasZpe, levelOf } from "../state.js";
 import { zpeMultiplier } from "./zpe.js";
+import { isAutoAcquire } from "./infinity.js";   // ★ 2026-10-22：自动模式价格=0（显示==实发 ✓）
 import Decimal from "../../dist/break_eternity.esm.js";
 
 export function effectiveZpeMultiplierForPrice(state) {
@@ -27,6 +28,11 @@ export function repeatableCost(state, id) {
 
 /** 熵阱价格（已应用 m5 折扣 + 量子升级「退火」） */
 export function trapCost(state) {
+  // ★★★ 2026-10-22（"显示 == 实发"守卫抓到的真 bug）——
+  //   自动获取（v9 传承启迪）开启时，熵阱是**免费**的（`buyTrap` 的 auto 分支不扣钱 ✓）
+  //   但价格显示仍算出 7.479e27 ✗ ⇒ 显示 ≠ 实发 ✗
+  //   ⇒ 自动模式下**价格就是 0** ✓（面板显示 0、买到的也是 0 花费 ✓）
+  if (isAutoAcquire(state, "trap")) return D(0);
   // （原来这里读 `qe.trapCostMult` 覆盖基础增长 ——
   //   旧量子升级「退火」，已随整套系统删除，永远返回 null，所以直接去掉）
   const n = state.resources.traps;
