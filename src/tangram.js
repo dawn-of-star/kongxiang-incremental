@@ -173,7 +173,7 @@ export const CANVAS_MAX = 8;    // 2026: 8x8 画布（正方形 0..4 贴在左�
  * ⚠️ 「在画布内」只需检查顶点：七块都是**凸**的，凸块的全部顶点在凸区域内 ⇒ 整块在内 ✓
  * ⚠️ 重叠用 `convexOverlap`（SAT）⇒ **共边/共点不算重叠** ⇒ 贴边拼装合法 ✓
  */
-export function isPlacementLegal(id, cfg, placed, pieces = TANGRAM_PIECES) {
+export function isPlacementLegal(id, cfg, placed, pieces = TANGRAM_PIECES, allowOverlap = false) {   // ★ 2026-10-22：第 5 个参数才是"允许重叠"（第 4 个是 pieces ✗ 我上一版把它顶掉了）
   const piece = pieces.find((p) => p.id === id);
   if (!piece) return false;
   const v = placePieceVerts(piece, cfg);
@@ -182,7 +182,7 @@ export function isPlacementLegal(id, cfg, placed, pieces = TANGRAM_PIECES) {
     if (other.id === id || !placed?.[other.id]) continue;
     // ★ 2026-10-22（用户：「可覆盖，但重叠区域红色阴影」）⇒ 玩家摆位允许重叠 ✓
   //   （覆盖率仍按**并集**算 ⇒ 重叠不白送加成 ✓；重叠块在棋盘上标红 ✓）
-  if (!allowOverlap && convexOverlap(v, placePieceVerts(other, placed[other.id]))) return false;
+    if (!allowOverlap && convexOverlap(v, placePieceVerts(other, placed[other.id]))) return false;
   }
   return true;
 }
