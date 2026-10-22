@@ -229,10 +229,23 @@ export function tangramChallengeTarget(state) {
 export function tangramChallengeSolved(state) {
   const t = tangramChallengeTarget(state);
   if (!t) return false;
-  if (!Object.keys(state?.tangramPlaced ?? {}).length) return false;
-  const mine = placedCells(state?.tangramPlaced);
+  const placed = state?.tangramPlaced ?? {};
+  if (!Object.keys(placed).length) return false;
+
+  // ★★★ 2026-10-22（用户：「照着题目拼好了却**不自动完成**」）——
+  //   根因：吸附是 **0.2 格**（用户要求 ✓），而 polygonCells 只在**整数网格**上切小三角 ✗
+  //   ⇒ 位置带 0.2/0.4 偏移时算不出 cell ⇒ 指纹永远对不上 ✗
+  //   ⇒ 判定时**把落点四舍五入到整格**再算 ✓（只影响判定，不改玩家看到的位置 ✓）
+  const rounded = {};
+  for (const [id, cfg] of Object.entries(placed)) {
+    rounded[id] = { ...cfg, dx: Math.round(Number(cfg?.dx ?? 0)), dy: Math.round(Number(cfg?.dy ?? 0)) };
+  }
+  const mine = placedCells(rounded);
   if (!mine.length) return false;
-  return cellsFingerprint(mine) === t.key;
+  if (cellsFingerprint(mine) === t.key) return true;
+  // 兜底：原始（未取整）也算一遍 —— 整数落点时两种结果相同 ✓
+  const raw = placedCells(placed);
+  return raw.length > 0 && cellsFingerprint(raw) === t.key;
 }
 /** 过关并进下一题（按目标难度累加 `tangramCleared`，奖励唯一输入）✓ */
 export function tangramAdvanceChallenge(state) {
