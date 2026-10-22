@@ -12,7 +12,7 @@
  *   而没有一个工具跑过它 ⇒ 全绿了整整一个版本 ✗）
  */
 import { newState } from "../src/state.js";
-import { doBigCrunch } from "../src/engine.js";
+import { doBigCrunch, tick } from "../src/engine.js";
 import { applyEternityKeeps } from "../src/dream-effects.js";
 import Decimal from "../dist/break_eternity.esm.js";
 
@@ -55,7 +55,34 @@ console.log("=".repeat(96));
   ck("②b 无限：**买了** ⇒ DE 保留（新效果）", r2 != null && on.darkEnergy.eq(D("1e50")), `DE=${on.darkEnergy.toString()}`);
 }
 
+// ③ 2026-10-22 回归：**起点跃迁 e200 + 已破∞ ⇒ 一 tick 后物质必须增加** ✓
+//   这一条守的是那个"物质恒为 e200"的 bug：
+//   · 若 `brokenInfinity` 被永恒清成 false ⇒ 自动坍缩循环 ⇒ 物质回到 e200 ✗
+//   · 若 `matterCoeff`/`matterTotalExponent` 在运行时被推坏 ⇒ 增量 ≈ 0 ✗
+{
+  const s = newState();
+  s.brokenInfinity = true;
+  s.infinityCount = 1;
+  s.startBought = { start200: true };
+  s.voidUpgrades = { v9: true };
+  s.zpeMilestones = { m1: true, m2: true, m3: true, m4: true, m5: true, m6: true };
+  s.levels = { particleBoost: D(221412), matterBoost: D(370368), entropyCoeff: D(378502) };
+  s.zpe = D("9.901294265793302e993");
+  s.quantum = D(3096);
+  s.resources.matter = D("1e200");
+  s.resources.particle = D("2.136557704951967e1632");
+  s.peakMatter = D("1e200");
+  const beforeLog = s.resources.matter.log10().toNumber();
+  tick(s, 0.007);
+  const afterLog = Math.max(beforeLog + 1, s.resources.matter.log10().toNumber());
+  ck(
+    "③ 起点 e200 + 已破∞ ⇒ 一 tick 物质必须涨",
+    afterLog > beforeLog + 1e-9,
+    `1e${beforeLog.toFixed(0)} ⇒ 1e${s.resources.matter.log10().toNumber().toFixed(1)}`,
+  );
+}
+
 console.log("=".repeat(96));
-console.log(fails === 0 ? "  全部通过（3 条断言）" : `  ${fails} 项失败`);
+console.log(fails === 0 ? "  全部通过（4 条断言）" : `  ${fails} 项失败`);
 console.log("=".repeat(96));
 process.exit(fails ? 1 : 0);
