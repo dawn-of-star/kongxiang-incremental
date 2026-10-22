@@ -28,7 +28,7 @@ export function nekoHostPresent(doc = globalThis.document) {
  * 单独给（默认等于 `gameId`）。
  */
 export const NEKO_GAME_ID = "kongxiang-incremental";
-export const NEKO_GAME_VERSION = "0.7.3";
+export const NEKO_GAME_VERSION = "0.7.4";
 export const NEKO_PROTOCOL_VERSION = "1";
 
 /**
