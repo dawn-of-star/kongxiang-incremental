@@ -116,7 +116,13 @@ export function doEternity(state) {
   //     升级保留 ⇒ 效果自动持续生效 ✓
   //   ⚠️ `speedBought`（速率解放）**仍然清空** —— 用户只点名了"所有的起点跃迁" ✓
   state.speedBought = {};
-  state.brokenInfinity = false;
+  // ★★★ 2026-10-22（用户：「如果是**打破无限**机制问题……那 em7 的逻辑确实得修」）——
+  //   **打破无限 = 曾经打破过**（`infinityCount ≥ 1` 就是"打破过" ✓）
+  //   旧写法无条件 `brokenInfinity = false` ✗ ⇒ 永恒后立刻退回**自动大坍缩**（到顶就触发 ✗）
+  //   ⇒ 配合"起点跃迁跨永恒保留" ⇒ **每秒一轮坍缩** ✗ ⇒ 物质永远停在 e200 ✗（实测 140 秒 86 次 ✓）
+  //   ⇒ 现在：**只要打破过无限，永恒后仍然算打破** ✓（自动坍缩不会回来 ✓）
+  //   ⚠️ em7 那段（下面 3 行）仍保留：它额外给 +1 次无限 ✓，与本条不冲突 ✓
+  state.brokenInfinity = Math.floor(Number(state.infinityCount ?? 0)) >= 1;
   // ★★★ 2026（用户：「em7 追加：初始获得一次无限次数，打破无限默认解锁」）——
   //   em7 达成后，每次永恒**保留 1 次无限 + 默认已打破无限** ✓
   if (hasEternityMilestone(state, "em7")) {
