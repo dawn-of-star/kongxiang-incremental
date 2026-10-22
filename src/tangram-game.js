@@ -162,7 +162,12 @@ export function tangramChallengeTarget(state) {
   // ★★★ 2026（用户：「时空是一个**新的重置层**，务必注意」）——
   //   种子必须是 **时空次数**（`spaceCount`）；时空层还没实装 ⇒ 先退回永恒次数 ✓
   //   ⚠️ 时空 ≠ 永恒：它是一层**更外层的重置** ⇒ 一旦实装，这里**不用改**（`spaceCount` 优先 ✓）
-  const seed = Math.floor(Number(state?.spaceCount ?? state?.eternityCount ?? 0)) || 0;
+  // 2026-10-22 (user: resetting the puzzle set is the SPACE layer's job, not eternity's)
+  //   seed used to be `spaceCount ?? eternityCount` -> every eternity changed the puzzle.
+  //   Now the seed is recorded once on first entry (state.tangramSeed) and only a
+  //   spaceCount change (the space layer) re-rolls it.
+  if (state && state.tangramSeed == null) state.tangramSeed = Math.floor(Number(state.spaceCount ?? 0)) || 0;
+  const seed = Math.floor(Number(state?.spaceCount ?? state?.tangramSeed ?? 0)) || 0;
   const cleared = state?.tangramCleared ?? [];
   for (let d = 0; d < 6; d++) {
     const n = Math.min(per, Math.max(0, Math.floor(Number(cleared[d] ?? 0))));

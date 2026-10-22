@@ -208,7 +208,11 @@ if (state.zpeEngineUnlocked) {
     //   新式（超载同款）：`1 / (1 + over/span)` ⇒ 越过 knee 后仍增长，但斜率按反比变小 ✓
     //     over = 0 ⇒ 1 倍（不削弱 ✓）｜ over = span ⇒ 1/2 ｜ over = 10·span ⇒ 1/11 ✓
     const _over = Math.max(0, _dlg - _cap.kneeLog10);
-    const _capDecay = 1 / (1 + _over / _cap.span);
+    // 2026-10-22 (user measured a stall at 2.06e64808): reverse-solving the formula,
+    //   d(log10 DE)/dt = a * decay with a ~ 0.29 and over ~ 64500 gives decay ~ 1/1076,
+    //   i.e. 0.00027 orders/sec -- about one order per hour, which looks like a stall.
+    //   A hard 5% floor keeps growth alive (user: keep gaining, just slower) -- not a stop.
+    const _capDecay = Math.max(0.05, 1 / (1 + _over / _cap.span));
   const deSelf = state.darkEnergy.max(1).mul(a).mul(Math.LN10).mul(_dtS).mul(_capDecay);
   state.darkEnergy = state.darkEnergy.add(deSelf);
   state.darkEnergy = state.darkEnergy.max(0);
