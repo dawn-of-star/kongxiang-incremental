@@ -108,6 +108,46 @@ export function autoPlaceTangram(state, id) {
  *   `force = true` 时**跳过合法性判定**（只用于旋转/翻转这类"原地变形" ✓）
  *   ⚠️ 位置拖动仍然走合法性判定（不许拖出画布 ✓）
  */
+
+/**
+ * ★★★ 2026-10-22（用户诊断：「**所有巧板的变换中心不在物理中心**」✓ 完全正确）——
+ *   原实现：`rot/flip` 是在**棋盘原点 (0,0)** 处做的 ✗ ⇒ 一转就把块甩到别处 ✗
+ *   （正方形是特例：它在原点周围恰好对称，所以看起来"只转了一点" ✗）
+ *
+ * 本函数 = **绕板块自身包围盒中心**变换 ✓：
+ *   1. 先取变换后的**未平移**顶点（dx=dy=0），算它的包围盒中心 c2
+ *   2. 再取变换前的世界包围盒中心 c1
+ *   3. 把 `dx,dy` 补上 `c1 − c2` ⇒ 视觉上"原地转/翻" ✓
+ *
+ * @returns {{ok:boolean}}
+ */
+export function transformPieceInPlace(state, id, { dRot = 0, dFlip = false } = {}) {
+  const piece = TANGRAM_PIECES.find((p) => p.id === id);
+  if (!piece) return { ok: false, reason: "unknown-piece" };
+  const cur = placementOf(state?.tangramPlaced, id);
+  const centerOf = (verts) => {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const [x, y] of verts) {
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+    }
+    return [(minX + maxX) / 2, (minY + maxY) / 2];
+  };
+  const before = placePieceVerts(piece, { rot: cur.rot, flip: cur.flip, dx: Number(cur.dx ?? 0), dy: Number(cur.dy ?? 0) });
+  const c1 = centerOf(before);
+  const next = {
+    rot: ((Math.floor(Number(cur.rot ?? 0) + dRot) % 4) + 4) % 4,
+    flip: dFlip ? !cur.flip : !!cur.flip,
+    dx: 0,
+    dy: 0,
+  };
+  const c2 = centerOf(placePieceVerts(piece, next));
+  // ⚠️ `c1` **已经含** cur.dx/cur.dy（它是变换前的世界包围盒）⇒ 这里不能再加一次 ✗
+  //   （我第一版写成 `cur.dx + (c1 − c2)` ⇒ 中心被推了两次 ⇒ 越转越偏 ✗）
+  next.dx = c1[0] - c2[0];
+  next.dy = c1[1] - c2[1];
+  return setTangramPlacement(state, id, next, true);
+}
 export function setTangramPlacement(state, id, cfg, force = false) {
   if (!state?.tangramOwned?.[id]) return { ok: false, reason: "not-owned" };
   state.tangramPlaced ??= {};

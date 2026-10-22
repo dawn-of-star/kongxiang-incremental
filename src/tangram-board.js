@@ -20,7 +20,7 @@
 import {
   TANGRAM_PIECES, placePieceVerts, placementOf, snapPoint, convexOverlap, cellsFromFingerprint,
 } from "./tangram.js";
-import { setTangramPlacement, tangramCoverage, tangramChallengeTarget } from "./tangram-game.js";
+import { setTangramPlacement, tangramCoverage, tangramChallengeTarget, transformPieceInPlace } from "./tangram-game.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 /** 板坐标 → SVG 坐标（**唯一换算点**）✓ */
@@ -244,12 +244,12 @@ export function bindTangramBoard(state, commit) {
       const state = stRef;
       if (ev.key === "r" || ev.key === "R") {
         const cfg = placementOf(state?.tangramPlaced, targetId);
-        setTangramPlacement(state, targetId, { rot: Number(cfg.rot ?? 0) + 1 }, true);   // ★ 旋转强制生效 ✓
+        transformPieceInPlace(state, targetId, { dRot: 1 });   // ★ 绕**自身中心**旋转 ✓
         paintTangramBoard(state);
         ev.preventDefault();
       } else if (ev.key === "f" || ev.key === "F") {
         const cfg = placementOf(state?.tangramPlaced, targetId);
-        setTangramPlacement(state, targetId, { flip: !cfg.flip }, true);   // ★ 翻转强制生效 ✓
+        transformPieceInPlace(state, targetId, { dFlip: true });   // ★ 绕**自身中心**翻转 ✓
         paintTangramBoard(state);
         ev.preventDefault();
       }
