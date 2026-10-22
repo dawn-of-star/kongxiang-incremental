@@ -387,6 +387,15 @@ function frame(nowMs) {
     try {
       tick(state, dt);
       state.playTimeMs += dt * 1000;
+      // ★ 2026-10-22 临时打点（定位"物质恒为 1e200"）—— 控制台 __KI_DIAG=false 可关 ✓
+      if (globalThis.__KI_DIAG !== false) {
+        globalThis.__KI_DIAG_T = (globalThis.__KI_DIAG_T ?? 0) + dt;
+        if (globalThis.__KI_DIAG_T >= 2) {
+          globalThis.__KI_DIAG_T = 0;
+          const r = state.resources ?? {};
+          console.log("[diag] t=" + Math.floor(state.playTimeMs / 1000) + "s 物质=" + r.matter + " 粒子=" + r.particle + " 熵=" + r.entropy + " 熵阱=" + r.traps + " 坍缩=" + state.bigCrunchCount + " broken=" + state.brokenInfinity + " dt=" + dt.toFixed(3));
+        }
+      }
     } catch (err) {
       reportRuntimeError(err, "tick");
     }
