@@ -263,4 +263,4 @@ main.js            装配 + rAF 主循环
 
 **验收基线**：`npm test` → **51/51 全绿**（默认批跑；`--strict` 仍有 6 个已知失败，
 见 [`TODO.md`](TODO.md) M 段，属过期断言/坏工具/数值漂移，非坏实现）；`node tools/dom-smoke.mjs` 全绿；
-`node tools/consistency.mjs` 速率 8/8 一致、其他 33/33 通过。
+`node tools/consistency.mjs` 速率 8/8 一致、其他 34/34 通过。

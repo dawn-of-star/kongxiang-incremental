@@ -6,6 +6,7 @@
  */
 import { darkMatterAffordableIn, darkMatterCostFor, darkMatterCount, darkMatterEffectMult, darkMatterPriceAt, darkMatterUnlocked } from "../../config.js";
 import { pushLevelLog, pushLog } from "../../state.js";
+import { fmt } from "../../format.js";
 
 export function buyDarkMatter(state, k = null) {
   if (!darkMatterUnlocked(state)) return 0;            // 未达成 em4 ⇒ 未解锁（唯一判据）
@@ -28,7 +29,7 @@ export function buyDarkMatter(state, k = null) {
   //   所以"买了但没涨"是可能发生的 ⇒ 把当前转化值一并写进日志 ✓
   const eff = darkMatterEffectMult(state);
   if (Number.isFinite(eff) && eff > 1) {
-    pushLog(state, `⬆ 暗物质转化值 → ×${eff.toFixed(4)}（第二台：${(darkMatterEffectMult(state) - 1).toFixed(4)} 加进暗能量倍率的加法区）`);
+    pushLog(state, `⬆ 暗物质转化值 → ×${fmt(eff, 4)}（第二台：${fmt(darkMatterEffectMult(state) - 1, 4)} 加进暗能量倍率的加法区）`);
   }
   return want;
 }

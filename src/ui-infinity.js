@@ -206,7 +206,7 @@ export function renderInfinityUpgrades(state) {
         : cfg.desc;
     } else if (cfg.rateMult != null) {
       descText = bought
-        ? `量子成长速率上限 ×${eff.totalMult.toFixed(3)}（已叠加）`
+        ? `量子成长速率上限 ×${fmt(eff.totalMult, 3)}（已叠加）`
         : cfg.desc;
     }
     $(`inf-${id}-desc`).textContent = descText;

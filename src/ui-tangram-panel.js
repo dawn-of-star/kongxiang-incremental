@@ -159,13 +159,13 @@ safePaint("tangram-preview", () => paintChallengePreview(st));
   const rl = document.getElementById("tg-reward-line");   // ⚠️ 不走 el[] 缓存（它在运行时才建）✓
   if (rl) {
     rl.textContent = "挑战奖励：EP 折扣 " + (rw.epDiscount * 100).toFixed(0) + "%"
-      + " ｜ 免费引擎 " + rw.freeZpeEngineLevels + " 级"
-      + " ｜ 暗能量 knee ×" + rw.deKneeMult.toFixed(2)
-      + " ｜ IP 倍增 knee ×" + rw.ipDoubleKneeMult.toFixed(2) + "（已生效 ✓）"
-      + " ｜ 转化斜率 ×" + (rw.convSlopeMult ?? 1).toFixed(0)
-      + " ｜ 计数系数 ×" + (rw.countFreqMult ?? 1).toFixed(0)
-      + " ｜ 保底 " + (rw.pityFloor ?? 150)
-      + " ｜ 每对量子 ×" + quantumPairMult(st).toFixed(0) + "（" + Math.floor(Number(st?.tangramChallengeThisEternity ?? 0)) + " 个挑战）"
+      + " ｜ 免费引擎 " + sci(rw.freeZpeEngineLevels) + " 级"
+      + " ｜ 暗能量 knee ×" + sci(rw.deKneeMult)
+      + " ｜ IP 倍增 knee ×" + sci(rw.ipDoubleKneeMult) + "（已生效 ✓）"
+      + " ｜ 转化斜率 ×" + sci(rw.convSlopeMult ?? 1)
+      + " ｜ 计数系数 ×" + sci(rw.countFreqMult ?? 1)
+      + " ｜ 保底 " + sci(rw.pityFloor ?? 150)
+      + " ｜ 每对量子 ×" + sci(quantumPairMult(st)) + "（" + sci(Math.floor(Number(st?.tangramChallengeThisEternity ?? 0))) + " 个挑战）"
       + (rw.passiveIpFrac > 0 ? " ｜ 每秒 " + (rw.passiveIpFrac * 100).toFixed(0) + "% 本次无限 IP" : "")
       + (rw.allClear ? " ｜ 全清 ✓" : "");
   }

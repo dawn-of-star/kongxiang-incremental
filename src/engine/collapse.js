@@ -6,6 +6,7 @@
  */
 import { BREAK_INFINITY, CRUNCH_AT_LABEL, INFINITY_UPGRADES, REPEATABLE, hasCollapse, infinityStartLog10, markPageUnlocked, quantumToIPGain } from "../config.js";
 import { D, bigCrunchGain, canBigCrunch } from "../formulas.js";
+import { sci } from "../format.js";
 import { awardDream, pushLog } from "../state.js";
 import Decimal from "../../dist/break_eternity.esm.js";
 import { applyCollapseKeeps } from "../dream-effects.js";   // ★ 2026-10-22：暗能量永存 ⇒ 无限也不重置 DE ✓
@@ -115,9 +116,9 @@ export function doBigCrunch(state) {
 
   // ★ 阈值文案从 config 取（CRUNCH_AT_LABEL），不要手写 "1e308.25" ——
   //   手写的那个和实际用的 log10(Number.MAX_VALUE) = 1e308.2547 差 0.25 个数量级。
-  pushLog(state, `🌌 大坍缩！物质触及 ${CRUNCH_AT_LABEL} 上限，获得 ${ip.toString()} 无限点（共 ${state.infinityPoints.toString()}）`);
+  pushLog(state, `🌌 大坍缩！物质触及 ${CRUNCH_AT_LABEL} 上限，获得 ${sci(ip)} 无限点（共 ${sci(state.infinityPoints)}）`);
   if (timeAccrued > 0) {
-    pushLog(state, `🌊 无限长河：本次无限 ${fmtSeconds(elapsed)} 期间实时进账 ${timeAccrued.toExponential(2)} 点` +
+    pushLog(state, `🌊 无限长河：本次无限 ${fmtSeconds(elapsed)} 期间实时进账 ${sci(timeAccrued)} 点` +
       `（超出 ${Math.round((INFINITY_UPGRADES.ipTime.capSeconds ?? 0) / 60)} 分钟的部分不再产点）`);
   }
   // ⚠️ 这里曾经有一行 `pushLog(... 量子 +${q.toString()} ...)`，以及
@@ -129,7 +130,7 @@ export function doBigCrunch(state) {
   //      dom-smoke 永远到不了 1e308 / audit 不调用它 /
   //      dead-code-audit 查的是 config 的 id，不是变量引用。
   //    教训：**删一个功能时，要连带删掉它对外的返回值、日志、接口。**
-  pushLog(state, `💭 梦想点保留（${state.dreamPoints.toString()} 点）`);
+  pushLog(state, `💭 梦想点保留（${sci(state.dreamPoints)} 点）`);
   awardDream(state, "bigcrunch", "首次大坍缩");
   // ⚠️ 返回值的 `infinityPoints` 是**本次实际发放**的点数（现在只有深度部分）；
   //    耗时部分（④）已经在 tick 里实时发过了，`timeIPAccrued` 只是它的累计值，供日志/界面用。

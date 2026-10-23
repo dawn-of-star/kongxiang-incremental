@@ -7,6 +7,7 @@
  */
 import Decimal from "../../dist/break_eternity.esm.js";
 import { tangramRewardEffects } from "../tangram.js";
+import { fmt } from "../format.js";
 import { hasEternityMilestone } from "./eternity.js";
 
 export const DE_PENALTY = {
@@ -75,7 +76,7 @@ export const DE_UPGRADES = {
       costParticle: (lv) => new Decimal(100).mul(new Decimal(R).pow(lv)),
       costMult: R,
       effectMult: M,
-      desc: (lv) => `每次暗能量转换的量 ×${new Decimal(M).pow(lv).toFixed(2)}（花粒子）`,
+      desc: (lv) => `每次暗能量转换的量 ×${fmt(new Decimal(M).pow(lv), 2)}（花粒子）`,
       firstRewardDream: true };
   })(),
   vacuumAccel: (() => {
@@ -87,7 +88,7 @@ export const DE_UPGRADES = {
       costZpe: (lv) => new Decimal(10).pow(lv),
       costMult: 10,
       effectMult: M,
-      desc: (lv) => `暗能量倍率 ×${new Decimal(M).pow(lv).toFixed(2)}`,
+      desc: (lv) => `暗能量倍率 ×${fmt(new Decimal(M).pow(lv), 2)}`,
       firstRewardDream: true };
   })(),
 
@@ -152,7 +153,7 @@ export const DE_UPGRADES = {
        */
       desc: (lv, state) => {
         const m = deGainBaseEffectMult(state);
-        return `每次暗能量转换的量 ×${new Decimal(m).pow(lv).toFixed(2)}（花暗能量）`
+        return `每次暗能量转换的量 ×${fmt(new Decimal(m).pow(lv), 2)}（花暗能量）`
           + (m > M ? "　（em4 已优化）" : "");
       },
       firstRewardDream: true };
@@ -194,8 +195,8 @@ export const DE_UPGRADES = {
       desc: (lv, state) => {
         const v5 = state?.voidUpgrades?.v5 ? 0.5 : 0;
         const inc = 0.15 + v5 + PER_LEVEL * lv;
-        return `熵凝聚每级产出增量 +${(PER_LEVEL * lv).toFixed(2)}` +
-          `（转换率上限 ${(inc / 3).toFixed(3)}${v5 ? "" : "，未含 v5"}）`;
+        return `熵凝聚每级产出增量 +${fmt(PER_LEVEL * lv, 2)}` +
+          `（转换率上限 ${fmt(inc / 3, 3)}${v5 ? "" : "，未含 v5"}）`;
       },
       firstRewardDream: true };
   })() };

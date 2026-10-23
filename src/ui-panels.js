@@ -301,7 +301,7 @@ export function renderZpeEnginePanel(state) {
     const multBonus = zpeEngineMultBonus(state);
     // ★ 2025：量子项的显示**必须含引擎账**（否则与 `zpeMultiplier` 的实发不符 ✗）
     const qTerm = quantumZpeMultBonus(qOf(state), engineBonusMult(state));
-    el["zpe-engine-level"].textContent = lv.gte(1e6) ? `10^${lv.log10().toNumber().toFixed(2)}` : fmt(lv, 0);
+    el["zpe-engine-level"].textContent = fmt(lv, 0);   // ★ 2026-10-23：>1e6 统一科学计数，不再 10^x
     el["zpe-engine-prod"].textContent = fmtMult(prod);
     // ★ 2025：这一格从"公式指数"改成"加法区加成"（设计稿第 1 条 ✓）
     el["zpe-engine-exp"].textContent = fmtMult(addBonus.max(1));
@@ -321,7 +321,7 @@ export function renderZpeEnginePanel(state) {
     const steepStart = ZPE_ENGINE.steepAfter?.level ?? 2000;
     const steepMult = ZPE_ENGINE.steepAfter?.mult ?? 1e9;
     const stepTxt = stepMult >= 1e4
-      ? `**每级 ×${stepMult.toExponential(4)}**（${steepStart} 级起每级另 ×${steepMult.toExponential(0)}，逐级连乘）`
+      ? `**每级 ×${fmt(stepMult, 4)}**（${steepStart} 级起每级另 ×${fmt(steepMult, 0)}，逐级连乘）`
       : `每级 ×${stepMult.toFixed(4)}`;
     el["zpe-engine-cost"].textContent = `花费 ${sci(cost)} 无限点｜${stepTxt}`;
     const btnBuy = el["btn-buy-zpe-engine"];

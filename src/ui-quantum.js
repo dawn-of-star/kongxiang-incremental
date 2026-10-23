@@ -70,7 +70,7 @@ export function renderQuantum(state, R) {
   // ★ 2025：R 退休后，这一行改显**粒子增幅速率 b**（替代 R 的那一位）。
   //   b = b0·(1+√q/10)·里程碑·档位加速·infinityRateMult ⇒ 阈值软上限。
   //   玩家看到的含义：粒子获得的时变增幅 `g = 10^(b·本轮时间)` 的**对数斜率**（阶/秒）。
-  el["quantum-grow"].textContent = `${particleBoostRate(state).toFixed(4)} 阶/秒`;
+  el["quantum-grow"].textContent = `${fmt(particleBoostRate(state), 4)} 阶/秒`;
   el["quantum-demult"].textContent = fmtMult(new Decimal(1).add(quantumDeMultBonus(state.quantum, ebmQ)));
   // ★ 2025 新增：**量子 → ZPE 倍率的加法区加成**（ZPE 引擎设计稿第 3 条 ✓）
   //   与引擎同一个函数 `quantumZpeMultBonus` ⇒ 显示即实发 ✓
@@ -116,7 +116,7 @@ export function renderSpanLayer(state) {
       : st.armed ? "已开启（待超过基准）"
         : "未开启";
   el["span-badge"].classList.toggle("on", st.on);
-  if (el["span-k"]) el["span-k"].textContent = st.k.toFixed(4);
+  if (el["span-k"]) el["span-k"].textContent = fmt(st.k, 4);
   if (el["span-mult"]) el["span-mult"].textContent = fmtMult(st.mult);
   if (el["span-base"]) {
     el["span-base"].textContent = st.base.gt(0) ? sci(st.base) : "—";

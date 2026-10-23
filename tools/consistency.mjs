@@ -70,7 +70,7 @@ import { breakInfinity, buyDeUpgrade, buyDreamUpgrade, buyRepeatable, buyTrap, b
   // ★★★ 2025：ZPE 引擎 2000 级后的价格增幅断言要它们 ✓
   buyZpeEngineLevel, buyIpDoubleMax } from "../src/engine.js";
 // ★★★ 2025：em7 的详情文案要 `sci`（统一科学计数法）✓
-import { sci } from "../src/format.js";
+import { fmt, sci } from "../src/format.js";
 
 const D = (v) => new Decimal(v);
 const pad = (s, n) => String(s).padEnd(n);
@@ -1104,6 +1104,24 @@ console.log();
           + `ζ连乘=${zetaCompounds}｜之前不加罚=${noJumpBefore}｜之后每级×r×M=${everyStepSteep}｜`
           + `每级数量级=${perLevelOrders.map((d) => d.toFixed(2)).join("/")}(应 ${wantOrders.toFixed(2)})｜` +
           `${bad.map((x) => `${x.pool}@Lv${x.lv0} 探针${x.k}/实买${x.real}`).join("｜")}｜标定=${calibOk}(${calib})`,
+    };
+  });
+
+  check("数字格式：>1e6 科学计数、>1e100000 双 e", () => {
+    const ok = sci(999999) === "999999"
+      && sci(1000000) === "1.00e6"
+      && sci(1234567) === "1.23e6"
+      && sci(new Decimal("1e100000")) === "1.00e100000"
+      && sci(new Decimal("1e100001")) === "e1e5"
+      && sci(new Decimal("1e1000000")) === "e1e6"
+      && fmt(1000000) === "1e6"
+      && fmt(new Decimal("1e100001")) === "e1e5";
+    return {
+      ok,
+      detail: ok
+        ? `1e6→${sci(1000000)}｜1.23e6→${sci(1234567)}｜1e100000→${sci(new Decimal("1e100000"))}`
+          + `｜1e100001→${sci(new Decimal("1e100001"))}｜1e1000000→${sci(new Decimal("1e1000000"))} ✓`
+        : `实得：1e6=${sci(1000000)}｜1e100001=${sci(new Decimal("1e100001"))}｜1e1000000=${sci(new Decimal("1e1000000"))}`,
     };
   });
 

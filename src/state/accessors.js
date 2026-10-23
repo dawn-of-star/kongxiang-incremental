@@ -5,13 +5,14 @@
  *    对外统一从 `src/state.js`（barrel）导入。
  */
 import { D } from "./helpers.js";
+import { sci } from "../format.js";
 import { pushLog } from "./log.js";
 
 export function awardDream(state, key, label) {
   if (state.dreamAwarded[key]) return false;
   state.dreamAwarded[key] = true;
   state.dreamPoints = state.dreamPoints.add(1);
-  pushLog(state, `💭 新成就「${label}」 梦想点 +1（共 ${state.dreamPoints.toString()}）`);
+  pushLog(state, `💭 新成就「${label}」 梦想点 +1（共 ${sci(state.dreamPoints)}）`);
   return true;
 }
 

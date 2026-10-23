@@ -196,7 +196,7 @@ export function doEternity(state) {
   }
 
   pushLog(state, `⏳ 永恒第 ${state.eternityCount} 次：无限点 ${sci(ipBefore)} → ` +
-    `获得 ${gained.toString()} 永恒点（共 ${state.eternityPoints.toString()}）`);
+    `获得 ${sci(gained)} 永恒点（共 ${sci(state.eternityPoints)}）`);
   pushLog(state, "⏳ 已重置除梦想系统外的一切（虚空 / 里程碑 / ∞ 层及以下）；永恒点保留");
   return { eternityPoints: gained, count: state.eternityCount };
 }

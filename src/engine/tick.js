@@ -488,7 +488,7 @@ export function phaseQuantumCapture(state) {
     //   ⚠️ `quantumPairs` 是 Decimal ⇒ 先 `toNumber()`（超 1e18 时 toNumber 给近似值，
     //      而我们的序列上界也是 1e18 ⇒ 边界处也不会误判 ✓）
     if (isQuantumLogLevel(state.quantumPairs.toNumber())) {
-      pushLog(state, `⚛ 捕获第 ${state.quantumPairs.toString()} 对量子（门槛 ${sci(need)} ZPE）`);
+      pushLog(state, `⚛ 捕获第 ${sci(state.quantumPairs)} 对量子（门槛 ${sci(need)} ZPE）`);
     }
     // ★★ 2025：**捕获量子会重置 ZPE**（设计稿第 39 行「量子获取时不再重置 zpe」的**前提**）。
     //   在此之前这个重置**根本没实现** —— 那么 em3 就成了一条永远为真的空条目 ✗
