@@ -106,17 +106,19 @@ export function autoPlaceTangram(state, id, { parking = false } = {}) {
   };
 
   if (parking) {
-    // ★ 原点在屏幕左中（棋盘 y=0）；正方形在 y=0..4 的**上方** ⇒ 屏幕下方的停车区是 y=-4..0。
-    // 优先停这里：不挡目标，也不会被右上角的题目预览浮层盖住；放不下再试右侧。
+    // ★ 2026-10-23（用户：「重置到的原点应该在加成原点」）——
+    //   加成原点 = 正方形右上角 (4,4)。重置优先把七块铺在它**右边**
+    //   （x=4..8, y=0..4）：屏幕上是目标右上角，停车方块的**左上角正好是加成原点**。
+    //   放不下再退到屏幕下方（y=-4..0, x=0..4）。
     for (const rot of [0, 1, 2, 3]) {
       for (const flip of [false, true]) {
-        for (let y = -4; y <= 0; y += 0.5) {
-          for (let x = 0; x <= 4; x += 0.5) {
+        for (let y = 0; y <= 4; y += 0.5) {
+          for (let x = 4; x <= 8; x += 0.5) {
             if (tryCfg({ dx: x, dy: y, rot, flip })) return true;
           }
         }
-        for (let y = -4; y <= 8; y += 0.5) {
-          for (let x = 4; x <= 8; x += 0.5) {
+        for (let y = -4; y <= 0; y += 0.5) {
+          for (let x = 0; x <= 4; x += 0.5) {
             if (tryCfg({ dx: x, dy: y, rot, flip })) return true;
           }
         }

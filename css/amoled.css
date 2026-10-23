@@ -1145,6 +1145,9 @@ button { font: inherit; cursor: pointer; }
 .tangram-svg, .tangram-board, .tangram-wrap, #panel-tangram { overflow: visible !important; }
 /* 2026: dashed guide grid beyond the square (visual only) */
 .tg-guide { stroke: rgba(255,255,255,0.10); stroke-width: 0.2; stroke-dasharray: 1 1.6; }
+.tg-origin-halo { fill: none; stroke: var(--eternity, #b388ff); stroke-width: 0.35; opacity: .55; }
+.tg-origin-dot { fill: var(--eternity, #b388ff); }
+.tg-origin-text { fill: var(--text-dim); font-size: 4px; letter-spacing: .1px; }
 
 /* ★★★ 2026-10-22（用户：奖励用表格列在最下方）—— 简洁方表，窄屏可横向滚动 ✓ */
 .tg-reward-table { width: 100%; border-collapse: collapse; font-size: 11px; margin: 6px 0 12px; }

@@ -16,7 +16,7 @@
  * 用法：node tools/tangram-lab.mjs [--check]
  */
 import {
-  TANGRAM_SIZE, TANGRAM_PIECES, TANGRAM_AXES, TANGRAM_ACQUIRE, TANGRAM_DRAW,
+  TANGRAM_SIZE, TANGRAM_PIECES, TANGRAM_AXES, TANGRAM_BONUS_ORIGIN, TANGRAM_ACQUIRE, TANGRAM_DRAW,
   polygonArea, pointInConvex, convexOverlap, axisCoverage, axisCoverageAll,
   placePieceVerts, rotateVerts, flipVerts, snapPoint, segLength,
   CANVAS_MIN, CANVAS_MAX,
@@ -515,12 +515,22 @@ ck("④f 定点手算：大三角 II ⇒ 右边缘 0%、上边缘 0%、斜轴 50
     const v = placePieceVerts(byId.get(id), s.tangramPlaced[id]);
     return v.every(([x, y]) => x >= CANVAS_MIN && x <= CANVAS_MAX && y >= CANVAS_MIN && y <= CANVAS_MAX);
   });
+  // 重置停车方块的**左上角**应正好是加成原点（屏幕坐标：minX, maxY）✓
+  let parkMinX = Infinity, parkMaxY = -Infinity;
+  for (const id of ids) {
+    for (const [x, y] of placePieceVerts(byId.get(id), s.tangramPlaced[id])) {
+      if (x < parkMinX) parkMinX = x;
+      if (y > parkMaxY) parkMaxY = y;
+    }
+  }
+  const atBonusOrigin = parkMinX === TANGRAM_BONUS_ORIGIN[0] && parkMaxY === TANGRAM_BONUS_ORIGIN[1];
   const diff = tangramChallengeDiff(s);
-  ck("⑬ 摆位越界 + 重置停车位 + 目标外不算过关",
+  ck("⑬ 摆位越界 + 重置停车位在加成原点 + 目标外不算过关",
     r.placed === 7 && r.parked === 0 && ids.length === 7 && outside && overlaps === 0
-      && canGoLeft && canGoFar && parkedInCanvas && !diff.ok && diff.extra > 0,
+      && canGoLeft && canGoFar && parkedInCanvas && atBonusOrigin && !diff.ok && diff.extra > 0,
     `重置=${r.placed} 块/停 ${r.parked}｜目标外=${outside}｜互相重叠=${overlaps}`
       + `｜负坐标可放=${canGoLeft}｜越界可放=${canGoFar}｜停车位在画布内=${parkedInCanvas}`
+      + `｜停车方块左上角=(${parkMinX},${parkMaxY}) 加成原点=(${TANGRAM_BONUS_ORIGIN.join(",")})`
       + `｜确认完成=ok:${diff.ok} missing:${diff.missing} extra:${diff.extra}（目标外不算过关 ✓）`
       + `｜画布 ${CANVAS_MIN}..${CANVAS_MAX}`);
 }
@@ -573,6 +583,19 @@ ck("④f 定点手算：大三角 II ⇒ 右边缘 0%、上边缘 0%、斜轴 50
     migrated && stable,
     `旧 ${JSON.stringify({ dx: 1, dy: 2, rot: 0, flip: false })} → ${JSON.stringify(cfg)}`
       + `｜新档稳定=${stable}`);
+}
+
+// ══════════════════════════════════════════════════════════
+// ⑯ 2026-10-23 用户：「原点不应该是加成原点么」
+//    摆位坐标原点 = 左下 (0,0)；**加成原点 = 三条加成轴的共同交点 = 右上 (4,4)**
+// ══════════════════════════════════════════════════════════
+{
+  const o = TANGRAM_BONUS_ORIGIN;
+  const at = (p) => p[0] === o[0] && p[1] === o[1];
+  const all = TANGRAM_AXES.every((ax) => at(ax.from) || at(ax.to));
+  ck("⑯ 加成原点 = 三条轴共同交点 (4,4)",
+    all && o[0] === TANGRAM_SIZE && o[1] === TANGRAM_SIZE,
+    `bonusOrigin=(${o.join(",")})｜${TANGRAM_AXES.map((ax) => `${ax.name}:${at(ax.to) ? "到原点" : "过原点"}`).join("｜")}`);
 }
 
 console.log();

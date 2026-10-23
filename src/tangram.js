@@ -512,13 +512,20 @@ export const TANGRAM_PIECES = [
 ];
 
 /** 三条轴（设计稿 §1）：都用「起点 → 终点」表示；比例 = 已覆盖长度 ÷ 全长 ✓ */
+/**
+ * ★ 2026-10-23（用户：「原点不应该是加成原点么」）——
+ *   摆位几何的原点是正方形**左下** `(0,0)`；
+ *   但三条加成轴（右边缘 / 上边缘 / 主对角线）现在**共同交于右上 (4,4)**。
+ *   这个交点就是「加成原点」，不是摆位坐标原点 ✓
+ */
+export const TANGRAM_BONUS_ORIGIN = [TANGRAM_SIZE, TANGRAM_SIZE];
 export const TANGRAM_AXES = [
   // ★★★ 2026-10-22（用户：「左侧的**竖轴**挪到主区域的**右侧**，连带着判定和 UI 表现」）——
   //   纵轴的**判定**从「左边缘」改成「**右边缘**」✓（不再只挪线不挪判定 ✗）
-  { id: "vert", name: "纵轴 · 右边缘", from: [TANGRAM_SIZE, 0], to: [TANGRAM_SIZE, TANGRAM_SIZE] },
+  { id: "vert", name: "纵轴 · 右边缘", from: [TANGRAM_SIZE, 0], to: [...TANGRAM_BONUS_ORIGIN] },
   // ★ 2026（用户：「判定区的**下侧线移动到上侧**就行了」）—— 横轴改到**上边缘** ✓
-  { id: "horz", name: "横轴 · 上边缘", from: [0, TANGRAM_SIZE], to: [TANGRAM_SIZE, TANGRAM_SIZE] },
-  { id: "diag", name: "斜轴 · 主对角线", from: [0, 0], to: [TANGRAM_SIZE, TANGRAM_SIZE] },
+  { id: "horz", name: "横轴 · 上边缘", from: [0, TANGRAM_SIZE], to: [...TANGRAM_BONUS_ORIGIN] },
+  { id: "diag", name: "斜轴 · 主对角线", from: [0, 0], to: [...TANGRAM_BONUS_ORIGIN] },
 ];
 
 // ── 基础几何（全部纯函数）────────────────────────────────

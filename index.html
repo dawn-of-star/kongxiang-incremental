@@ -937,6 +937,13 @@
                       stroke-dasharray="100 100" stroke-dashoffset="100"></line>
                 <line class="tg-cov" id="tg-cov-diag" x1="0" y1="100" x2="100" y2="0"
                      stroke-dasharray="141.42 141.42" stroke-dashoffset="141.42"></line>
+                <!-- ★ 2026-10-23：三条加成轴共同交于右上 (100,0) = **加成原点**；
+                     摆位坐标原点仍在正方形左下 (0,100) = 画布左中。 -->
+                <g id="tg-bonus-origin" pointer-events="none">
+                  <circle class="tg-origin-halo" cx="100" cy="0" r="2.6"></circle>
+                  <circle class="tg-origin-dot" cx="100" cy="0" r="1.05"></circle>
+                  <text class="tg-origin-text" x="96" y="6" text-anchor="end">加成原点</text>
+                </g>
               </svg>
               <!-- ★★★ 2026-10-22（用户：「拼装挑战的提示做成**悬浮页面**」）——
                    悬浮在棋盘右上角（`.tg-preview-float` 是 absolute ✓ 不占布局 ✓）
@@ -999,7 +1006,8 @@
           <p class="note">
           <p class="note">
             <b>已实装</b>：七块可<b>自由拖拽</b>（可拖出边框/目标，松手吸附 0.2 格，拖拽中 R 旋转 / F 翻转，绕自身中心）；
-            拖丢/找不到时点「重置棋盘」——七块会停到目标外的 4×4 停放方块，不叠不丢；
+            拖丢/找不到时点「重置棋盘」——七块会从加成原点（右上）向右铺成 4×4 停放方块，不叠不丢；
+            左下是摆位原点，右上角标出的「加成原点」才是三条加成轴的交点；
             概率获取（2% + 保底）与足量兑换；<b>6 档 × 6 关</b>拼装挑战（每次永恒换一批题目顺序）。
             设计与实装清单见 <b>docs/TANGRAM.md</b>
           </p>
