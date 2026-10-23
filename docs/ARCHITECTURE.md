@@ -261,6 +261,6 @@ main.js            装配 + rAF 主循环
 | `cbde401` | `config/zpe-engine.js` 624 行 → `zpe-engine/` 2 个模块（config / economy） |
 | 本轮末 | 冻结 N.E.K.O 协同代码（§0.5）；收紧结构预算；ARCHITECTURE 同步为 79 模块、加权 27.8% |
 
-**验收基线**：`npm test` → **50/50 全绿**（默认批跑；`--strict` 仍有 6 个已知失败，
+**验收基线**：`npm test` → **51/51 全绿**（默认批跑；`--strict` 仍有 6 个已知失败，
 见 [`TODO.md`](TODO.md) M 段，属过期断言/坏工具/数值漂移，非坏实现）；`node tools/dom-smoke.mjs` 全绿；
 `node tools/consistency.mjs` 速率 8/8 一致、其他 33/33 通过。

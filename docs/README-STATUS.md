@@ -26,7 +26,7 @@
 
 | 项 | 实测值 | 权威来源 |
 |---|---|---|
-| 默认批跑脚本数 | **50** | `node tools/run-all.mjs --list` |
+| 默认批跑脚本数 | **51** | `node tools/run-all.mjs --list` |
 | `npm test` 结果 | **✅ 默认全绿**；`--strict` 有 **6 个失败** | `tools/run-all.mjs` |
 | `--strict` 的 6 个失败 | `base-vs-quantum` / `cap-monotonic-lab` / `check-web-bundle` / `ip-economy-lab` / `quantum-particle-lab` / `zpe-engine-lab`（属"过期断言/坏工具/数值漂移"，非坏实现） | `docs/TODO.md` M 段 |
 | 版本 | **0.7.4**（`package.json` 是唯一出处） | `package.json` |
