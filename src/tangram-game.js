@@ -106,10 +106,9 @@ export function autoPlaceTangram(state, id, { parking = false } = {}) {
   };
 
   if (parking) {
-    // ★ 2026-10-23（用户：「重置到的原点应该在加成原点」）——
-    //   加成原点 = 正方形右上角 (4,4)。重置优先把七块铺在它**右边**
-    //   （x=4..8, y=0..4）：屏幕上是目标右上角，停车方块的**左上角正好是加成原点**。
-    //   放不下再退到屏幕下方（y=-4..0, x=0..4）。
+    // ★ 2026-10-23：自动摆位的 fallback（新获得的块在目标区放不下时）。
+    //   优先停在加成原点 (4,4) 右侧（x=4..8, y=0..4），再退到屏幕下方。
+    //   ⚠️ 重置棋盘**不走这里**：重置要回到左侧 4×4 加成区（三轴满覆盖）✓
     for (const rot of [0, 1, 2, 3]) {
       for (const flip of [false, true]) {
         for (let y = 0; y <= 4; y += 0.5) {
@@ -222,7 +221,9 @@ export function resetTangramBoard(state) {
   let parked = 0;
   for (const p of TANGRAM_PIECES) {
     if (!state.tangramOwned?.[p.id]) continue;
-    if (autoPlaceTangram(state, p.id, { parking: true })) placed++;
+    // ★ 2026-10-23（用户：「重置的时候所有板块应该在左半（覆盖加成区域）」）——
+    //   回到左侧 4×4 加成区（经典摆放，三轴 100%），不再停车到右侧/外面 ✓
+    if (autoPlaceTangram(state, p.id)) placed++;
     else parked++;
   }
   return { cleared, placed, parked };

@@ -25,7 +25,7 @@ import {
   TANGRAM_CHALLENGE_REWARDS, tangramRewardEffects,
 } from "../src/tangram.js";
 // ★ 2026-10-23：摆位/重置停车位断言要用
-import { resetTangramBoard, setTangramPlacement, rotateTangramPlacement, flipTangramPlacement, tangramChallengeDiff } from "../src/tangram-game.js";
+import { resetTangramBoard, setTangramPlacement, rotateTangramPlacement, flipTangramPlacement, tangramChallengeDiff, tangramCoverage } from "../src/tangram-game.js";
 import { newState, serialize, deserialize } from "../src/state.js";
 // ★ 2026：抽取/兑换与覆盖率读数（引擎侧）
 // ★ 2026：图案库（由 `tools/tangram-patterns.mjs --write` 生成的 108 个真图案）
@@ -485,12 +485,10 @@ ck("④f 定点手算：大三角 II ⇒ 右边缘 0%、上边缘 0%、斜轴 50
   const r = resetTangramBoard(s);
   const ids = Object.keys(s.tangramPlaced ?? {});
   const byId = new Map(TANGRAM_PIECES.map((p) => [p.id, p]));
-  const outside = ids.every((id) => {
+  // 重置的全部板块必须在**左侧 4×4 加成区**内（不是右侧停车区/页面任何位置）
+  const atBonusArea = ids.every((id) => {
     const v = placePieceVerts(byId.get(id), s.tangramPlaced[id]);
-    const minX = Math.min(...v.map(([x]) => x));
-    const maxY = Math.max(...v.map(([, y]) => y));
-    // 屏幕下方停车 = 棋盘 y<0；右侧停车 = x>=4。两者都不在目标正方形 0..4 内 ✓
-    return minX >= TANGRAM_SIZE - 1e-9 || maxY <= 1e-9;
+    return v.every(([x, y]) => x >= -1e-9 && x <= TANGRAM_SIZE + 1e-9 && y >= -1e-9 && y <= TANGRAM_SIZE + 1e-9);
   });
   let overlaps = 0;
   for (let i = 0; i < ids.length; i++) {
@@ -500,38 +498,30 @@ ck("④f 定点手算：大三角 II ⇒ 右边缘 0%、上边缘 0%、斜轴 50
       if (convexOverlap(a, b)) overlaps++;
     }
   }
+  const cov = tangramCoverage(s);
+  const fullCoverage = cov.vert > 0.999 && cov.horz > 0.999 && cov.diag > 0.999;
   const canGoLeft = (() => {
     const t = newState();
     t.tangramOwned.smallA = true;
     return setTangramPlacement(t, "smallA", { dx: -1, dy: 0 }).ok;
   })();
-  // ★ 手动拖拽不再被画布边框拦住（CANVAS 只约束自动摆位/重置停车位）
+  // ★ 手动拖拽不再被画布边框拦住（CANVAS 只约束自动摆位/重置）
   const canGoFar = (() => {
     const t = newState();
     t.tangramOwned.smallA = true;
     return setTangramPlacement(t, "smallA", { dx: CANVAS_MAX + 1, dy: 0 }).ok;
   })();
-  const parkedInCanvas = ids.every((id) => {
-    const v = placePieceVerts(byId.get(id), s.tangramPlaced[id]);
-    return v.every(([x, y]) => x >= CANVAS_MIN && x <= CANVAS_MAX && y >= CANVAS_MIN && y <= CANVAS_MAX);
-  });
-  // 重置停车方块的**左上角**应正好是加成原点（屏幕坐标：minX, maxY）✓
-  let parkMinX = Infinity, parkMaxY = -Infinity;
-  for (const id of ids) {
-    for (const [x, y] of placePieceVerts(byId.get(id), s.tangramPlaced[id])) {
-      if (x < parkMinX) parkMinX = x;
-      if (y > parkMaxY) parkMaxY = y;
-    }
-  }
-  const atBonusOrigin = parkMinX === TANGRAM_BONUS_ORIGIN[0] && parkMaxY === TANGRAM_BONUS_ORIGIN[1];
-  const diff = tangramChallengeDiff(s);
-  ck("⑬ 摆位越界 + 重置停车位在加成原点 + 目标外不算过关",
-    r.placed === 7 && r.parked === 0 && ids.length === 7 && outside && overlaps === 0
-      && canGoLeft && canGoFar && parkedInCanvas && atBonusOrigin && !diff.ok && diff.extra > 0,
-    `重置=${r.placed} 块/停 ${r.parked}｜目标外=${outside}｜互相重叠=${overlaps}`
-      + `｜负坐标可放=${canGoLeft}｜越界可放=${canGoFar}｜停车位在画布内=${parkedInCanvas}`
-      + `｜停车方块左上角=(${parkMinX},${parkMaxY}) 加成原点=(${TANGRAM_BONUS_ORIGIN.join(",")})`
-      + `｜确认完成=ok:${diff.ok} missing:${diff.missing} extra:${diff.extra}（目标外不算过关 ✓）`
+  // 目标外的块不算过关：把重置后的大三角移出加成区，确认结果变成 extra>0 且 !ok
+  const moved = setTangramPlacement(s, "largeA", { dx: 5, dy: 0 });
+  const diffOutside = tangramChallengeDiff(s);
+  const outsideNotSolved = moved.ok && !diffOutside.ok && diffOutside.extra > 0;
+  ck("⑬ 重置回左侧加成区（三轴满覆盖）+ 越界可放 + 目标外不算过关",
+    r.placed === 7 && r.parked === 0 && ids.length === 7 && atBonusArea && overlaps === 0
+      && fullCoverage && canGoLeft && canGoFar && outsideNotSolved,
+    `重置=${r.placed} 块/停 ${r.parked}｜全在加成区=${atBonusArea}｜互相重叠=${overlaps}`
+      + `｜三轴覆盖=${cov.vert.toFixed(2)}/${cov.horz.toFixed(2)}/${cov.diag.toFixed(2)}`
+      + `｜负坐标可放=${canGoLeft}｜越界可放=${canGoFar}`
+      + `｜目标外 extra=${diffOutside.extra} ok=${diffOutside.ok}（不算过关 ✓）`
       + `｜画布 ${CANVAS_MIN}..${CANVAS_MAX}`);
 }
 

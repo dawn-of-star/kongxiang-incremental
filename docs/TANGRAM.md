@@ -329,12 +329,12 @@ panel-tangram
 |---|---|---|
 | 几何内核 | `src/tangram.js` | 细三角精确表示（每格 4 个小三角）、三轴覆盖率、8 对称指纹、价目表、奖励表 |
 | 图案库 | `src/tangram-pattern-library.js` | **108 个真图案**（6 档 × 18，键互不相同，全部来自验证过的七块拼合）|
-| 游戏侧 | `src/tangram-game.js` | 抽取（2% + 保底 150）/ 足量兑换 / 自动归位 / 摆位（**手动拖拽不检查边框**，自动停车有界）/ 重置（从加成原点 (4,4) 向右停车）/ 挑战判定 |
+| 游戏侧 | `src/tangram-game.js` | 抽取（2% + 保底 150）/ 足量兑换 / 自动归位 / 摆位（**手动拖拽不检查边框**，自动停车有界）/ 重置（回到左侧 4×4 加成区，三轴满覆盖）/ 挑战判定 |
 | 三轴加成 | `src/tangram-bonus.js` | 纵 ⇒ `effectiveEngineLevel()`（10→10000 级）；横 ⇒ `conversion()` 斜率（0.1→1e13）；斜 ⇒ `countFreqAddTerm()` 每级系数（0.05→50）；**log 插值 + knee 饱和** |
 | 被动 IP | `src/tangram-passive.js` | 中间难度全清 ⇒ 每秒 1% 本次无限 IP（AD **TS181** 同款；收益源走 `bigCrunchGain`）|
 | 画板 / 拖拽 | `src/tangram-board.js` | 目标轮廓单 `<path>`（按指纹缓存）+ 板块 `<polygon>`；**自由拖动、可拖出边框**，松手吸附 0.2 格；拖拽中 R/F |
 | 面板 | `ui.js` 的 `renderTangramReal` | 真数据（下一块/抽取价/保底/三轴读数/挑战状态/奖励行）+ 11 个按钮 |
-| 断言 | `tools/tangram-lab.mjs` | 33 条（几何 / 覆盖率 / 图案表 / 奖励 / 分档单调 / **越界摆位 + 重置停车位 + 旋转中心 + 旧档迁移 + 加成原点**）|
+| 断言 | `tools/tangram-lab.mjs` | 33 条（几何 / 覆盖率 / 图案表 / 奖励 / 分档单调 / **越界摆位 + 重置回加成区 + 旋转中心 + 旧档迁移 + 加成原点**）|
 | 枚举器 | `tools/tangram-patterns.mjs` | HEAVY；重生成：`node tools/tangram-patterns.mjs --seconds 12 --write` |
 
 ---
