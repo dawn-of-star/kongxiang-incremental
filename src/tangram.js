@@ -4,7 +4,7 @@
  * ── 设计稿要点（逐条对应）──
  *   · 最终目标是**把七块板拼成正方形**（经典七巧板）⇒ 正方形边长取 **4**，顶点全落在 **0..4 整数点** ✓
  *   · 原点在**左下角**；只看**三条线**：
- *       **纵轴** = 左边缘 `x=0` ｜ **横轴** = 下边缘 `y=0` ｜ **斜轴** = 主对角线 `y=x` ✓
+ *       **纵轴** = 右边缘 `x=4` ｜ **横轴** = 上边缘 `y=4` ｜ **斜轴** = 主对角线 `y=x` ✓
  *   · 加成随「**板块占据该线的比例**」走，且**「边、点、面覆盖都算」**（用户原话）
  *     ⇒ 所以覆盖率 = 「线上落进**任意板块**（含内部与边界）的**并集长度** ÷ 该线全长」✓
  *   · 「相当自由」⇒ 不是固定插槽：板块可 **旋转 / 翻转**，落点靠**吸附**（见 `snapPoint`）✓
@@ -167,7 +167,7 @@ export function placedVertices(placed, pieces = TANGRAM_PIECES) {
  *     玩家可以把块停到页面任何地方；`CANVAS` 只约束自动摆位/重置停车位，保证块可见 ✓
  *     （拖丢了的块用「重置棋盘」找回；重置会把七块停到目标外的 4×4 方框 ✓）
  */
-export const CANVAS_MIN = -2;   // 2026-10-23: 自动摆位画布向左上各留 2 格
+export const CANVAS_MIN = -4;   // 2026-10-23: 原点左中；下方停车区到 y=-4（屏幕下半）
 export const CANVAS_MAX = 10;   // 2026-10-23: 自动摆位画布向右下各留 2 格
 
 /**
@@ -205,18 +205,18 @@ export function placementOf(placed, id) {
  *   `rect` = `svg.getBoundingClientRect()` 的形状 `{ left, top, width, height }`
  * @returns {[number, number]} 棋盘坐标（单位 = 格，未取整）
  */
-export function svgToBoard(clientX, clientY, rect, view = { x: 0, y: 0, w: 200, h: 200 }) {   // 2026: canvas 8x8, no y flip
+export function svgToBoard(clientX, clientY, rect, view = { x: 0, y: 0, w: 200, h: 200 }) {
   const sx = view.x + ((clientX - rect.left) / rect.width) * view.w;
   const sy = view.y + ((clientY - rect.top) / rect.height) * view.h;
-  // ⚠️ 棋盘占的是 viewBox 的 **0..100**（`-3` 只是外圈留白）⇒ 不能拿 view.x 当原点 ✗
-  //   （我第一版写成 `(sx - view.x)/25` ⇒ 全错，被 ⑧ 的 4 个角点当场抓住 ✓）
-  // 2026: rotate the canvas 90deg clockwise => NO y flip (square sits top-left) ✓
-  return [sx / 25, sy / 25];
+  // ★ 2026-10-23（用户：「原点不应该在左中么」）：
+  //   棋盘原点在正方形**左下**；正方形仍画在画布左上 ⇒ 原点的屏幕位置是 (0,100)
+  //   = 8×8 画布的**左中**。因此这里必须把 SVG 的 y 翻回棋盘坐标 ✓
+  return [sx / 25, TANGRAM_SIZE - sy / 25];
 }
 
 /** 棋盘坐标 → SVG（`ui.js` 画 `polygon` 用；与 `svgToBoard` 互为逆）✓ */
 export function boardToSvg([x, y]) {
-  return [x * 25, y * 25];   // 2026: canvas rotated 90deg clockwise => no y flip
+  return [x * 25, (TANGRAM_SIZE - y) * 25];   // 原点 (0,0) → SVG (0,100) 左中 ✓
 }
 
 /**

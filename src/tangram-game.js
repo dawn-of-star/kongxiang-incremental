@@ -106,16 +106,16 @@ export function autoPlaceTangram(state, id, { parking = false } = {}) {
   };
 
   if (parking) {
-    // 优先停到目标**下方**（x=0..4, y=4..8）：不挡目标，也不会被右上角的题目预览浮层盖住；
-    // 放不下再试右侧（x=4..8, y=0..8）。旋转/翻转也试，全部在可视 8×8 内。
+    // ★ 原点在屏幕左中（棋盘 y=0）；正方形在 y=0..4 的**上方** ⇒ 屏幕下方的停车区是 y=-4..0。
+    // 优先停这里：不挡目标，也不会被右上角的题目预览浮层盖住；放不下再试右侧。
     for (const rot of [0, 1, 2, 3]) {
       for (const flip of [false, true]) {
-        for (let y = 4; y <= 8; y += 0.5) {
+        for (let y = -4; y <= 0; y += 0.5) {
           for (let x = 0; x <= 4; x += 0.5) {
             if (tryCfg({ dx: x, dy: y, rot, flip })) return true;
           }
         }
-        for (let y = 0; y <= 8; y += 0.5) {
+        for (let y = -4; y <= 8; y += 0.5) {
           for (let x = 4; x <= 8; x += 0.5) {
             if (tryCfg({ dx: x, dy: y, rot, flip })) return true;
           }
@@ -198,12 +198,14 @@ export const moveTangramPlacement = (state, id, ddx, ddy) => {
   return setTangramPlacement(state, id, { dx: cur.dx + ddx, dy: cur.dy + ddy });
 };
 export const rotateTangramPlacement = (state, id, dir = 1) => {
-  const cur = placementOf(state.tangramPlaced, id);
-  return setTangramPlacement(state, id, { rot: cur.rot + dir });
+  // ★ 2026-10-23（用户：「旋转后又不在中心点了」）——
+  //   面板按钮原来走这里，只改 `rot`（绕棋盘原点转）⇒ 块会被甩走 ✗
+  //   现在和 R 键共用 `transformPieceInPlace`（绕自身 bbox 中心）✓
+  return transformPieceInPlace(state, id, { dRot: dir });
 };
 export const flipTangramPlacement = (state, id) => {
-  const cur = placementOf(state.tangramPlaced, id);
-  return setTangramPlacement(state, id, { flip: !cur.flip });
+  // 同上：翻转也绕自身中心，不再绕棋盘原点 ✓
+  return transformPieceInPlace(state, id, { dFlip: true });
 };
 export function takeTangramBack(state, id) {
   if (!state?.tangramPlaced?.[id]) return false;

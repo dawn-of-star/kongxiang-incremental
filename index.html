@@ -923,17 +923,19 @@
             <line class="tg-guide" x1="0" y1="200" x2="200" y2="200"></line>
           </g>
 <rect class="tg-frame" x="0" y="0" width="100" height="100"></rect>
-                <!-- 三条轴：左边缘 / 下边缘 / 左下→右上 主对角线 -->
+                <!-- 三条轴：右边缘 / 上边缘 / 左下→右上 主对角线
+                     ★ 2026-10-23：原点在正方形左下 ⇒ 屏幕 (0,100) = 画布左中；
+                       正方形仍画在左上，因此 y 必须翻转 ✓ -->
                 <line class="tg-axis" x1="100" y1="100" x2="100" y2="0"></line>
-                <line class="tg-axis" x1="0" y1="100" x2="100" y2="100"></line>
-                <line class="tg-axis" x1="0" y1="0" x2="100" y2="100"></line>
+                <line class="tg-axis" x1="0" y1="0" x2="100" y2="0"></line>
+                <line class="tg-axis" x1="0" y1="100" x2="100" y2="0"></line>
                 <!-- 覆盖率高亮：由 JS 用 stroke-dasharray / dashoffset 驱动
                      由 JS 按覆盖率驱动：stroke-dashoffset = 全长 × (1 − 覆盖率) ✓ -->
                 <line class="tg-cov" id="tg-cov-vert" x1="100" y1="100" x2="100" y2="0"
                       stroke-dasharray="100 100" stroke-dashoffset="100"></line>
-                <line class="tg-cov" id="tg-cov-horz" x1="0" y1="100" x2="100" y2="100"
+                <line class="tg-cov" id="tg-cov-horz" x1="0" y1="0" x2="100" y2="0"
                       stroke-dasharray="100 100" stroke-dashoffset="100"></line>
-                <line class="tg-cov" id="tg-cov-diag" x1="0" y1="0" x2="100" y2="100"
+                <line class="tg-cov" id="tg-cov-diag" x1="0" y1="100" x2="100" y2="0"
                      stroke-dasharray="141.42 141.42" stroke-dashoffset="141.42"></line>
               </svg>
               <!-- ★★★ 2026-10-22（用户：「拼装挑战的提示做成**悬浮页面**」）——
@@ -948,7 +950,7 @@
               </div>
               <div class="tangram-axes">
                 <div><span>纵轴 · 右边缘</span><b id="tangram-cov-vert">—</b></div>
-                <div><span>横轴 · 下边缘</span><b id="tangram-cov-horz">—</b></div>
+                <div><span>横轴 · 上边缘</span><b id="tangram-cov-horz">—</b></div>
                 <div><span>斜轴 · 主对角线</span><b id="tangram-cov-diag">—</b></div>
                 <div><span>当前进度</span><b id="tangram-progress">—</b></div>
               </div>
@@ -978,7 +980,7 @@
           <h2>三条轴（覆盖率 → 加成）</h2>
           <div class="detail" style="margin-bottom:12px">
             <div><span>纵轴 · 右边缘</span><b>免费 ZPE 引擎 10 → <b>1e7</b> 级</b></div>
-            <div><span>横轴 · 下边缘</span><b>熵→粒子 10:1 → <b>1:1e16</b></b></div>
+            <div><span>横轴 · 上边缘</span><b>熵→粒子 10:1 → <b>1:1e16</b></b></div>
             <div><span>斜轴 · 主对角线</span><b>计数频率 每级 +5% → <b>+5e4%</b></b></div>
             <div><span>说明</span><b>三处读数现在 = 「覆盖 ｜ <b>对数进度</b> ｜ 当前加成」（2026-10-22）</b></div>
           </div>
@@ -996,7 +998,7 @@
 
           <p class="note">
           <p class="note">
-            <b>已实装</b>：七块可<b>自由拖拽</b>（可拖出边框/目标，松手吸附 0.2 格，拖拽中 R 旋转 / F 翻转）；
+            <b>已实装</b>：七块可<b>自由拖拽</b>（可拖出边框/目标，松手吸附 0.2 格，拖拽中 R 旋转 / F 翻转，绕自身中心）；
             拖丢/找不到时点「重置棋盘」——七块会停到目标外的 4×4 停放方块，不叠不丢；
             概率获取（2% + 保底）与足量兑换；<b>6 档 × 6 关</b>拼装挑战（每次永恒换一批题目顺序）。
             设计与实装清单见 <b>docs/TANGRAM.md</b>

@@ -25,7 +25,7 @@ import {
   TANGRAM_CHALLENGE_REWARDS, tangramRewardEffects,
 } from "../src/tangram.js";
 // ★ 2026-10-23：摆位/重置停车位断言要用
-import { resetTangramBoard, setTangramPlacement, tangramChallengeDiff } from "../src/tangram-game.js";
+import { resetTangramBoard, setTangramPlacement, rotateTangramPlacement, flipTangramPlacement, tangramChallengeDiff } from "../src/tangram-game.js";
 import { newState } from "../src/state.js";
 // ★ 2026：抽取/兑换与覆盖率读数（引擎侧）
 // ★ 2026：图案库（由 `tools/tangram-patterns.mjs --write` 生成的 108 个真图案）
@@ -250,8 +250,9 @@ ck("④f 定点手算：大三角 II ⇒ 右边缘 0%、上边缘 0%、斜轴 50
   const px = (v) => 100 + ((v - VB.x) / VB.w) * 400;
   const py = (v) => 50 + ((v - VB.y) / VB.h) * 400;
   const cases = [
-    [[4, 0], [px(100), py(0)]],          // 棋盘右下（不翻转 ⇒ svg 右上）✓
-    [[0, 0], [px(0), py(0)]],            // 2026：不翻转 ⇒ 棋盘原点(0,0) = SVG 左上 ✓
+    [[4, 0], [px(100), py(100)]],        // 棋盘右下 → SVG 右下 ✓
+    [[0, 0], [px(0), py(100)]],          // ★ 原点 = 正方形左下 = 画布**左中**（SVG y=100）✓
+    [[0, 4], [px(0), py(0)]],            // 棋盘左上 → SVG 左上 ✓
     [[2, 2], [px(50), py(50)]],          // 正中 ✓
   ];
   const bad = cases.filter(([[bx, by], [cx, cy]]) => {
@@ -266,7 +267,7 @@ ck("④f 定点手算：大三角 II ⇒ 右边缘 0%、上边缘 0%、斜轴 50
     return Math.abs(gx - bx) < 1e-9 && Math.abs(gy - by) < 1e-9;
   });
   ck("⑧ 拖拽坐标：svgToBoard 的 4 个角点 + 往返一致", bad.length === 0 && rt,
-    bad.length === 0 ? `4 个角点全部命中，往返一致 ✓（**不翻转**：正方形在左上 ✓）`
+    bad.length === 0 ? `4 个角点全部命中，往返一致 ✓（**y 翻转**：原点 (0,0) → SVG 左中 (0,100) ✓）`
       : `偏差：${bad.map(([[bx, by]]) => `(${bx},${by})`).join(",")}`);
 }
 
@@ -487,8 +488,9 @@ ck("④f 定点手算：大三角 II ⇒ 右边缘 0%、上边缘 0%、斜轴 50
   const outside = ids.every((id) => {
     const v = placePieceVerts(byId.get(id), s.tangramPlaced[id]);
     const minX = Math.min(...v.map(([x]) => x));
-    const minY = Math.min(...v.map(([, y]) => y));
-    return minX >= TANGRAM_SIZE - 1e-9 || minY >= TANGRAM_SIZE - 1e-9;
+    const maxY = Math.max(...v.map(([, y]) => y));
+    // 屏幕下方停车 = 棋盘 y<0；右侧停车 = x>=4。两者都不在目标正方形 0..4 内 ✓
+    return minX >= TANGRAM_SIZE - 1e-9 || maxY <= 1e-9;
   });
   let overlaps = 0;
   for (let i = 0; i < ids.length; i++) {
@@ -521,6 +523,32 @@ ck("④f 定点手算：大三角 II ⇒ 右边缘 0%、上边缘 0%、斜轴 50
       + `｜负坐标可放=${canGoLeft}｜越界可放=${canGoFar}｜停车位在画布内=${parkedInCanvas}`
       + `｜确认完成=ok:${diff.ok} missing:${diff.missing} extra:${diff.extra}（目标外不算过关 ✓）`
       + `｜画布 ${CANVAS_MIN}..${CANVAS_MAX}`);
+}
+
+// ══════════════════════════════════════════════════════════
+// ⑭ 2026-10-23 用户：「旋转后又不在中心点了」
+//    面板按钮「旋转/翻转」必须和 R/F 一样绕**自身 bbox 中心**，不能绕棋盘原点 ✗
+// ══════════════════════════════════════════════════════════
+{
+  const s = newState();
+  s.tangramOwned.largeA = true;
+  setTangramPlacement(s, "largeA", { dx: 1, dy: 2, rot: 0, flip: false });
+  const piece = TANGRAM_PIECES.find((p) => p.id === "largeA");
+  const center = () => {
+    const v = placePieceVerts(piece, placementOf(s.tangramPlaced, "largeA"));
+    const xs = v.map(([x]) => x), ys = v.map(([, y]) => y);
+    return [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2];
+  };
+  const c0 = center();
+  rotateTangramPlacement(s, "largeA", 1);
+  const c1 = center();
+  flipTangramPlacement(s, "largeA");
+  const c2 = center();
+  const same = (a, b) => Math.abs(a[0] - b[0]) < 1e-9 && Math.abs(a[1] - b[1]) < 1e-9;
+  ck("⑭ 面板旋转/翻转绕自身中心（不再甩飞）",
+    same(c0, c1) && same(c0, c2),
+    `中心 ${c0.map((n) => n.toFixed(2)).join(",")} → 旋转后 ${c1.map((n) => n.toFixed(2)).join(",")}`
+      + ` → 翻转后 ${c2.map((n) => n.toFixed(2)).join(",")} ✓`);
 }
 
 console.log();

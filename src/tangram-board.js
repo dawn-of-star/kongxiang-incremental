@@ -19,17 +19,18 @@
  * ⚠️ 独立模块 ⇒ `ui.js` 只加两行（`bindTangramBoard` / `paintTangramBoard`）✓
  */
 import {
-  TANGRAM_PIECES, placePieceVerts, placementOf, snapPoint, convexOverlap, cellsFromFingerprint,
+  TANGRAM_SIZE, TANGRAM_PIECES, placePieceVerts, placementOf, snapPoint, convexOverlap, cellsFromFingerprint,
 } from "./tangram.js";
 import { setTangramPlacement, tangramCoverage, tangramChallengeTarget, transformPieceInPlace, tangramChallengeDiff } from "./tangram-game.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 /** 板坐标 → SVG 坐标（**唯一换算点**）✓ */
-// ★ 2026（用户：「包括虚线部分的顺时针旋转 90° 刚刚好」）——
-//   取消 y 翻转 ⇒ 正方形(0..4)落到 **左上**，虚线停车区在**右/下**（不用滚到底才看见 ✓）
-const toSvg = (x, y) => [x * 25, y * 25];
+// ★ 2026-10-23（用户：「原点不应该在左中么」）——
+//   正方形仍画在画布**左上**，但棋盘原点在正方形**左下** ⇒ SVG y 必须翻转：
+//   原点 (0,0) → SVG (0,100) = 8×8 画布的**左中** ✓
+const toSvg = (x, y) => [x * 25, (TANGRAM_SIZE - y) * 25];
 /** SVG 坐标 → 板坐标 ✓ */
-const toBoard = (sx, sy) => [sx / 25, sy / 25];
+const toBoard = (sx, sy) => [sx / 25, TANGRAM_SIZE - sy / 25];
 
 const PAD = 240;                       // viewBox 外扩，让 −3..7 的画布也看得见 ✓
 let layerTarget = null;
