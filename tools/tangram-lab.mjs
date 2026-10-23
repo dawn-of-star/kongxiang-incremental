@@ -26,7 +26,7 @@ import {
 } from "../src/tangram.js";
 // ★ 2026-10-23：摆位/重置停车位断言要用
 import { resetTangramBoard, setTangramPlacement, rotateTangramPlacement, flipTangramPlacement, tangramChallengeDiff } from "../src/tangram-game.js";
-import { newState } from "../src/state.js";
+import { newState, serialize, deserialize } from "../src/state.js";
 // ★ 2026：抽取/兑换与覆盖率读数（引擎侧）
 // ★ 2026：图案库（由 `tools/tangram-patterns.mjs --write` 生成的 108 个真图案）
 import { TANGRAM_PATTERN_LIBRARY } from "../src/tangram-pattern-library.js";
@@ -549,6 +549,30 @@ ck("④f 定点手算：大三角 II ⇒ 右边缘 0%、上边缘 0%、斜轴 50
     same(c0, c1) && same(c0, c2),
     `中心 ${c0.map((n) => n.toFixed(2)).join(",")} → 旋转后 ${c1.map((n) => n.toFixed(2)).join(",")}`
       + ` → 翻转后 ${c2.map((n) => n.toFixed(2)).join(",")} ✓`);
+}
+
+// ══════════════════════════════════════════════════════════
+// ⑮ 2026-10-23 旧档迁移：旧坐标（无 y 翻转）→ 新坐标（原点左中）
+//    保持屏幕位置/朝向：dy'=4-dy，rot'=rot+2，flip'=!flip
+// ══════════════════════════════════════════════════════════
+{
+  const old = newState();
+  old.tangramCoordVersion = 1;
+  old.tangramPlaced = { largeA: { dx: 1, dy: 2, rot: 0, flip: false } };
+  const back = deserialize(serialize(old)).state;
+  const cfg = back.tangramPlaced?.largeA ?? {};
+  const migrated = back.tangramCoordVersion === 2
+    && Math.abs(cfg.dx - 1) < 1e-9 && Math.abs(cfg.dy - 2) < 1e-9
+    && cfg.rot === 2 && cfg.flip === true;
+  // 新档不能再被迁移一次
+  const fresh = newState();
+  fresh.tangramPlaced = { largeA: { dx: 1, dy: 2, rot: 0, flip: false } };
+  const back2 = deserialize(serialize(fresh)).state.tangramPlaced.largeA;
+  const stable = back2.dx === 1 && back2.dy === 2 && back2.rot === 0 && back2.flip === false;
+  ck("⑮ 旧存档摆位迁移：dy→4−dy、rot+2、flip 取反，且只迁一次",
+    migrated && stable,
+    `旧 ${JSON.stringify({ dx: 1, dy: 2, rot: 0, flip: false })} → ${JSON.stringify(cfg)}`
+      + `｜新档稳定=${stable}`);
 }
 
 console.log();

@@ -279,8 +279,30 @@ export function deserialize(raw) {
     ? Object.fromEntries(Object.entries(raw.tangramPity).map(([k, v]) => [k, num(v, 0)]))
     : {};
   s.tangramPlaced = raw.tangramPlaced && typeof raw.tangramPlaced === "object"
-    ? Object.fromEntries(Object.entries(raw.tangramPlaced).filter(([, v]) => v && typeof v === "object"))
+    ? Object.fromEntries(Object.entries(raw.tangramPlaced)
+      .filter(([, v]) => v && typeof v === "object")
+      .map(([id, v]) => [id, { ...v }]))
     : {};
+  /**
+   * ★ 2026-10-23（用户：「原点不应该在左中么」）——
+   *   坐标系从「无 y 翻转（原点屏幕左上）」改成「y 翻转（原点屏幕左中）」。
+   *   旧档的 dx/dy/rot/flip 是按旧屏幕坐标存的；直接渲染会整块跑到面板上方（截图事故）。
+   *   ⇒ 保持**屏幕位置和朝向不变**：
+   *       dy' = 4 - dy
+   *       rot' = (rot + 2) % 4    （y 反射 = x 反射 + 180°）
+   *       flip' = !flip
+   *   只在旧档（没有 `tangramCoordVersion` 或 < 2）执行一次；新档不动 ✓
+   */
+  const coordVersion = num(raw.tangramCoordVersion, 1);
+  if (coordVersion < 2) {
+    for (const cfg of Object.values(s.tangramPlaced)) {
+      cfg.dx = num(cfg.dx, 0);
+      cfg.dy = 4 - num(cfg.dy, 0);
+      cfg.rot = ((Math.floor(num(cfg.rot, 0)) + 2) % 4 + 4) % 4;
+      cfg.flip = !bool(cfg.flip);
+    }
+  }
+  s.tangramCoordVersion = 2;
   s.tangramCleared = Array.isArray(raw.tangramCleared)
     ? [0, 0, 0, 0, 0, 0].map((_, i) => num(raw.tangramCleared[i], 0))
     : [0, 0, 0, 0, 0, 0];

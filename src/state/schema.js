@@ -202,6 +202,12 @@ export function newState() {
     tangramOwned: {},          // 已获得（id → true）
     tangramPity: {},           // 抽取保底（id → 连续失败次数）
     tangramPlaced: {},         // 摆位（id → {rot, flip, dx, dy}；小数 = 自由拖动）
+    /**
+     * 摆位坐标系版本。
+     * 1（旧）= 无 y 翻转，原点在屏幕左上；2（2026-10-23）= y 翻转，原点在屏幕左中。
+     * 旧档读入时必须把 dy 映射为 4-dy，并把块翻转/转 180° 才能保持原样 ✓
+     */
+    tangramCoordVersion: 2,
     tangramCleared: [0, 0, 0, 0, 0, 0],   // 拼装挑战：每档已清数（奖励唯一输入）
     tangramChallenge: { solved: 0 },      // 挑战进度
     /** 已大坍缩次数 */

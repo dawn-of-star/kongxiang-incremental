@@ -332,7 +332,7 @@ panel-tangram
 | 被动 IP | `src/tangram-passive.js` | 中间难度全清 ⇒ 每秒 1% 本次无限 IP（AD **TS181** 同款；收益源走 `bigCrunchGain`）|
 | 画板 / 拖拽 | `src/tangram-board.js` | 目标轮廓单 `<path>`（按指纹缓存）+ 板块 `<polygon>`；**自由拖动、可拖出边框**，松手吸附 0.2 格；拖拽中 R/F |
 | 面板 | `ui.js` 的 `renderTangramReal` | 真数据（下一块/抽取价/保底/三轴读数/挑战状态/奖励行）+ 11 个按钮 |
-| 断言 | `tools/tangram-lab.mjs` | 31 条（几何 / 覆盖率 / 图案表 / 奖励 / 分档单调 / **越界摆位 + 重置停车位 + 旋转中心**）|
+| 断言 | `tools/tangram-lab.mjs` | 32 条（几何 / 覆盖率 / 图案表 / 奖励 / 分档单调 / **越界摆位 + 重置停车位 + 旋转中心 + 旧档迁移**）|
 | 枚举器 | `tools/tangram-patterns.mjs` | HEAVY；重生成：`node tools/tangram-patterns.mjs --seconds 12 --write` |
 
 ---
