@@ -163,21 +163,26 @@ export function placedVertices(placed, pieces = TANGRAM_PIECES) {
  *   活动范围从「必须在 4×4 方框内」放宽成**一大片画布**：`CANVAS_MIN..CANVAS_MAX` ✓
  *   ⚠️ 为什么这样"加成判定不用改"：三条轴**永远是方框的边与对角线**（`TANGRAM_AXES`）；
  *     块拖到框外 ⇒ 它与那三条线的交集自然变成 0（或被裁掉一部分）⇒ 覆盖率公式**一字不改** ✓
- *   ⚠️ 仍保留一个**画布上限**（不真的无限远）：否则可以把块拖到看不见的地方 ⇒ 体验变差 ✗
+ *   ★ 2026-10-23：**手动拖拽完全不走这个边框**（`checkBounds=false`）——
+ *     玩家可以把块停到页面任何地方；`CANVAS` 只约束自动摆位/重置停车位，保证块可见 ✓
+ *     （拖丢了的块用「重置棋盘」找回；重置会把七块停到目标外的 4×4 方框 ✓）
  */
-export const CANVAS_MIN = 0;    // 2026: 画布左下角 = 正方形左下角 (0,0)
-export const CANVAS_MAX = 8;    // 2026: 8x8 画布（正方形 0..4 贴在左下）
+export const CANVAS_MIN = -2;   // 2026-10-23: 自动摆位画布向左上各留 2 格
+export const CANVAS_MAX = 10;   // 2026-10-23: 自动摆位画布向右下各留 2 格
 
 /**
- * 一个摆位**是否合法**：① 整块在**画布**内（`-3..7`，**不再是 0..4 的方框**）② 不与已放下的块重叠 ✓
+ * 一个摆位**是否合法**：① 整块在**画布**内（自动摆位用；手动拖拽可越界）
+ * ② 不与已放下的块重叠 ✓
  * ⚠️ 「在画布内」只需检查顶点：七块都是**凸**的，凸块的全部顶点在凸区域内 ⇒ 整块在内 ✓
  * ⚠️ 重叠用 `convexOverlap`（SAT）⇒ **共边/共点不算重叠** ⇒ 贴边拼装合法 ✓
+ * ★ 2026-10-23：`checkBounds=false` 时**不检查画布边框** —— 玩家手动拖拽用这个，
+ *   边框不再是墙；自动摆位/重置仍走有界检查，保证停车位可见 ✓
  */
-export function isPlacementLegal(id, cfg, placed, pieces = TANGRAM_PIECES, allowOverlap = false) {   // ★ 2026-10-22：第 5 个参数才是"允许重叠"（第 4 个是 pieces ✗ 我上一版把它顶掉了）
+export function isPlacementLegal(id, cfg, placed, pieces = TANGRAM_PIECES, allowOverlap = false, checkBounds = true) {
   const piece = pieces.find((p) => p.id === id);
   if (!piece) return false;
   const v = placePieceVerts(piece, cfg);
-  if (!v.every(([x, y]) => x >= CANVAS_MIN && x <= CANVAS_MAX && y >= CANVAS_MIN && y <= CANVAS_MAX)) return false;
+  if (checkBounds && !v.every(([x, y]) => x >= CANVAS_MIN && x <= CANVAS_MAX && y >= CANVAS_MIN && y <= CANVAS_MAX)) return false;
   for (const other of pieces) {
     if (other.id === id || !placed?.[other.id]) continue;
     // ★ 2026-10-22（用户：「可覆盖，但重叠区域红色阴影」）⇒ 玩家摆位允许重叠 ✓

@@ -19,10 +19,14 @@ import {
   TANGRAM_SIZE, TANGRAM_PIECES, TANGRAM_AXES, TANGRAM_ACQUIRE, TANGRAM_DRAW,
   polygonArea, pointInConvex, convexOverlap, axisCoverage, axisCoverageAll,
   placePieceVerts, rotateVerts, flipVerts, snapPoint, segLength,
+  CANVAS_MIN, CANVAS_MAX,
   tangramPiecesFromEP, tangramThresholdAt, tangramPricesAt, placementOf, svgToBoard, boardToSvg,
   TANGRAM_CHALLENGE, tangramPatternsPerDifficulty, tangramPatternsTotal, pickChallengePatterns,
   TANGRAM_CHALLENGE_REWARDS, tangramRewardEffects,
 } from "../src/tangram.js";
+// ★ 2026-10-23：摆位/重置停车位断言要用
+import { resetTangramBoard, setTangramPlacement, tangramChallengeDiff } from "../src/tangram-game.js";
+import { newState } from "../src/state.js";
 // ★ 2026：抽取/兑换与覆盖率读数（引擎侧）
 // ★ 2026：图案库（由 `tools/tangram-patterns.mjs --write` 生成的 108 个真图案）
 import { TANGRAM_PATTERN_LIBRARY } from "../src/tangram-pattern-library.js";
@@ -466,6 +470,57 @@ ck("④f 定点手算：大三角 II ⇒ 右边缘 0%、上边缘 0%、斜轴 50
     g([6, 6, 6, 6, 6, 6]) === true;
   ck("⑫ neko 指数作用于 ZPE：仅前两组清满解锁", ok,
     `000000=${g([0,0,0,0,0,0])} ｜ 600000=${g([6,0,0,0,0,0])} ｜ 660000=${g([6,6,0,0,0,0])} ｜ 606000=${g([6,0,6,0,0,0])}`);
+}
+
+// ══════════════════════════════════════════════════════════
+// ⑬ 2026-10-23 用户裁定：**边框不是墙**
+//    · 摆位可以超出 4×4 目标（甚至超出 8×8 可视区，CANVAS_MIN..MAX）
+//    · 「重置棋盘」把七块停到目标外的 4×4 停车位（不叠、不丢、不帮解题）
+//    · 目标外的块**不算过关**（判定仍按目标并集）
+// ══════════════════════════════════════════════════════════
+{
+  const s = newState();
+  for (const p of TANGRAM_PIECES) s.tangramOwned[p.id] = true;
+  const r = resetTangramBoard(s);
+  const ids = Object.keys(s.tangramPlaced ?? {});
+  const byId = new Map(TANGRAM_PIECES.map((p) => [p.id, p]));
+  const outside = ids.every((id) => {
+    const v = placePieceVerts(byId.get(id), s.tangramPlaced[id]);
+    const minX = Math.min(...v.map(([x]) => x));
+    const minY = Math.min(...v.map(([, y]) => y));
+    return minX >= TANGRAM_SIZE - 1e-9 || minY >= TANGRAM_SIZE - 1e-9;
+  });
+  let overlaps = 0;
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) {
+      const a = placePieceVerts(byId.get(ids[i]), s.tangramPlaced[ids[i]]);
+      const b = placePieceVerts(byId.get(ids[j]), s.tangramPlaced[ids[j]]);
+      if (convexOverlap(a, b)) overlaps++;
+    }
+  }
+  const canGoLeft = (() => {
+    const t = newState();
+    t.tangramOwned.smallA = true;
+    return setTangramPlacement(t, "smallA", { dx: -1, dy: 0 }).ok;
+  })();
+  // ★ 手动拖拽不再被画布边框拦住（CANVAS 只约束自动摆位/重置停车位）
+  const canGoFar = (() => {
+    const t = newState();
+    t.tangramOwned.smallA = true;
+    return setTangramPlacement(t, "smallA", { dx: CANVAS_MAX + 1, dy: 0 }).ok;
+  })();
+  const parkedInCanvas = ids.every((id) => {
+    const v = placePieceVerts(byId.get(id), s.tangramPlaced[id]);
+    return v.every(([x, y]) => x >= CANVAS_MIN && x <= CANVAS_MAX && y >= CANVAS_MIN && y <= CANVAS_MAX);
+  });
+  const diff = tangramChallengeDiff(s);
+  ck("⑬ 摆位越界 + 重置停车位 + 目标外不算过关",
+    r.placed === 7 && r.parked === 0 && ids.length === 7 && outside && overlaps === 0
+      && canGoLeft && canGoFar && parkedInCanvas && !diff.ok && diff.extra > 0,
+    `重置=${r.placed} 块/停 ${r.parked}｜目标外=${outside}｜互相重叠=${overlaps}`
+      + `｜负坐标可放=${canGoLeft}｜越界可放=${canGoFar}｜停车位在画布内=${parkedInCanvas}`
+      + `｜确认完成=ok:${diff.ok} missing:${diff.missing} extra:${diff.extra}（目标外不算过关 ✓）`
+      + `｜画布 ${CANVAS_MIN}..${CANVAS_MAX}`);
 }
 
 console.log();

@@ -12,7 +12,8 @@
  *
  * 拖拽语义（用户裁定）：
  *   · **自由拖动**：位置是**小数**，只有松手时吸附 0.2 格（`tangram.js` 的 `snapPoint`）✓
- *   · 画布外也能放（`CANVAS_MIN..CANVAS_MAX` = −3..7），只是**覆盖率贡献 0** ✓
+ *   · **手动拖拽不检查边框**：可以停在目标/画布外，覆盖率贡献 0；拖丢用重置找回 ✓
+ *   · 自动摆位/重置停车位仍用 `CANVAS_MIN..CANVAS_MAX`（−2..10）保证可见 ✓
  *   · 拖的时候按 R / F 旋转 / 翻转 ✓
  *
  * ⚠️ 独立模块 ⇒ `ui.js` 只加两行（`bindTangramBoard` / `paintTangramBoard`）✓
@@ -227,7 +228,7 @@ export function bindTangramBoard(state, commit) {
     const state = stRef;
     if (Math.abs(ev.clientX - drag.sx) > 3 || Math.abs(ev.clientY - drag.sy) > 3) drag.moved = true;
     const [bx, by] = ptToBoard(ev);
-    // 自由拖动：**不吸附**；合法性只判"在画布内"（**允许重叠** ✓，重叠块会标红 ✓）
+    // 自由拖动：**不吸附**；手动摆位**不检查画布边框**（允许重叠，重叠块标红）✓
     setTangramPlacement(state, drag.id, { dx: bx - drag.grabDx, dy: by - drag.grabDy });
     paintTangramBoard(state);
   });

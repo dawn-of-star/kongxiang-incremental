@@ -91,16 +91,48 @@ export function exchangeTangramPiece(state, step) {
 }
 
 /** 拿到手就摆上棋盘（否则玩家"看不到巧板"）✓ 依次试几个格点，都冲突就留在托盘 ✓ */
-export function autoPlaceTangram(state, id) {
+export function autoPlaceTangram(state, id, { parking = false } = {}) {
   if (!state?.tangramOwned?.[id]) return false;
   if (state.tangramPlaced?.[id]) return true;
-  for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [2, 0], [0, 2], [1, 1], [-1, 0], [0, -1], [3, 0], [0, 3]]) {
-    if (setTangramPlacement(state, id, { dx, dy }).ok) return true;
+
+  // ★ 2026-10-23（用户：「允许超出放置；重置棋盘能找到所有巧板」）：
+  //   旧实现**允许重叠** ⇒ `setTangramPlacement(0,0)` 永远成功 ⇒ 重置时七块全叠在 (0,0) ✗
+  //   现在自动摆位先做**无重叠**检查；重置用 `parking` 把块放到**目标 4×4 外**的停车位，
+  //   既不会帮玩家自动解题，也不会让块叠成一坨。
+  const tryCfg = (cfg) => {
+    if (!isPlacementLegal(id, cfg, state.tangramPlaced, undefined, false)) return false;
+    const r = setTangramPlacement(state, id, cfg, true);   // 已检查过：force 只跳过重复检查
+    return r.ok;
+  };
+
+  if (parking) {
+    // 优先停到目标**下方**（x=0..4, y=4..8）：不挡目标，也不会被右上角的题目预览浮层盖住；
+    // 放不下再试右侧（x=4..8, y=0..8）。旋转/翻转也试，全部在可视 8×8 内。
+    for (const rot of [0, 1, 2, 3]) {
+      for (const flip of [false, true]) {
+        for (let y = 4; y <= 8; y += 0.5) {
+          for (let x = 0; x <= 4; x += 0.5) {
+            if (tryCfg({ dx: x, dy: y, rot, flip })) return true;
+          }
+        }
+        for (let y = 0; y <= 8; y += 0.5) {
+          for (let x = 4; x <= 8; x += 0.5) {
+            if (tryCfg({ dx: x, dy: y, rot, flip })) return true;
+          }
+        }
+      }
+    }
+    return false;
   }
-  return false;
+
+  // 新获得的块：优先放进目标 4×4；放不下再停车
+  for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [2, 0], [0, 2], [1, 1], [3, 0], [0, 3]]) {
+    if (tryCfg({ dx, dy, rot: 0, flip: false })) return true;
+  }
+  return autoPlaceTangram(state, id, { parking: true });
 }
 
-/** 设定摆位（**允许小数** = 自由拖动；合法性 = 在画布内 + 不与已放下块重叠）✓ */
+/** 设定摆位（**允许小数** = 自由拖动；手动摆位不检查画布边框，允许重叠）✓ */
 /**
  * ★★★ 2026-10-22（用户：「旋转/翻转在选中后无法生效，快捷键也是」）——
  *   根因：旋转/翻转后会**重新做合法性判定** ✗ ⇒ 一旦旋出画布/产生重叠就被拒绝 ✗
@@ -155,7 +187,9 @@ export function setTangramPlacement(state, id, cfg, force = false) {
   next.rot = ((Math.floor(next.rot) % 4) + 4) % 4;
   next.dx = Number(next.dx) || 0;
   next.dy = Number(next.dy) || 0;
-  if (!force && !isPlacementLegal(id, next, state.tangramPlaced, undefined, true)) return { ok: false, reason: "illegal" };   // ★ 允许重叠（第 5 参 ✓）   // ★ 允许重叠 ✓
+  // ★ 2026-10-23：手动拖拽**不检查画布边框**（第 6 参 false）⇒ 块可以停在目标外/边框外；
+  //   自动摆位仍用有界检查（`autoPlaceTangram` 自己调 `isPlacementLegal`）✓
+  if (!force && !isPlacementLegal(id, next, state.tangramPlaced, undefined, true, false)) return { ok: false, reason: "illegal" };
   state.tangramPlaced[id] = next;
   return { ok: true, placement: next };
 }
@@ -184,7 +218,7 @@ export function resetTangramBoard(state) {
   let parked = 0;
   for (const p of TANGRAM_PIECES) {
     if (!state.tangramOwned?.[p.id]) continue;
-    if (autoPlaceTangram(state, p.id)) placed++;
+    if (autoPlaceTangram(state, p.id, { parking: true })) placed++;
     else parked++;
   }
   return { cleared, placed, parked };
