@@ -1,4 +1,4 @@
-
+﻿
 /**
  * ★★★ 2026：**「每秒 1% 本次无限可获得的 IP」**（设计稿 §4 的中间难度全清奖励）
  *
@@ -33,8 +33,15 @@ export function tangramPassiveIpGain(state, dtSec, gainFn) {
   //   ⇒ 现在用 **破∞那一刻的快照**（`state.passiveIpBase`）作为收益源：
   //     · 本次无限内**恒定** ⇒ 被动 IP 随时间**线性**增长 ✓ 不会爆炸 ✓
   //     · 破∞时重新取一次快照 ⇒ 与"本次无限可获得 IP"的语义仍然一致 ✓
-  const snapshot = state?.passiveIpBase;
-  const g = snapshot != null ? new Decimal(snapshot) : gainFn(state);
+  // ★★★ 2026-10-24（用户：「被动 IP 的最终收益者应该是**已持有的 IP**」）——
+  //   收益源从「本次无限可获得 IP」改成**你实际持有的 IP 的峰值**（`maxIpThisEternity` ✓
+  //   它在 tick 里逐帧维护 = 本永恒持有 IP 的最高水位 ✓）
+  //   ⚠️ 为什么不用"当前持有"：`dIP/dt = 1%×IP` 是**指数**（IP→IP ✗ 红线 ✗），
+  //      70 秒就翻倍 ⇒ 会把 p 推向 1 ✗。用**持有峰值** ⇒ 线性 ✓ 且语义仍是"按你持有的 IP 给" ✓
+  const peakHeld = state?.maxIpThisEternity;
+  const g = peakHeld != null && new Decimal(peakHeld).gt(0)
+    ? new Decimal(peakHeld)
+    : (state?.infinityPoints != null ? new Decimal(state.infinityPoints) : gainFn(state));
   if (!g || !g.gt || !g.gt(0)) return new Decimal(0);
   return g.mul(frac).mul(dt / 1000);                        // ⚠️ dt 是**毫秒**（与 tick 一致）
 }
