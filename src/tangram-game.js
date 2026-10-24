@@ -343,7 +343,12 @@ export function tangramChallengeDiff(state) {
   //   不再跟随玩家形状的包围盒 ✗（那会飘到块旁边 ✗）
   //   改成**原位绘制**：目标图案本来就是归一化到左下角的 ✓ ⇒ 直接落在画布的**左下 4×4** ✓
   //   （画布 0..8 ✓，目标占 0..4 ✓ ⇒ 稳稳在棋盘内 ✓）
-  const ghostCells = tgtCells.map(([x, y, k]) => [x, y, k]);
+  // ★★★ 2026-10-24（用户选「② 视觉居中」）——
+  //   可见区 = viewBox 0..200 ⇒ 数学 x 0..8、y −4..4（`boardToSvg` 有 y 翻转 ✓）
+  //   可见区中心 = 数学 (4, 0) ✗（不是 (4,4) ✗）
+  //   ⇒ 缺口（归一化后 0..6 / 0..4）平移 **(+1, −2)** ⇒ 中心落到 SVG (100,100) = 屏幕正中 ✓
+  const GHOST_OFFSET = { dx: 1, dy: -2 };
+  const ghostCells = tgtCells.map(([x, y, k]) => [x + GHOST_OFFSET.dx, y + GHOST_OFFSET.dy, k]);
   return {
     ok: missing === 0 && extra === 0,
     missing, extra,
