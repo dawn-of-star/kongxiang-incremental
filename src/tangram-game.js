@@ -12,7 +12,7 @@
  * 存档字段（`state.js` 里登记）：`tangramOwned` / `tangramPity` / `tangramPlaced` / `tangramCleared` / `tangramChallenge`
  */
 import Decimal from "../dist/break_eternity.esm.js";
-import {
+import { CANVAS_MIN, CANVAS_MAX,
   TANGRAM_PIECES, TANGRAM_CHALLENGE, TANGRAM_ACQUIRE,
   tangramPricesAt, tangramPieceAtStep, tangramPatternsPerDifficulty, pickChallengePatterns,
   placePieceVerts, placementOf, isPlacementLegal, placedVertices, axisCoverageAll,
@@ -343,7 +343,16 @@ export function tangramChallengeDiff(state) {
   //   不再跟随玩家形状的包围盒 ✗（那会飘到块旁边 ✗）
   //   改成**原位绘制**：目标图案本来就是归一化到左下角的 ✓ ⇒ 直接落在画布的**左下 4×4** ✓
   //   （画布 0..8 ✓，目标占 0..4 ✓ ⇒ 稳稳在棋盘内 ✓）
-  const ghostCells = tgtCells.map(([x, y, k]) => [x, y, k]);
+  // ★★★ 2026-10-24（用户：「预想的题目中心点在 8×8 的中间（4×4 位置）」）——
+  //   目标图案的包围盒**中心**对齐到画布中点 `(CANVAS_MAX/2, CANVAS_MAX/2) = (4,4)` ✓
+  //   （之前是"左下角对齐原点" ✗ ⇒ 实测中心落在约 (3,2) ✗ —— 正是用户看到偏左偏下 ✓）
+  const cw = 4;   // 画布 0..8 的中点（写死 4，避免 CANVAS_* 未注入时算成 NaN ✗）
+  const [bbx0, bby0] = bboxMin(tgtCells);
+  let bbx1 = -Infinity, bby1 = -Infinity;
+  for (const c of tgtCells) { if (c[0] > bbx1) bbx1 = c[0]; if (c[1] > bby1) bby1 = c[1]; }
+  const ox = Math.round(cw - (bbx0 + bbx1) / 2);
+  const oy = Math.round(cw - (bby0 + bby1) / 2);
+  const ghostCells = tgtCells.map(([x, y, k]) => [x + ox, y + oy, k]);
   return {
     ok: missing === 0 && extra === 0,
     missing, extra,
