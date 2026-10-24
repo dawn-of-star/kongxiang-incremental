@@ -156,6 +156,8 @@ safePaint("tangram-preview", () => paintChallengePreview(st));
 
   // ★★★ 2026：**挑战奖励的当前档位**（唯一聚合入口 `tangramRewardEffects`）✓
   const rw = tangramRewardEffects(st.tangramCleared);
+  // ★ 2026-10-24：奖励表**点亮已生效行**（每帧一次，成本 O(11) ✓）
+  try { paintRewardTableActive(st); } catch { /* 表格还没建好也不影响面板 ✓ */ }
   const rl = document.getElementById("tg-reward-line");   // ⚠️ 不走 el[] 缓存（它在运行时才建）✓
   if (rl) {
     rl.textContent = "挑战奖励：EP 折扣 " + (rw.epDiscount * 100).toFixed(0) + "%"
@@ -455,5 +457,39 @@ function triVertsForPreview(x, y, t) {
     case 1: return [[x + 1, y], [x + 1, y + 1], [x + 0.5, y + 0.5]];
     case 2: return [[x + 1, y + 1], [x, y + 1], [x + 0.5, y + 0.5]];
     default: return [[x, y + 1], [x, y], [x + 0.5, y + 0.5]];
+  }
+}
+/**
+ * ★★★ 2026-10-24（用户：「完成时看不见哪些加成被启动」）——
+ *   把**已生效**的奖励行点亮（`.is-active` ✓，CSS 已就位 ✓）
+ *
+ * 判据**只读** `tangramRewardEffects()`（唯一聚合入口 ✓），不自己算 ✗
+ */
+export function paintRewardTableActive(state) {
+  if (typeof document === "undefined") return;
+  const rows = document.querySelectorAll("#panel-tangram .tg-reward-table tr[data-reward]");
+  if (!rows.length) return;
+  let rw;
+  try {
+    rw = tangramRewardEffects(state?.tangramCleared);
+  } catch {
+    return;
+  }
+  const nThisEternity = Number(state?.tangramChallengeThisEternity ?? 0);
+  const active = {
+    epDiscount: (rw.epDiscount ?? 0) > 0,
+    deKnee: (rw.deKneeMult ?? 1) > 1,
+    ipDoubleKnee: (rw.ipDoubleKneeMult ?? 1) > 1,
+    freeEngine: (rw.freeZpeEngineLevels ?? 0) > 0,
+    convSlope: (rw.convSlopeMult ?? 1) > 1,
+    countFreq: (rw.countFreqMult ?? 1) > 1,
+    pity: (rw.pityFloor ?? 150) < 150,
+    passiveIp: (rw.passiveIpFrac ?? 0) > 0,
+    deGain: rw.allClear === true,
+    quantumPair: nThisEternity >= 6,
+    nekoZpe: rw.nekoExponentOnZpe === true,
+  };
+  for (const tr of rows) {
+    tr.classList.toggle("is-active", active[tr.dataset.reward] === true);
   }
 }
