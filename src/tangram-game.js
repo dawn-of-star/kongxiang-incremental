@@ -339,10 +339,11 @@ export function tangramChallengeDiff(state) {
     for (const c of cells) { if (c[0] < minX) minX = c[0]; if (c[1] < minY) minY = c[1]; }
     return [minX === Infinity ? 0 : minX, minY === Infinity ? 0 : minY];
   };
-  const [mx, my] = bboxMin(mineCells.length ? mineCells : tgtCells);
-  const [tx, ty] = bboxMin(tgtCells);
-  const ox = Math.round(mx - tx), oy = Math.round(my - ty);
-  const ghostCells = tgtCells.map(([x, y, k]) => [x + ox, y + oy, k]);
+  // ★★★ 2026-10-24（用户：「红色提示**固定在 8×8 棋盘内**」）——
+  //   不再跟随玩家形状的包围盒 ✗（那会飘到块旁边 ✗）
+  //   改成**原位绘制**：目标图案本来就是归一化到左下角的 ✓ ⇒ 直接落在画布的**左下 4×4** ✓
+  //   （画布 0..8 ✓，目标占 0..4 ✓ ⇒ 稳稳在棋盘内 ✓）
+  const ghostCells = tgtCells.map(([x, y, k]) => [x, y, k]);
   return {
     ok: missing === 0 && extra === 0,
     missing, extra,
