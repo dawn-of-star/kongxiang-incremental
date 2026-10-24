@@ -1142,7 +1142,11 @@ button { font: inherit; cursor: pointer; }
 /* ★★★ 2026（用户：「甚至可能得超越 ui 元素，不然不可见」）——
    巧板被拖到 svg 视口之外时也必须**可见**：SVG 默认裁剪到视口 ⇒ 关掉裁剪 ✓
    （祖先也不许裁剪：dom-smoke 的"无祖先裁剪"守卫守着）*/
-.tangram-svg, .tangram-board, .tangram-wrap, #panel-tangram { overflow: visible !important; }
+/* ★ 2026-10-24 修（用户截图：红色缺口**画到页面外**、盖住了顶部资源栏）——
+   根因：这里给 `.tangram-svg` 开了 `overflow: visible` ✗ ⇒ 画到 viewBox 之外的图形会溢出到页面上 ✗
+   ⇒ SVG **必须裁剪**在自己框内 ✓；`board/wrap/panel` 的 visible 保留（它们要显示投影/边框 ✓）*/
+.tangram-svg { overflow: hidden !important; }
+.tangram-board, .tangram-wrap, #panel-tangram { overflow: visible !important; }
 /* 2026: dashed guide grid beyond the square (visual only) */
 .tg-guide { stroke: rgba(255,255,255,0.10); stroke-width: 0.2; stroke-dasharray: 1 1.6; }
 
