@@ -183,7 +183,7 @@ const CACHE_IDS = [
     "de-multiplier", "de-penalty", "de-upgrade-list", "de-milestone-list",
     // ── 标签页 ──
     "tabs", "tab-void", "tab-de", "tab-quantum", "tab-infinity", "tab-eternity",
-    "panel-void", "panel-zpe", "panel-de", "panel-quantum", "panel-infinity", "panel-eternity",
+    "panel-void", "panel-zpe", "panel-de", "panel-quantum", "panel-infinity", "panel-eternity", "panel-space",
     // ★★★ 2026：暗能量的第二个子页（设计稿第 50 行）
     "panel-darkm",
     // ★★★ 2025（用户裁定）：主控台的子页（梦想 / 猫猫）

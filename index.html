@@ -245,7 +245,7 @@
             <div class="tab-flyout" id="tab-flyout-eternity">
               <button class="flyout-item" data-tab="eternity" id="flyout-eternity-core">永恒升级 · 里程碑</button>
               <button class="flyout-item" data-tab="tangram" id="flyout-eternity-tangram">七巧板</button>
-                <button class="flyout-item" data-tab="space" id="flyout-eternity-space">空间膨胀（占位）</button>
+                <button class="flyout-item" data-tab="space" id="flyout-eternity-space">空间膨胀</button>
             </div>
           </div>
         </div>
@@ -1032,23 +1032,10 @@
           </table>
         </div>
 
-        <!-- ══ 面板：空间膨胀（**占位** —— 用户 2026-10-24：「可以在永恒页面下做子页面先占符」）══ -->
-        <!-- ⚠️ 这是**占位页**：只写"规划中"和已定的设计要点 ✓ 不接任何逻辑 ✗ -->
+        <!-- ══ 面板：空间膨胀（**UI 先行**；购买/结算待引擎接线）══ -->
+        <!-- 页面由 `src/space-ui.js` 构建：货币 / 挑战 / 目标 / du 卡片；数值从 state.space 读，缺省显示 0。 -->
         <div class="tab-panel" id="panel-space" hidden>
-          <p class="rule">
-            <b>空间膨胀</b>（Space Expansion）—— <b>规划中</b>，当前为占位页
-          </p>
-          <p class="note">
-            设计稿见 <b>docs/SPACE-EXPANSION.md</b>（用户原文 + 可达性核算 + du 购买表）
-          </p>
-          <div class="detail" style="margin-bottom:12px">
-            <div><span>形态</span><b>挑战模式：所有最终收益 ^0.5（可退出，退出后带着升级回主档）</b></div>
-            <div><span>货币</span><b>膨胀点数 SE（挑战内结算） ｜ 膨胀时间 ST（由 SE 主动生产）</b></div>
-            <div><span>可重复升级</span><b>du1~du6（暗物质倍率 / 巧板加成 / 量子强度 / 巧板引擎 / 七巧板熵→粒子 / 计数频率）</b></div>
-            <div><span>单次升级</span><b>du7~du10（量子按个数 / ZPE 价格削弱 / 虚空强度 / 膨胀升级价格修正）</b></div>
-            <div><span>目标</span><b>把 EP 从 ~1.6 推到 1e8（= 七巧板抽取得起）</b></div>
-            <div><span>状态</span><b>数值未标定 · 未实装</b></div>
-          </div>
+          <div id="space-root"></div>
         </div>
 
         <!-- ══ 面板：永恒（升级 · 里程碑 · 七巧板；已实装）══ -->

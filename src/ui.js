@@ -21,6 +21,7 @@ import { renderQuantum, renderSpanLayer } from "./ui-quantum.js";
 import { renderInfinity, renderFloatResets } from "./ui-infinity.js";
 import { paintAutoCrunchUI } from "./autocrunch-ui.js";
 import { renderTangram } from "./ui-tangram-panel.js";
+import { renderSpace } from "./space-ui.js";
 // 主面板区块（render() 只做编排）
 import {
   renderPageUnlockSelfHeal, renderResourceBars, renderClickAndUpgrades, renderVoidPanel,
@@ -358,7 +359,7 @@ function buildEternityMilestones() {
  *   `state.epMultLevel` / `epMultFactor` / `epMultPriceAt`（唯一入口）⇒
  *   不可能出现"显示 ≠ 实发" ✓（本项目在这上面栽过 4 次）
  */
-const TAB_PARENT = { void: "void", zpe: "void", de: "de", darkm: "de", quantum: "quantum", infinity: "infinity", infdeep: "infinity", eternity: "eternity", tangram: "eternity" };
+const TAB_PARENT = { void: "void", zpe: "void", de: "de", darkm: "de", quantum: "quantum", infinity: "infinity", infdeep: "infinity", eternity: "eternity", tangram: "eternity", space: "eternity" };
 /** 子页 → 它的父标签（父标签在子页激活时保持高亮） */
 const SUB_WRAP = {
   zpe: "tab-wrap-void",
@@ -367,6 +368,7 @@ const SUB_WRAP = {
   darkm: "tab-wrap-de",
   // ★★★ 2026：永恒的子页（七巧板 —— 骨架）
   tangram: "tab-wrap-eternity",
+  space: "tab-wrap-eternity",
   // ★★★ 2025（用户裁定）：主控台的**三个子页**（主控台本体 / 梦想 / 猫猫）
   //   —— 与虚空科技同一套表现形式 ✓
   dream: "tab-wrap-console",
@@ -374,7 +376,7 @@ const SUB_WRAP = {
 };
 const ALL_PANELS = [
   "console", "dream", "neko",          // ★ 2025：主控台的三个子页
-  "void", "zpe", "de", "darkm", "quantum", "infinity", "infdeep", "eternity", "tangram",
+  "void", "zpe", "de", "darkm", "quantum", "infinity", "infdeep", "eternity", "tangram", "space",
 ];
 
 export function activateTab(name) {
@@ -423,6 +425,7 @@ export function render(state) {
   renderDreamPage(state);
   paintAutoCrunchUI(state, () => uiHandlers?.onTangramCommit?.());
   perfSection("七巧板", () => renderTangram(state));
+  perfSection("空间膨胀", () => renderSpace(state));
   perfSection("无限面板", () => renderInfinity(state));
   renderFloatResets(state);
   renderLogPanel(state);

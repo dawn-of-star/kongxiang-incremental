@@ -19,6 +19,7 @@ export const PAGE_UNLOCK_HINTS = {
   quantum: "首次捕获量子",
   infinity: "首次打破无限（物质触顶）",
   eternity: "首次永恒（IP 达到门槛）",
+  space: "首次永恒（空间膨胀是永恒的子页）",
 };
 
 /**
