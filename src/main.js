@@ -147,16 +147,27 @@ if (nekoChatUi) {
     let mounted = false;
     const tryMount = async () => {
       if (mounted || !nekoBridge.status?.connected) return;
+      // 容器不可见（标签页没打开）时不要初始化 Live2D：宽高为 0 会直接失败
+      if (avatarBox.offsetParent === null || avatarBox.offsetWidth < 40 || avatarBox.offsetHeight < 40) return;
+      if (avatarBadge && avatarBadge.textContent === '未渲染') avatarBadge.textContent = '渲染中…';
       const result = await mountAvatar({ bridge: nekoBridge, container: avatarSlot });
       mounted = Boolean(result.ok);
       if (avatarBadge) avatarBadge.textContent = result.ok ? '已渲染' : (result.reason || '不可用');
-      if (!result.ok && avatarBox) avatarBox.dataset.renderer = 'fallback';
+      if (!result.ok) {
+        if (avatarBox) avatarBox.dataset.renderer = 'fallback';
+        // 挂载失败的原因写进游戏日志（宿主页里也能看到）
+        try { pushLog(state, `🎭 角色渲染失败：${result.reason || '未知'}`); } catch { /* ignore */ }
+      } else {
+        try { pushLog(state, '🎭 角色已渲染（Live2D）'); } catch { /* ignore */ }
+      }
     };
+    // 持续重试（切到「她」标签、窗口尺寸变化后再挂），成功后停
     const avatarTimer = setInterval(() => {
       void tryMount();
       if (mounted) clearInterval(avatarTimer);
-    }, 2000);
-    setTimeout(() => clearInterval(avatarTimer), 60000);
+    }, 2500);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) void tryMount(); });
+    window.addEventListener('resize', () => { if (!mounted) void tryMount(); });
   }
 }
 

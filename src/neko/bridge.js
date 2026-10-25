@@ -32,7 +32,7 @@ export function nekoHostPresent(doc = globalThis.document) {
  * 单独给（默认等于 `gameId`）。
  */
 export const NEKO_GAME_ID = "kongxiang-incremental";
-export const NEKO_GAME_VERSION = "0.7.8";
+export const NEKO_GAME_VERSION = "0.7.9";
 export const NEKO_PROTOCOL_VERSION = "1";
 
 /**
@@ -106,7 +106,7 @@ export const NEKO_MANIFEST = Object.freeze({
  * @returns 桥对象（`available` 为 false 时方法仍可安全调用 ✓）
  */
 export function createNekoBridge({ getState, onStatus, actionApi } = {}) {
-  const status = { available: false, connected: false, capabilities: [], declared: null, lastError: null, lastAsk: null };
+  const status = { available: false, connected: false, capabilities: [], declared: null, lastError: null, lastAsk: null, runtimeReady: false };
   // 主动问话的节流状态（每座桥独立；读档时"已达成点"会在首帧被预标记）
   const askState = { asked: new Set(), primed: false, lastAt: 0, count: 0, failedUntil: 0, sinceT: 0 };
   const report = (phase, detail) => {
@@ -217,6 +217,7 @@ export function createNekoBridge({ getState, onStatus, actionApi } = {}) {
 
         if (typeof client?.runtime?.start === "function") {
           Promise.resolve(client.runtime.start({ schema: NEKO_SNAPSHOT_SCHEMA }))
+            .then(() => { status.runtimeReady = true; })
             .catch((err) => report("runtime-start-failed", err));
         }
         return true;

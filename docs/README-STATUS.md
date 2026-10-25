@@ -1,4 +1,4 @@
-# 技术文档状态索引 —— **文档的权威入口**（最后核对：0.7.8 / 2025）
+# 技术文档状态索引 —— **文档的权威入口**（最后核对：0.7.9 / 2025）
 
 > **这份文件是"哪些文档还有效、以哪份为准"的唯一入口。**
 > 加/删/改任何 `docs/*.md` 时**必须回来同步这张表** ✓
@@ -29,7 +29,7 @@
 | 默认批跑脚本数 | **52** | `node tools/run-all.mjs --list` |
 | `npm test` 结果 | **✅ 默认全绿**；`--strict` 有 **6 个失败** | `tools/run-all.mjs` |
 | `--strict` 的 6 个失败 | `base-vs-quantum` / `cap-monotonic-lab` / `check-web-bundle` / `ip-economy-lab` / `quantum-particle-lab` / `zpe-engine-lab`（属"过期断言/坏工具/数值漂移"，非坏实现） | `docs/TODO.md` M 段 |
-| 版本 | **0.7.8**（`package.json` 是唯一出处） | `package.json` |
+| 版本 | **0.7.9**（`package.json` 是唯一出处） | `package.json` |
 | 文档篇数 / 脚本总数 / 各类计数 | ⇒ **见 [`CONFIG-FACTS.md`](CONFIG-FACTS.md)**（机器生成） | `tools/config-facts.mjs` |
 
 > ⚠️ **历史教训（本文件被改写的直接原因）**：

@@ -7,6 +7,27 @@
 
 ---
 
+## 0.7.9 — 修好头像握手（provider 必须在 connect 之前注册）
+
+> **公告**：0.7.8 的头像"挂不上"，根因不是渲染失败，而是**握手时能力没授予**：
+> 宿主只在 `connect` 时看 launch 节点上的 `nekoCapabilityProviders[gameId].avatarHostFactory`，
+> 没有 factory 就不给 `avatar-renderer`；我们原来是在连上之后才创建 provider ⇒ 永远拿不到。
+> 现在照内置游戏的做法，在 **bootstrap 之前**用经典脚本注册 factory（`host/avatar-provider.js`），
+> 并且只在「她」页面可见、runtime 已 running 时才挂载，失败原因写进游戏日志。
+>
+> 统计：自 `0.7.8` 起 **1 个提交**（fix 1）。
+
+**这一版做了什么**
+
+1. **provider 前置注册**：页面在 launch JSON 与 bootstrap 之间插入 live2d 脚本 +
+   `host/avatar-provider.js` + `nekoCapabilityProviders` 赋值 ⇒ 握手就能授予
+   `avatar-renderer`（实测能力列表已出现）。
+2. **可见才挂载**：容器宽高为 0（不在「她」标签页）时不初始化 Live2D；切过去/改窗口大小自动重试，
+   直到挂上为止。
+3. **原因可见**：失败写 `🎭 角色渲染失败：<reason>` 到游戏日志，徽章显示 `no-capability` /
+   `no-model` / `mount-failed` 等。
+4. 挂载前等 `runtime.start` 完成（`avatar.mount` 要求活跃路由）。
+
 ## 0.7.8 — 游戏内角色渲染（Live2D）+ 关闭即结束路由
 
 > **公告**：游戏页右侧新增「她」—— 挂载宿主当前的 Live2D（照内置游戏的

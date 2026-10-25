@@ -48,6 +48,16 @@ const sdkBlock = `  <!-- ═══ N.E.K.O 小游戏 SDK 接入（便携包） �
        相对路径保持不变；宿主 SDK 走绝对路径 /static/game/sdk/。 -->
   <script src="/static/game/sdk/neko-minigame-sdk.js"></script>
   <script id="neko-minigame-host-launch" type="application/json">${JSON.stringify(registration)}</script>
+  <script src="/static/libs/live2dcubismcore.min.js"></script>
+  <script src="/static/libs/live2d.min.js"></script>
+  <script src="/static/libs/pixi.min.js"></script>
+  <script src="/static/live2d/live2d-core.js"></script>
+  <script src="/static/live2d/live2d-emotion.js"></script>
+  <script src="/static/live2d/live2d-model.js"></script>
+  <script src="/static/live2d/live2d-init.js"></script>
+  <script src="/static/game/sdk/neko-minigame-avatar-host.js"></script>
+  <script src="./host/avatar-provider.js"></script>
+  <script>document.getElementById("neko-minigame-host-launch").nekoCapabilityProviders={"kongxiang-incremental":{avatarHostFactory:window.createKongxiangAvatarHost}};</script>
   <script src="/static/game/sdk/neko-minigame-same-origin-bootstrap.js"></script>
 
 `;
@@ -58,7 +68,7 @@ html = html.slice(0, idx) + sdkBlock + html.slice(idx);
 writeFileSync(join(OUT, 'index.html'), html, 'utf8');
 
 // ── 2. 复制运行所需文件 ──
-for (const dir of ['src', 'css', 'dist', 'assets']) {
+for (const dir of ['src', 'css', 'dist', 'assets', 'host']) {
   const from = join(PUB, dir);
   if (existsSync(from)) {
     cpSync(from, join(OUT, dir), { recursive: true });
