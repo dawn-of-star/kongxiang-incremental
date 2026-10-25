@@ -312,6 +312,31 @@ export function deserialize(raw) {
   s.tangramChallengeThisEternity = num(raw.tangramChallengeThisEternity, 0);
   s.tangramSeed = raw.tangramSeed == null ? null : num(raw.tangramSeed, 0);
 
+  // ★ 2026-10-25：空间膨胀（UI 先行）——同样必须显式白名单，否则刷新即丢
+  {
+    const sp = raw.space && typeof raw.space === "object" ? raw.space : {};
+    const ups = {};
+    if (sp.upgrades && typeof sp.upgrades === "object") {
+      for (const [id, v] of Object.entries(sp.upgrades)) {
+        if (v === true) ups[id] = true;
+        else {
+          const n = num(v, 0);
+          if (n > 0) ups[id] = n;
+        }
+      }
+    }
+    s.space = {
+      se: dec(sp.se),
+      st: dec(sp.st),
+      challenge: sp.challenge === true,
+      ipPeak: dec(sp.ipPeak),
+      bestIp: dec(sp.bestIp),
+      bestEp: dec(sp.bestEp),
+      challengeSe: dec(sp.challengeSe),
+      upgrades: ups,
+    };
+  }
+
   return { state: s, ok: true };
 }
 

@@ -210,6 +210,22 @@ export function newState() {
     tangramCoordVersion: 2,
     tangramCleared: [0, 0, 0, 0, 0, 0],   // 拼装挑战：每档已清数（奖励唯一输入）
     tangramChallenge: { solved: 0 },      // 挑战进度
+    /**
+     * ★ 2026-10-25：空间膨胀（UI 已接，引擎待接线）
+     *   se/st 双货币；challenge=是否在挑战内；ipPeak=挑战内 IP 峰值；
+     *   upgrades=du 等级/单次标记；challengeSe=本次挑战已结算的 SE（用于增量结算）。
+     *   ⚠️ 这是存档字段：serialize 全量、deserialize 显式白名单必须同步 ✓
+     */
+    space: {
+      se: D(0),
+      st: D(0),
+      challenge: false,
+      ipPeak: D(0),
+      bestIp: D(0),
+      bestEp: D(0),
+      challengeSe: D(0),
+      upgrades: {},
+    },
     /** 已大坍缩次数 */
     bigCrunchCount: D(0),
     /**
