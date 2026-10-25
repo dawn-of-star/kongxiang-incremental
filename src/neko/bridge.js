@@ -7,7 +7,7 @@
 import { nekoLogEntry } from "./log.js";
 import { createControlHandler } from "./control.js";
 import { buildAssistContext, NEKO_ASK_POINTS, NEKO_ASK_SYSTEM_PROMPT } from "./assist.js";
-import { chatWithHost, readHostContextFrom, speakViaHost } from "./chat.js";
+import { chatWithHost, proactiveWithHost, readHostContextFrom, speakViaHost } from "./chat.js";
 import { NEKO_SNAPSHOT_SCHEMA, NEKO_SNAPSHOT_STATE_SCHEMA, nekoNum, nekoSnapshotForHost } from "./snapshot.js";
 
 export { buildAssistContext };
@@ -32,7 +32,7 @@ export function nekoHostPresent(doc = globalThis.document) {
  * 单独给（默认等于 `gameId`）。
  */
 export const NEKO_GAME_ID = "kongxiang-incremental";
-export const NEKO_GAME_VERSION = "0.7.10";
+export const NEKO_GAME_VERSION = "0.7.11";
 export const NEKO_PROTOCOL_VERSION = "1";
 
 /**
@@ -49,12 +49,10 @@ export const NEKO_PROTOCOL_VERSION = "1";
 const NEKO_CONTROL_SCHEMA = {
   type: "object",
   properties: {
-    type: {
-      type: "string",
-      enum: ["buyRepeatable", "buyVoidUpgrade", "buyDeUpgrade", "buyInfinityUpgrade",
-             "buyTrap", "buyDarkMatter", "buyIpDoubleMax", "buyEpMult", "buyZpeEngineLevel",
-             "doBigCrunch", "doEternity", "setAuto"],
-    },
+    // ⚠️ 这里**故意不用 enum**：模型偶尔会编一个没见过的动作名，
+    //    枚举会让整条回复被 SDK 判 invalid_contract、连台词一起丢掉。
+    //    真正的白名单在 `dispatchNekoActions` 里（未知动作 → unknown_action，不执行）。
+    type: { type: "string", minLength: 1, maxLength: 64 },
     id: { type: "string", minLength: 1, maxLength: 64 },
     max: { type: "boolean" },
     k: { type: "number", minimum: 0, maximum: 1000000 },
@@ -284,6 +282,14 @@ export function createNekoBridge({ getState, onStatus, actionApi } = {}) {
       try { client.dispose?.(); } catch { /* ignore */ }
       status.connected = false;
       return true;
+    },
+
+    /** 每 60 秒的主动搭话：带紧凑局面，让她自己找话题（可顺手操作）。 */
+    async proactive(stateLike) {
+      if (!status.connected) return { ok: false, reason: status.lastError || "not-connected" };
+      const state = stateLike ?? getState?.() ?? {};
+      const context = buildAssistContext(state, { sinceT: 0, maxChars: 400 });
+      return proactiveWithHost(bridge.requestAssist, context);
     },
 
     /** 读宿主上下文（角色名 + 最近聊天摘要）。 */

@@ -89,11 +89,13 @@ export function createChatUi({ bridge, getState } = {}) {
 
   const statusText = () => document.getElementById('neko-chat-status');
   let herName = '她';
+  let lastActivityAt = Date.now();
   let hostSummary = '';
   const history = [];
   let pending = false;
 
   function addMessage(role, text, extra) {
+    lastActivityAt = Date.now();
     const el = document.createElement('div');
     el.className = `neko-msg ${role === 'user' ? 'you' : role === 'sys' ? 'sys' : 'neko'}`;
     if (role === 'neko') el.classList.add('her');
@@ -156,6 +158,35 @@ export function createChatUi({ bridge, getState } = {}) {
     }
   }
 
+  /**
+   * 每 60 秒的主动搭话：没人说话时她自己找话题；可顺手做个划算的操作。
+   * 只在页面可见、已连接、距上次消息 ≥55 秒时触发。
+   */
+  async function proactive(force = false) {
+    if (!bridge?.proactive || pending) return false;
+    if (document.visibilityState === 'hidden') return false;
+    if (!bridge.status?.connected) return false;
+    if (!force && Date.now() - lastActivityAt < 55000) return false;
+    pending = true;
+    sendEl.disabled = true;
+    try {
+      const result = await bridge.proactive(getState?.());
+      if (!result?.ok || !result.line) return false;
+      const controlLabel = result.control?.action
+        ? `已执行：${result.control.action.type}${result.control.action.id ? ' / ' + result.control.action.id : ''}`
+        : '';
+      addMessage('neko', result.line, controlLabel);
+      try { await bridge.speak?.(result.line); } catch { /* 语音失败不影响文本 */ }
+      return true;
+    } catch {
+      return false;
+    } finally {
+      pending = false;
+      sendEl.disabled = false;
+      setStatus();
+    }
+  }
+
   sendEl.addEventListener('click', () => { void send(); });
   inputEl.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -189,15 +220,20 @@ export function createChatUi({ bridge, getState } = {}) {
     } catch { /* 摘要读不到不影响聊天 */ }
   }, 2000);
 
+  // 每 15 秒检查一次：距上次消息 ≥55 秒就让她主动搭话（真正的 60 秒节奏）
+  const proactiveTimer = setInterval(() => { void proactive(); }, 15000);
+
   return {
     root,
     floatMode,
     addMessage,
     send,
+    proactive,
     setStatus,
     dispose() {
       clearInterval(timer);
       clearInterval(contextTimer);
+      clearInterval(proactiveTimer);
       if (floatMode) root.remove();
       style.remove();
     },

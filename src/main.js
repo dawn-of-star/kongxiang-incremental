@@ -581,6 +581,8 @@ window.__game = {
   nekoAsk: (prompt) => nekoBridge.requestAssist(prompt),
   /** 游戏内聊天（走聊天面板同一条路：台词 + 可选 control + 语音） */
   nekoChat: (text) => (nekoChatUi ? nekoChatUi.send(text) : Promise.resolve(false)),
+  /** 触发一次主动搭话（测试用；正常由 60 秒定时器触发） */
+  nekoProactive: (force = true) => (nekoChatUi ? nekoChatUi.proactive(force) : Promise.resolve(false)),
   /** ★ 2025：**性能监视器**（`__game.perf(true)` 打开 / `__game.perf()` 切换 / `F8`） */
   perf: (force) => {
     const on = perfToggle(force);
