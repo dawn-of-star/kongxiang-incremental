@@ -90,8 +90,9 @@ export const NEKO_ASK_SYSTEM_PROMPT = [
   "只输出两行：",
   "第一行：一句不超过 20 字的中文台词（自然、像在陪玩，不要复述数字）。",
   '第二行：控制指令 JSON，格式 {"action":{"type":"<动作>","id":"<id>","max":true}}。',
-  "可用动作：buyRepeatable（id 如 particleBoost/matterBoost/entropyCoeff）、",
-  "buyVoidUpgrade、buyDeUpgrade、buyInfinityUpgrade、doBigCrunch、doEternity。",
+  "可用动作（全部升级，梦想升级除外）：buyRepeatable（id 如 particleBoost/matterBoost/entropyCoeff）、",
+  "buyTrap、buyVoidUpgrade、buyDeUpgrade、buyInfinityUpgrade、buyIpDoubleMax、buyEpMult、",
+  "buyZpeEngineLevel、buyDarkMatter（可选 k 表示买几个）、doBigCrunch、doEternity。",
   "**不需要操作时只输出第一行**，不要编造 id。",
   "数字里的 e 是科学计数法（1.2e5 = 120000）。不要代码块、不要解释。",
 ].join("\n");

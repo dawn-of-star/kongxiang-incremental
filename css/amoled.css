@@ -1227,34 +1227,7 @@ button { font: inherit; cursor: pointer; }
 /* 空间膨胀：未到 EP 1e1200 时，flyout 入口锁住（仍可见，符合 AD 式锁态） */
 .flyout-item.locked { opacity: .55; cursor: not-allowed; }
 
-/* ── N.E.K.O 角色（Live2D）── */
-.neko-avatar {
-  position: relative;
-  min-height: 220px;
-  border-radius: var(--radius);
-  border: 1px solid var(--line);
-  background: var(--bg-card);
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.neko-avatar .avatar-renderer {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.neko-avatar .avatar-renderer canvas {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: contain;
-}
-.neko-avatar-fallback {
-  color: var(--text-dim);
-  font-size: 13px;
-  padding: 24px;
-  text-align: center;
-}
-.neko-avatar[data-renderer="live2d"] .neko-avatar-fallback { display: none; }
+/* 对话区：可滚动（长聊天不撑爆页面） */
+.neko-chat { max-height: 420px; overflow-y: auto; padding-right: 4px; }
+.neko-chat::-webkit-scrollbar { width: 8px; }
+.neko-chat::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }

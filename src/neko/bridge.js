@@ -32,7 +32,7 @@ export function nekoHostPresent(doc = globalThis.document) {
  * 单独给（默认等于 `gameId`）。
  */
 export const NEKO_GAME_ID = "kongxiang-incremental";
-export const NEKO_GAME_VERSION = "0.7.9";
+export const NEKO_GAME_VERSION = "0.7.10";
 export const NEKO_PROTOCOL_VERSION = "1";
 
 /**
@@ -52,10 +52,12 @@ const NEKO_CONTROL_SCHEMA = {
     type: {
       type: "string",
       enum: ["buyRepeatable", "buyVoidUpgrade", "buyDeUpgrade", "buyInfinityUpgrade",
+             "buyTrap", "buyDarkMatter", "buyIpDoubleMax", "buyEpMult", "buyZpeEngineLevel",
              "doBigCrunch", "doEternity", "setAuto"],
     },
     id: { type: "string", minLength: 1, maxLength: 64 },
     max: { type: "boolean" },
+    k: { type: "number", minimum: 0, maximum: 1000000 },
     reason: { type: "string", maxLength: 200 },
   },
   required: ["type"],
@@ -88,7 +90,7 @@ export const NEKO_MANIFEST = Object.freeze({
   protocolVersion: NEKO_PROTOCOL_VERSION,
   requiredCapabilities: Object.freeze(["runtime", "logging"]),
   optionalCapabilities: Object.freeze([
-    "dialogue", "speech-output", "context-read", "memory", "voice-input", "avatar-renderer",
+    "dialogue", "speech-output", "context-read", "memory", "voice-input",
   ]),
   contracts: Object.freeze({
     states: Object.freeze({ snapshot: NEKO_SNAPSHOT_STATE_SCHEMA }),
@@ -106,7 +108,7 @@ export const NEKO_MANIFEST = Object.freeze({
  * @returns 桥对象（`available` 为 false 时方法仍可安全调用 ✓）
  */
 export function createNekoBridge({ getState, onStatus, actionApi } = {}) {
-  const status = { available: false, connected: false, capabilities: [], declared: null, lastError: null, lastAsk: null, runtimeReady: false };
+  const status = { available: false, connected: false, capabilities: [], declared: null, lastError: null, lastAsk: null };
   // 主动问话的节流状态（每座桥独立；读档时"已达成点"会在首帧被预标记）
   const askState = { asked: new Set(), primed: false, lastAt: 0, count: 0, failedUntil: 0, sinceT: 0 };
   const report = (phase, detail) => {
@@ -217,7 +219,6 @@ export function createNekoBridge({ getState, onStatus, actionApi } = {}) {
 
         if (typeof client?.runtime?.start === "function") {
           Promise.resolve(client.runtime.start({ schema: NEKO_SNAPSHOT_SCHEMA }))
-            .then(() => { status.runtimeReady = true; })
             .catch((err) => report("runtime-start-failed", err));
         }
         return true;
@@ -283,20 +284,6 @@ export function createNekoBridge({ getState, onStatus, actionApi } = {}) {
       try { client.dispose?.(); } catch { /* ignore */ }
       status.connected = false;
       return true;
-    },
-
-    /** 当前角色描述（名字 + 可渲染的模型）。 */
-    async getAvatarCharacter() {
-      const client = bridge.__client;
-      if (!client?.capabilities?.has?.("avatar-renderer")) return null;
-      try { return await client.avatar.getCurrentCharacter(); } catch { return null; }
-    },
-
-    /** 把角色挂到页面里的容器（host 的 avatar-host 负责真正渲染）。 */
-    async mountAvatar(config) {
-      const client = bridge.__client;
-      if (!client?.capabilities?.has?.("avatar-renderer")) return null;
-      try { return await client.avatar.mount(config); } catch (err) { report("avatar-failed", err); return null; }
     },
 
     /** 读宿主上下文（角色名 + 最近聊天摘要）。 */

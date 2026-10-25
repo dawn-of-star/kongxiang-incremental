@@ -79,7 +79,36 @@ const NEKO_ACTION_SPECS = {
   buyDeUpgrade: {
     guard: (s, p, api) => typeof p?.id === "string" && api?.hasDe?.(p.id) === true,
     guardWhy: "缺少或未知的暗能量升级 id",
-    fn: (s, p, api) => api.buyDeUpgrade(s, p.id, p.max === true),
+    // max 走专门的批量接口（buyDeUpgrade 本身不吃 max 参数）
+    fn: (s, p, api) => (p.max === true && typeof api.buyDeUpgradeMax === "function"
+      ? api.buyDeUpgradeMax(s, p.id)
+      : api.buyDeUpgrade(s, p.id, p.max === true)),
+  },
+  // ── 其余升级：全部开放给指令（梦想升级不在此列）──
+  buyTrap: {
+    guard: (s, p, api) => typeof api?.buyTrap === "function",
+    guardWhy: "宿主未提供陷阱升级接口",
+    fn: (s, p, api) => api.buyTrap(s, p.max === true),
+  },
+  buyDarkMatter: {
+    guard: (s, p, api) => typeof api?.buyDarkMatter === "function",
+    guardWhy: "宿主未提供暗物质购买接口",
+    fn: (s, p, api) => api.buyDarkMatter(s, typeof p.k === "number" ? p.k : null),
+  },
+  buyIpDoubleMax: {
+    guard: (s, p, api) => typeof api?.buyIpDoubleMax === "function",
+    guardWhy: "宿主未提供 IP 倍增接口",
+    fn: (s, p, api) => api.buyIpDoubleMax(s),
+  },
+  buyEpMult: {
+    guard: (s, p, api) => typeof api?.buyEpMult === "function",
+    guardWhy: "宿主未提供 EP 倍率接口",
+    fn: (s, p, api) => api.buyEpMult(s, typeof p.k === "number" ? p.k : null),
+  },
+  buyZpeEngineLevel: {
+    guard: (s, p, api) => typeof api?.buyZpeEngineLevel === "function",
+    guardWhy: "宿主未提供 ZPE 引擎升级接口",
+    fn: (s, p, api) => api.buyZpeEngineLevel(s, p.max === true),
   },
   // ★ ① 无限增幅走它（`ipDouble`）；**未打破无限也能买**（见 K 段 bug #10）
   buyInfinityUpgrade: {

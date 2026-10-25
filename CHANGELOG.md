@@ -7,6 +7,28 @@
 
 ---
 
+## 0.7.10 — 删掉游戏内角色渲染；对话区可滚动；所有升级可被指令调用
+
+> **公告**：头像渲染这条路放弃（宿主对第三方游戏的 `avatar-renderer` 握手太挑，
+> 投入产出不划算）—— 页面里的「她」卡片、provider 脚本与相关接口全部移除。
+> 对话区改成**可滚动**（长聊天不再把页面撑爆）。
+> 更实用的一项：**除梦想升级外的所有升级都能被指令调用** —— 陷阱、暗物质、IP 倍增、
+> EP 倍率、ZPE 引擎、虚空 / 暗能量 / 无限升级都在白名单里，且一律由引擎函数执行。
+>
+> 统计：自 `0.7.9` 起 **1 个提交**（feat 1）。
+
+**这一版做了什么**
+
+1. **删掉头像**：`index.html` 的「她」卡片、`.neko-avatar` 样式、`host/avatar-provider.js`、
+   `src/neko/avatar.js`、bridge 的 `getAvatarCharacter` / `mountAvatar`、
+   manifest 的 `avatar-renderer`、页面注入的 live2d 脚本。
+2. **对话区可滚动**：`.neko-chat` 加 `max-height: 420px` + `overflow-y: auto`（细滚动条）。
+3. **所有升级可被指令调用**（梦想升级除外）：新增 `buyTrap` / `buyDarkMatter` /
+   `buyIpDoubleMax` / `buyEpMult` / `buyZpeEngineLevel`；`buyDeUpgrade` 的 `max`
+   改走 `buyDeUpgradeMax`（原来多传的参数被忽略）。
+4. **契约与提示同步**：control 的 `enum` 增加上述类型、payload 增加可选 `k`；
+   问话/聊天提示词都列出完整动作表。
+
 ## 0.7.9 — 修好头像握手（provider 必须在 connect 之前注册）
 
 > **公告**：0.7.8 的头像"挂不上"，根因不是渲染失败，而是**握手时能力没授予**：

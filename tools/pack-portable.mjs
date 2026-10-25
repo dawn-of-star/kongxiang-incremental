@@ -20,7 +20,7 @@ const OUT = join(PUB, 'release', 'kongxiang-portable');
 const GAME_ID = 'kongxiang-incremental';
 const ROUTE_TYPE = 'kongxiang';
 const PUBLISHER = 'dawn-of-star';
-const CAPS = ['runtime', 'logging', 'dialogue', 'speech-output', 'voice-input', 'context-read', 'memory', 'avatar-renderer'];
+const CAPS = ['runtime', 'logging', 'dialogue', 'speech-output', 'voice-input', 'context-read', 'memory'];
 
 const pkg = JSON.parse(readFileSync(join(PUB, 'package.json'), 'utf8'));
 const VERSION = pkg.version;
@@ -48,16 +48,6 @@ const sdkBlock = `  <!-- ═══ N.E.K.O 小游戏 SDK 接入（便携包） �
        相对路径保持不变；宿主 SDK 走绝对路径 /static/game/sdk/。 -->
   <script src="/static/game/sdk/neko-minigame-sdk.js"></script>
   <script id="neko-minigame-host-launch" type="application/json">${JSON.stringify(registration)}</script>
-  <script src="/static/libs/live2dcubismcore.min.js"></script>
-  <script src="/static/libs/live2d.min.js"></script>
-  <script src="/static/libs/pixi.min.js"></script>
-  <script src="/static/live2d/live2d-core.js"></script>
-  <script src="/static/live2d/live2d-emotion.js"></script>
-  <script src="/static/live2d/live2d-model.js"></script>
-  <script src="/static/live2d/live2d-init.js"></script>
-  <script src="/static/game/sdk/neko-minigame-avatar-host.js"></script>
-  <script src="./host/avatar-provider.js"></script>
-  <script>document.getElementById("neko-minigame-host-launch").nekoCapabilityProviders={"kongxiang-incremental":{avatarHostFactory:window.createKongxiangAvatarHost}};</script>
   <script src="/static/game/sdk/neko-minigame-same-origin-bootstrap.js"></script>
 
 `;
@@ -68,7 +58,7 @@ html = html.slice(0, idx) + sdkBlock + html.slice(idx);
 writeFileSync(join(OUT, 'index.html'), html, 'utf8');
 
 // ── 2. 复制运行所需文件 ──
-for (const dir of ['src', 'css', 'dist', 'assets', 'host']) {
+for (const dir of ['src', 'css', 'dist', 'assets']) {
   const from = join(PUB, dir);
   if (existsSync(from)) {
     cpSync(from, join(OUT, dir), { recursive: true });

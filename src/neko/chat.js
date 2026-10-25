@@ -10,8 +10,8 @@ export const NEKO_CHAT_SYSTEM_PROMPT = [
   "用一句自然的中文台词回复（不超过 30 字，像聊天，不要复述游戏数字、不要列清单）。",
   "如果你想顺手替主人操作，在台词**之后单独一行**输出控制 JSON：",
   '{"action":{"type":"<动作>","id":"<id>","max":true}}',
-  "可用动作：buyRepeatable（id 如 particleBoost/matterBoost/entropyCoeff）、",
-  "buyVoidUpgrade、buyDeUpgrade、buyInfinityUpgrade、doBigCrunch、doEternity。",
+  "可用动作（全部升级，梦想升级除外）：buyRepeatable、buyTrap、buyVoidUpgrade、buyDeUpgrade、",
+  "buyInfinityUpgrade、buyIpDoubleMax、buyEpMult、buyZpeEngineLevel、buyDarkMatter、doBigCrunch、doEternity。",
   "不需要操作时**不要输出 JSON**。不要代码块、不要解释。",
 ].join("\n");
 
