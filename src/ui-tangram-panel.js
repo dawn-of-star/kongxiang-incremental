@@ -10,7 +10,7 @@ import { hasEternityMilestone } from "./config.js";
 import { D } from "./formulas.js";
 import { updateTabLocks } from "./lock-ui.js";
 import { paintTangramBoard } from "./tangram/board.js";
-import { TANGRAM_PIECES, autoPlaceTangram, cellsFromFingerprint, drawTangramPiece, exchangeTangramPiece, flipTangramPlacement, moveTangramPlacement, resetTangramBoard, rotateTangramPlacement, takeTangramBack, tangramAdvanceChallenge, tangramChallengeSolved, tangramChallengeTarget, tangramCoverage, tangramPieceAtStep, tangramPriceFactor, tangramPricesAt, tangramChallengeDiff } from "./tangram/game.js";
+import { TANGRAM_PIECES, autoPlaceTangram, cellsFromFingerprint, drawTangramPiece, exchangeTangramPiece, flipTangramPlacement, moveTangramPlacement, resetTangramBoard, rotateTangramPlacement, takeTangramBack, tangramAdvanceChallenge, tangramChallengeSolved, tangramChallengeTarget, tangramCoverage, tangramPieceAtStep, tangramPriceFactor, tangramPricesAt, tangramChallengeDiff, transformPieceInPlace } from "./tangram/game.js";
 import { TANGRAM_AXES_RANGE, tangramAxisParams } from "./tangram/bonus.js";   // ★ 2026：三轴端点 + 实时数值 ✓
 import { fmtMult } from "./format.js";
 import { quantumPairMult } from "./config/quantum/gates.js";   // ★ 2026：每对量子实时倍率（与引擎同源 ✓）
@@ -347,8 +347,11 @@ function buildTangramControlBar(st) {
       mk("右移", () => { if (tgSel) moveTangramPlacement(st, tgSel, 1, 0); });
       mk("上移", () => { if (tgSel) moveTangramPlacement(st, tgSel, 0, 1); });
       mk("下移", () => { if (tgSel) moveTangramPlacement(st, tgSel, 0, -1); });
-      mk("旋转", () => { if (tgSel) rotateTangramPlacement(st, tgSel, 1); });
-      mk("翻转", () => { if (tgSel) flipTangramPlacement(st, tgSel); });
+      // ★★★ 2026-10-25（用户：「控制面板得和**现有的操作逻辑**统一」）——
+  //   旋转/翻转必须和棋盘上的 R/F **同一条路径**（`transformPieceInPlace` 绕自身中心 ✓）
+  //   原来这里走 `rotateTangramPlacement` ✗ —— 那是**绕原点**的旧实现 ✗ ⇒ 一转就飞 ✗
+  mk("旋转", () => { if (tgSel) transformPieceInPlace(st, tgSel, { dRot: 1 }); });
+      mk("翻转", () => { if (tgSel) transformPieceInPlace(st, tgSel, { dFlip: true }); });
       mk("放下", () => { if (tgSel) autoPlaceTangram(st, tgSel); });
       mk("收回", () => { if (tgSel) takeTangramBack(st, tgSel); });
       mk("下一题", () => tangramAdvanceChallenge(st));
