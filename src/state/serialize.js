@@ -313,30 +313,37 @@ export function deserialize(raw) {
   s.tangramSeed = raw.tangramSeed == null ? null : num(raw.tangramSeed, 0);
 
   // ★ 2026-10-25：空间膨胀（UI 先行）——同样必须显式白名单，否则刷新即丢
-  {
-    const sp = raw.space && typeof raw.space === "object" ? raw.space : {};
-    const ups = {};
-    if (sp.upgrades && typeof sp.upgrades === "object") {
-      for (const [id, v] of Object.entries(sp.upgrades)) {
-        if (v === true) ups[id] = true;
-        else {
-          const n = num(v, 0);
-          if (n > 0) ups[id] = n;
-        }
-      }
-    }
-    s.space = {
-      se: dec(sp.se),
-      st: dec(sp.st),
-      challenge: sp.challenge === true,
-      ipPeak: dec(sp.ipPeak),
-      bestIp: dec(sp.bestIp),
-      bestEp: dec(sp.bestEp),
-      challengeSe: dec(sp.challengeSe),
-      upgrades: ups,
-    };
-  }
+  s.space = restoreSpace(raw.space, dec, num);
 
   return { state: s, ok: true };
+}
+/**
+ * ★ 2026-10-25：空间膨胀状态白名单（从 deserialize 拆出，控制函数预算）。
+ * @param {object|undefined} raw 存档里的 raw.space
+ * @param {(v:any)=>any} dec Decimal 解码
+ * @param {(v:any,d:number)=>number} num 数字解码
+ */
+function restoreSpace(raw, dec, num) {
+  const sp = raw && typeof raw === "object" ? raw : {};
+  const upgrades = {};
+  if (sp.upgrades && typeof sp.upgrades === "object") {
+    for (const [id, v] of Object.entries(sp.upgrades)) {
+      if (v === true) upgrades[id] = true;
+      else {
+        const n = num(v, 0);
+        if (n > 0) upgrades[id] = n;
+      }
+    }
+  }
+  return {
+    se: dec(sp.se),
+    st: dec(sp.st),
+    challenge: sp.challenge === true,
+    ipPeak: dec(sp.ipPeak),
+    bestIp: dec(sp.bestIp),
+    bestEp: dec(sp.bestEp),
+    challengeSe: dec(sp.challengeSe),
+    upgrades,
+  };
 }
 
