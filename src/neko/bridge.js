@@ -32,7 +32,7 @@ export function nekoHostPresent(doc = globalThis.document) {
  * 单独给（默认等于 `gameId`）。
  */
 export const NEKO_GAME_ID = "kongxiang-incremental";
-export const NEKO_GAME_VERSION = "0.7.7";
+export const NEKO_GAME_VERSION = "0.7.8";
 export const NEKO_PROTOCOL_VERSION = "1";
 
 /**
@@ -88,7 +88,7 @@ export const NEKO_MANIFEST = Object.freeze({
   protocolVersion: NEKO_PROTOCOL_VERSION,
   requiredCapabilities: Object.freeze(["runtime", "logging"]),
   optionalCapabilities: Object.freeze([
-    "dialogue", "speech-output", "context-read", "memory", "voice-input",
+    "dialogue", "speech-output", "context-read", "memory", "voice-input", "avatar-renderer",
   ]),
   contracts: Object.freeze({
     states: Object.freeze({ snapshot: NEKO_SNAPSHOT_STATE_SCHEMA }),
@@ -272,6 +272,30 @@ export function createNekoBridge({ getState, onStatus, actionApi } = {}) {
     async speak(text) {
       if (!status.connected) return false;
       return speakViaHost(bridge.__client, text);
+    },
+
+    /** 页面关闭：显式结束路由，别等宿主心跳超时（会把模型悬在游戏态）。 */
+    async end() {
+      const client = bridge.__client;
+      if (!client) return false;
+      try { await client.runtime?.end?.({ reason: "page-close" }); } catch { /* 已经结束 */ }
+      try { client.dispose?.(); } catch { /* ignore */ }
+      status.connected = false;
+      return true;
+    },
+
+    /** 当前角色描述（名字 + 可渲染的模型）。 */
+    async getAvatarCharacter() {
+      const client = bridge.__client;
+      if (!client?.capabilities?.has?.("avatar-renderer")) return null;
+      try { return await client.avatar.getCurrentCharacter(); } catch { return null; }
+    },
+
+    /** 把角色挂到页面里的容器（host 的 avatar-host 负责真正渲染）。 */
+    async mountAvatar(config) {
+      const client = bridge.__client;
+      if (!client?.capabilities?.has?.("avatar-renderer")) return null;
+      try { return await client.avatar.mount(config); } catch (err) { report("avatar-failed", err); return null; }
     },
 
     /** 读宿主上下文（角色名 + 最近聊天摘要）。 */

@@ -48,6 +48,7 @@ import { newState, pushLog, setLogSink } from "./state.js";
 //   `dispatchNekoActions` = §6 动作白名单的派发器（三条约束都实现在 `neko.js` 里）
 import { createNekoBridge, dispatchNekoActions, nekoHostPresent } from "./neko.js";
 import { createChatUi } from "./neko/chat-ui.js";
+import { mountAvatar } from "./neko/avatar.js";
 // ★★★ 2025：**性能监视器**（用户报「数字跳动速率及其低下」⇒ 装仪表而不是猜）
 import { perfFrame, perfOn, perfSummary, perfToggle, perfFrames, perfSections } from "./perf.js";
 // ★★★ 2025：**真实 DOM 写入计数** + **构建标记**（区分"代码 bug"与"浏览器旧缓存"）
@@ -136,6 +137,34 @@ const nekoBridge = createNekoBridge({
 const nekoChatUi = nekoHostPresent()
   ? createChatUi({ bridge: nekoBridge, getState: () => state })
   : null;
+// ★ 角色渲染：宿主页里把当前 Live2D 挂进右列（失败只影响形象，不影响游戏）
+if (nekoChatUi) {
+  const avatarBox = document.getElementById('neko-avatar');
+  const avatarSlot = document.getElementById('neko-avatar-live2d');
+  const avatarBadge = document.getElementById('neko-avatar-badge');
+  if (avatarBox && avatarSlot) {
+    avatarBox.hidden = false;
+    let mounted = false;
+    const tryMount = async () => {
+      if (mounted || !nekoBridge.status?.connected) return;
+      const result = await mountAvatar({ bridge: nekoBridge, container: avatarSlot });
+      mounted = Boolean(result.ok);
+      if (avatarBadge) avatarBadge.textContent = result.ok ? '已渲染' : (result.reason || '不可用');
+      if (!result.ok && avatarBox) avatarBox.dataset.renderer = 'fallback';
+    };
+    const avatarTimer = setInterval(() => {
+      void tryMount();
+      if (mounted) clearInterval(avatarTimer);
+    }, 2000);
+    setTimeout(() => clearInterval(avatarTimer), 60000);
+  }
+}
+
+// ★ 页面关闭：显式结束宿主路由（否则只能等 10 秒心跳超时，模型会悬在游戏态）
+const endHostRoute = () => { try { void nekoBridge.end(); } catch { /* ignore */ } };
+window.addEventListener('pagehide', endHostRoute);
+window.addEventListener('beforeunload', endHostRoute);
+
 // ① 把**全部** `pushLog` 自动导向宿主（无宿主 ⇒ 桥内部直接丢弃 ✓）
 setLogSink((entry) => nekoBridge.sendLog(entry));
 // ② 探测（不阻塞：失败就是"没有宿主"，正常单机玩）

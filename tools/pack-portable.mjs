@@ -20,7 +20,7 @@ const OUT = join(PUB, 'release', 'kongxiang-portable');
 const GAME_ID = 'kongxiang-incremental';
 const ROUTE_TYPE = 'kongxiang';
 const PUBLISHER = 'dawn-of-star';
-const CAPS = ['runtime', 'logging', 'dialogue', 'speech-output', 'voice-input', 'context-read', 'memory'];
+const CAPS = ['runtime', 'logging', 'dialogue', 'speech-output', 'voice-input', 'context-read', 'memory', 'avatar-renderer'];
 
 const pkg = JSON.parse(readFileSync(join(PUB, 'package.json'), 'utf8'));
 const VERSION = pkg.version;
