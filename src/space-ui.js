@@ -148,7 +148,7 @@ function build() {
 
   const note = h("p", "note space-footnote");
   note.textContent = "UI 先行：按钮暂禁用，避免“点了没反应”。"
-    + " 旧 du11（IP × ST^0.1）已删除；新 du11 是 ST 缓解暗能量超载（初始被削弱值 0.3）；du8/du10 为价格侧，本阶段暂缓。";
+    + " 旧 du11（IP × ST^0.1）已删除；新 du11 是 ST 抬高暗能量超载后的强度下限（0.3×初始，不会到 1）；du8/du10 为价格侧，本阶段暂缓。";
   root.appendChild(note);
 
   built = true;

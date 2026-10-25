@@ -61,7 +61,7 @@ export const SPACE_UPGRADES = [
     id: "du4", name: "免费 ZPE 引擎", slot: "有效引擎等级",
     currency: "se", repeatable: true,
     effect: "+10n 级 · 软上限 1e6 级",
-    desc: "按购买次数给七巧板系统增加免费 ZPE 引擎等级；1e6 级后仍可买，边际效果每 +2 数量级减半。",
+    desc: "按购买次数给七巧板系统增加免费 ZPE 引擎等级；1e6 级前正常，1e8 级时每级效果降到初值 50%，之后继续递减但总量仍增加。",
     cost: "4 SE 起 · ×1.6^n",
   },
   {
@@ -75,7 +75,7 @@ export const SPACE_UPGRADES = [
     id: "du6", name: "计数频率倍率", slot: "计数频率加法项",
     currency: "se", repeatable: true,
     effect: "×(1 + 0.5√n) · 软上限 1e8 级",
-    desc: "按购买次数的开根，给计数频率一个倍率加成；1e8 级后仍可买，边际效果每 +2 数量级减半。",
+    desc: "按购买次数的开根，给计数频率一个倍率加成；1e8 级前正常，1e10 级时每级效果降到初值 50%，之后继续递减但总量仍增加。",
     cost: "6 SE 起 · ×1.6^n",
   },
   {
@@ -111,8 +111,8 @@ export const SPACE_UPGRADES = [
   {
     id: "du11", name: "暗能量超载缓解", slot: "暗能量过载惩罚",
     currency: "st", repeatable: true,
-    effect: "削弱值下限 0.3（不会到 1）",
-    desc: "用膨胀时间缓解暗能量被超载削弱的效果；不会完全等于无削弱，初始被削弱值 0.3。",
+    effect: "削弱后强度下限 0.3×初始（不会到 1）",
+    desc: "用膨胀时间抬高暗能量被超载削弱后的强度下限；初始为初始强度的 0.3 倍，不会完全等于无削弱。",
     cost: "ST 复购 · 价格待定",
   },
 ];
