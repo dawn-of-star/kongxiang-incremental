@@ -4,30 +4,23 @@
  * ★ 2026 模块化：由 1,116 行的 formulas.js 按领域拆出（声明与注释逐字保留）。
  *    对外统一从 `src/formulas.js`（barrel）导入。
  */
-import { BASE, DE_EFF_CAP, INFINITY_UPGRADES } from "../config.js";
+import { BASE, INFINITY_UPGRADES } from "../config.js";
 import { D } from "./core.js";
 import { darkEnergyGainPerConversion } from "./dark-energy.js";
 import { globalMultiplier } from "./global.js";
 import { hasDe } from "../state.js";
 import { tangramRewardEffects } from "../tangram.js";
 import { zpeRate } from "./zpe.js";
-import Decimal from "../../dist/break_eternity.esm.js";
 
 export function effectiveDarkEnergyGain(state) {
   let g = darkEnergyGainPerConversion(state);
   // ★ 里程碑 dm4b：全局加成作用于相变转换速率
   if (hasDe(state, "dm4b")) g = g.mul(globalMultiplier(state));
-  // ★ 2026：挑战奖励的 `deKneeMult`（d3~d6 清满）⇒ 暗能量收益抬升 ✓
-  //   ⚠️ 它只是"乘一个数"（不改曲线形状 ⇒ 不动 p）✓
+  // ★ 2026-10-25 归一化：DE 本体不再吃收益软上限；
+  //   削弱只作用在 darkEnergyMultiplier（有效量）上。
+  //   tangram 的 deKnee 仍只乘收益，不改曲线。
   const _deKnee = tangramRewardEffects(state?.tangramCleared).deKneeMult ?? 1;
-  // ★ 2026：**软上限**（DE_EFF_CAP）必须作用在"收益"上，否则自增长仍是指数 ✗
-  const _dlg = (state?.darkEnergy ?? new Decimal(0)).lte(0) ? 0 : state.darkEnergy.log10().toNumber();
-  const _cap = DE_EFF_CAP;
-  const deCapDecay = _dlg <= _cap.kneeLog10 ? 1 : Math.pow(2, -(_dlg - _cap.kneeLog10) / _cap.span);
-  // ⚠️ 必须走 `.mul()`：`g` 可能是 >1e308 或 `ee…` 层的 Decimal，
-  //   而 JS 的 `g * 数字` 会先 `valueOf()` 成 Number ⇒ Infinity/NaN ✗
-  //   （README 数值约定 #3；这正是 2026 离线结算里 darkEnergy/zpe 变 ∞ 的根因）
-  return g.mul(_deKnee).mul(deCapDecay);
+  return g.mul(_deKnee);
 }
 
 /**

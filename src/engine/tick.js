@@ -7,7 +7,7 @@
 import { autoAcquire, autoAcquireDream } from "./actions.js";
 import { maybeAutoCrunch } from "../autocrunch.js";
 import { doBigCrunch } from "./collapse.js";
-import { BASE, COLLAPSE, DE_EFF_CAP, INFINITY_UPGRADES, crunchThreshold, deEngineLevelBonus, deGrowthRate, hasEternityMilestone, ipDoubleMult, markPageUnlocked, quantumPerPair, quantumStepMult, quantumZpeRequirement, zpeEngineLevel, zpeEngineUnlocked } from "../config.js";
+import { BASE, COLLAPSE, INFINITY_UPGRADES, crunchThreshold, deEngineLevelBonus, deGrowthRate, hasEternityMilestone, ipDoubleMult, markPageUnlocked, quantumPerPair, quantumStepMult, quantumZpeRequirement, zpeEngineLevel, zpeEngineUnlocked } from "../config.js";
 import { sci } from "../format.js";
 import { D, bigCrunchGain, checkDeMilestones, checkQuantumMilestones, checkZpeMilestones, collapseUnlocked, darkEnergyRate, floorDiv, globalMultiplier, matterGainOver, zpeRate } from "../formulas.js";
 import { spaceApplyFinalGain, spaceTick } from "../space.js";
@@ -202,20 +202,9 @@ if (state.zpeEngineUnlocked) {
   // 2026: dDE/dt is proportional to DE, so clamp the per-frame dt to 1s --
   // a background tab can deliver a multi-thousand-second catch-up tick that jumps DE past the limit.
   const _dtS = Math.min(Math.max(0, dt), 1);
-  // 2026: the DE_EFF_CAP soft cap is applied to the growth rate so it converges instead of exploding.
-  const _dlg = state.darkEnergy.lte(0) ? 0 : state.darkEnergy.log10().toNumber();
-  const _cap = DE_EFF_CAP;
-  // ★★★ 2026-10-22（用户）：「DE 的削弱请类似 AD 复制器 / 物质超载 —— **继续获取有效，只是增长减缓**」✓
-    //   旧式 `2^(-over/span)` 会**指数衰减到 0** ✗ ⇒ 等于停住 ✗
-    //   新式（超载同款）：`1 / (1 + over/span)` ⇒ 越过 knee 后仍增长，但斜率按反比变小 ✓
-    //     over = 0 ⇒ 1 倍（不削弱 ✓）｜ over = span ⇒ 1/2 ｜ over = 10·span ⇒ 1/11 ✓
-    const _over = Math.max(0, _dlg - _cap.kneeLog10);
-    // 2026-10-22 (user measured a stall at 2.06e64808): reverse-solving the formula,
-    //   d(log10 DE)/dt = a * decay with a ~ 0.29 and over ~ 64500 gives decay ~ 1/1076,
-    //   i.e. 0.00027 orders/sec -- about one order per hour, which looks like a stall.
-    //   A hard 5% floor keeps growth alive (user: keep gaining, just slower) -- not a stop.
-    const _capDecay = Math.max(0.05, 1 / (1 + _over / _cap.span));
-  const deSelf = state.darkEnergy.max(1).mul(a).mul(Math.LN10).mul(_dtS).mul(_capDecay);
+  // ★ 2026-10-25 归一化：DE 自增长不再吃 DE_EFF_CAP；
+  //   削弱只作用在 darkEnergyMultiplier 的有效量上。
+  const deSelf = state.darkEnergy.max(1).mul(a).mul(Math.LN10).mul(_dtS);
   state.darkEnergy = state.darkEnergy.add(deSelf);
   state.darkEnergy = state.darkEnergy.max(0);
   state.darkEnergyTotal = state.darkEnergyTotal.add(deSelf);   // ★ 先累加再净化（否则 total 漏检）

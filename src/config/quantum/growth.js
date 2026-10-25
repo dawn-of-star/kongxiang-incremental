@@ -140,11 +140,14 @@ export const DE_SPAN = {
   /**
    * ★ 暗能量的指数增长速率常数（**替代 R 的那一位**）。
    *
-   * `dDE/dt = a(DE)·DE` ⇒ `d(log10 DE)/dt = a(DE)`，即 log 空间里的斜率。
-   * `a(DE)` 随当前暗能量**衰减**（软上限）但**有下限**（用户第 3 条：不会停摆）。
+   * `dDE/dt = a0·DE` ⇒ `d(log10 DE)/dt = a0`，即 log 空间里的**常数斜率**。
+   *
+   * ★ 2026-10-25 归一化：`a(DE)` 的衰减/下限**已移除**。
+   *   DE 本体不再被削；削弱只作用在 `darkEnergyMultiplier` 的有效量上。
+   *   （旧 `aKnee/aHalving/aFloor` 已删除，避免两套削弱叠加。）
    *
    * ★ 数值 2025 修正（引擎提前到第一次大坍缩之后）：
-   *   a(DE) 从**引擎到手**那一刻就开始跑，所以 a0 必须按
+   *   a0 从**引擎到手**那一刻就开始跑，所以 a0 必须按
    *   「引擎到手 → 买到门槛压平（打破无限）」的**整段时长**标定，而不是按一次大坍缩 ✗
    *   整段 ≈ 10h ⇒ a0 = 50 / 36000 ≈ **0.00139 阶/秒** ✓
    *   （旧值 0.00621 会让 DE 在 3.41h 就撞 1e50 ⇒ 买开关时基准≈上限 ⇒ 跨度层白买 ✗
@@ -153,12 +156,7 @@ export const DE_SPAN = {
    * ⚠️ 由 **ZPE 引擎**负责放大它（用户声明：引擎主负责打破无限→永恒这一段）。
    */
   a0: 0.003112,
-  /** 衰减拐点（阶）：低于它不衰减 */
-  aKnee: 30,
-  /** 每多少阶减半 */
-  aHalving: 8,
-  /** 下限（占 a0 的比例）：保证永不停摆 */
-  aFloor: 0.15,
+  // ⚠️ 2026-10-25：`aKnee` / `aHalving` / `aFloor` 已删除（DE 本体不再衰减）
   // ⚠️ 这三个字段 **已删除**（2025 引擎机制重做，用户裁定 A 方案）：
   //   `engineLevelCoeff` / `prodLevelCoeff` / `multLevelCoeff`
   //   ⇒ 全部搬到 `ENGINE_MECH`（`add` / `prod` / `mult` / `de`），因为
@@ -166,7 +164,7 @@ export const DE_SPAN = {
 };
 
 /**
- * 暗能量的指数增长速率 `a(DE)`：随当前暗能量衰减，但**不低于下限**。
+ * 暗能量的指数增长速率 `a0`：不再随 DE 量级衰减（2026-10-25 归一化）。
  *
  * ⚠️ 这是**替代 R** 的那一位（`R` 是"物质 log 的斜率"，`a` 是"暗能量 log 的斜率"）。
  *    接线时要注意：它必须落在**环的输出侧**（ZPE→DE），不许接回熵阱/ZPE/全局加成。
@@ -192,9 +190,9 @@ export function deEngineLevelBonus(level) {
 }
 
 export function deGrowthRate(state, engineMult = 1) {
-  const L = Math.max(0, (state.darkEnergy ?? new Decimal(1)).max(1).log10().toNumber());
-  const decay = L > DE_SPAN.aKnee ? Math.pow(2, -(L - DE_SPAN.aKnee) / DE_SPAN.aHalving) : 1;
-  const a = Math.max(DE_SPAN.a0 * DE_SPAN.aFloor, DE_SPAN.a0 * decay);
+  // ★ 2026-10-25 归一化：DE 自增长不再按 DE 量级衰减；
+  //   削弱只作用在 darkEnergyMultiplier 的有效量上。
+  const a = DE_SPAN.a0;
   // ★ 量子里程碑 qm4：暗能量自增长速率 ×1.25（见 docs/QUANTUM-MILESTONES.md）
   const qm = state.quantumMilestones?.qm4 ? 1.25 : 1;
   return a * qm * Math.max(0, engineMult);

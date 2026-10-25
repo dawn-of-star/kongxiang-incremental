@@ -238,6 +238,11 @@ export function deGainBaseEffectMult(state) {
  * 定位：**自动化**。买了之后对应的暗能量升级会自动购买，
  * 玩家不用再手点（对齐 v9 的「达到阈值自动获取」）。
  */
+/**
+ * ★ 2026-10-25 归一化：**只压“有效量”**（供 darkEnergyMultiplier / matterSpanMult 用），
+ * 不再压暗能量本体的产出或自增长。
+ *   `L_eff = knee + span·(1 − 2^(−(L−knee)/span))`，渐近上限 knee+span = 368.25。
+ */
 export const DE_EFF_CAP = { kneeLog10: 308.25, span: 60 };
 
 /**
@@ -277,13 +282,24 @@ export const DE_EFF_CAP = { kneeLog10: 308.25, span: 60 };
  */
 export const DE_AUTO = { buyPerSecond: 1e6 };
 
-export function effectiveDarkEnergyLog10(state) {
-  const de = state?.darkEnergy ?? new Decimal(0);
+/**
+ * ★ 2026-10-25 归一化：**不再削暗能量本身**，只保留一个“有效量”软上限。
+ * 传入的是**任意暗能量值**（余额或累计总量），返回用于“效果侧”的 log10。
+ * 超过 knee 后渐近到 knee+span；这只压效果，不压 DE 的产出/自增长。
+ */
+export function effectiveDarkEnergyLog10Of(value) {
+  const de = value instanceof Decimal ? value : new Decimal(value ?? 0);
   if (de.lte(0)) return 0;
   const dlg = de.log10().toNumber();
   const { kneeLog10: knee, span } = DE_EFF_CAP;
+  if (!Number.isFinite(dlg)) return knee + span;
   if (dlg <= knee) return dlg;
   return knee + span * (1 - Math.pow(2, -(dlg - knee) / span));
+}
+
+/** 余额版（matterSpanMult 用）；保留旧入口名。 */
+export function effectiveDarkEnergyLog10(state) {
+  return effectiveDarkEnergyLog10Of(state?.darkEnergy ?? new Decimal(0));
 }
 
 // ══════════════════════════════════════════════════════════

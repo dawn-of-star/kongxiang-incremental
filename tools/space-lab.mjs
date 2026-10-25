@@ -7,7 +7,7 @@
 import Decimal from "../dist/break_eternity.esm.js";
 import { newState, serialize, deserialize } from "../src/state.js";
 import { bigCrunchGain, darkEnergyMultiplier, darkEnergyRate, overloadFactor } from "../src/formulas.js";
-import { darkMatterAdditiveTerm } from "../src/config.js";
+import { darkMatterAdditiveTerm, deGrowthRate } from "../src/config.js";
 import { startSpaceChallenge } from "../src/engine.js";
 import { autoBuySpaceDu, buySpaceUpgrade, spaceUpgradeCost } from "../src/space-upgrades.js";
 import {
@@ -209,6 +209,25 @@ console.log("=".repeat(96));
   ck("du 大等级 + 暗物质：DE 倍率/速率/加法项都不 ∞",
     term.isFinite() && dm.isFinite() && dr.isFinite(),
     `du=1e6 ⇒ term=${String(term).slice(0, 20)}｜mult=${String(dm).slice(0, 20)}｜rate=${String(dr).slice(0, 20)}`);
+}
+
+{
+  const a = newState();
+  a.darkEnergy = D("1e300");
+  const b = newState();
+  b.darkEnergy = D("1e5000");
+  const a1 = deGrowthRate(a, 1);
+  const a2 = deGrowthRate(b, 1);
+  const m1s = newState();
+  m1s.darkEnergyTotal = D("1e1000");
+  const m2s = newState();
+  m2s.darkEnergyTotal = D("1e2000");
+  const m1 = darkEnergyMultiplier(m1s);
+  const m2 = darkEnergyMultiplier(m2s);
+  ck("归一化：DE 自增长不随量级衰减，倍率只吃有效量上限",
+    Math.abs(a2 / a1 - 1) < 1e-12 && m1.isFinite() && m2.isFinite()
+      && m2.sub(m1).abs().lt(1) && m2.lt(400),
+    `a(1e300)=${a1}｜a(1e5000)=${a2}｜mult(1e1000)=${String(m1).slice(0, 18)}｜mult(1e2000)=${String(m2).slice(0, 18)}`);
 }
 
 console.log();
