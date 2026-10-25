@@ -10,8 +10,8 @@
  *   · du8 / du10：价格侧，本阶段 deferred，不实现。
  */
 import Decimal from "../dist/break_eternity.esm.js";
-import { spaceUnlocked } from "./space.js";
-import { SPACE_UPGRADES } from "./space-config.js";
+import { spaceLevel, spaceUnlocked } from "./space.js";
+import { SPACE_DU_AUTO, SPACE_UPGRADES } from "./space-config.js";
 
 const D = (x) => new Decimal(x ?? 0);
 
@@ -79,4 +79,37 @@ export function buySpaceUpgrade(state, id) {
   const level = spaceUpgradeLevel(state, id) + 1;
   state.space.upgrades[id] = cfg.repeatable ? level : true;
   return { ok: true, cost, level };
+}
+
+/**
+ * du7 解锁后的自动购买：只买可重复 du（du1~du6），按 `buyPerSecond × dt`
+ * 给每条预算，带小数进位；与帧率无关。开关在梦想（自动化）页。
+ *
+ * `space.autoDuCarry` 是运行时余量，不进存档；丢了最多少 1 级。
+ */
+export function autoBuySpaceDu(state, dt) {
+  if (state?.autoToggles?.autoSpaceDu !== true) return 0;
+  if (spaceLevel(state, "du7") <= 0) return 0;
+  if (!spaceUnlocked(state)) return 0;
+  const d = Math.max(0, Number(dt) || 0);
+  if (!(d > 0)) return 0;
+  const sp = state.space;
+  sp.autoDuCarry ??= {};
+  let bought = 0;
+  for (const cfg of SPACE_UPGRADES) {
+    if (!cfg.repeatable || cfg.deferred || cfg.pending) continue;
+    let budget = (Number(sp.autoDuCarry[cfg.id] ?? 0) || 0) + SPACE_DU_AUTO.buyPerSecond * d;
+    budget = Math.min(budget, 1e4);          // 安全阀：离线大 dt 也只买 1e4/条
+    let n = Math.floor(budget);
+    sp.autoDuCarry[cfg.id] = budget - n;
+    while (n-- > 0) {
+      const r = buySpaceUpgrade(state, cfg.id);
+      if (!r.ok) {
+        sp.autoDuCarry[cfg.id] = 0;
+        break;
+      }
+      bought++;
+    }
+  }
+  return bought;
 }

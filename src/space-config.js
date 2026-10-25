@@ -25,6 +25,12 @@ export const SPACE_DESIGN = {
 };
 
 /**
+ * du7 解锁后的自动购买速率（**按游戏秒计，与帧率无关**）。
+ * 每条可重复 du 各自有预算；带小数进位。
+ */
+export const SPACE_DU_AUTO = { buyPerSecond: 100 };
+
+/**
  * 升级表。`cost` 是**展示文案**；实际价格公式等引擎接线时再放进这里。
  * @typedef {{
  *   id:string, name:string, slot:string, currency:"se"|"st",
@@ -85,13 +91,12 @@ export const SPACE_UPGRADES = [
     baseCost: "6", costMult: 1.6,
   },
   {
-    id: "du7", name: "量子同频", slot: "量子加成合成点",
+    id: "du7", name: "膨胀自动化", slot: "梦想（自动化）页",
     currency: "st", repeatable: false,
-    effect: "换口径：按量子个数",
-    desc: "量子加成改为按量子**个数**计算，而不是只按每对。",
+    effect: "解锁 du1~du6 自动购买",
+    desc: "单次购买；解锁所有可重复 du（du1~du6）的自动购买。自动化开关在梦想（自动化）页，买下后仍需手动打开。",
     cost: "10 ST · 单次",
     baseCost: "10",
-    pending: true, pendingReason: "效果口径待定：量子加成按个数/每对的入口还没写死",
   },
   {
     id: "du8", name: "ZPE 引擎价格削弱", slot: "ZPE 引擎价格",

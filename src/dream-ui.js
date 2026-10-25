@@ -12,6 +12,7 @@
  */
 import { DE_AUTO, DREAM_UPGRADES, dreamUpgradeLevelOf, dreamUpgradeCostAt, hasEternityMilestone } from "./config.js";
 import { sci } from "./format.js";
+import { spaceLevel, spaceUnlocked } from "./space.js";
 
 /** 这 7 条是「有开关」的自动化（4 条自动购物 + 自动无限 + 2 条自动购买新对象）✓ */
 export const AUTOMATION_IDS = new Set([
@@ -159,6 +160,7 @@ export function arrangeDreamPage(state) {
 /** 每帧（只改文本/属性，**不动结构**）✓ */
 export function renderDreamPage(state) {
   if (state) stateRef = state;
+  bindSpaceDuAutoToggle();
   const box = document.getElementById("dream-upgrade-list");
   if (!box || box.dataset.arranged !== "1") return;
 
@@ -246,8 +248,39 @@ export function renderDreamPage(state) {
       st.textContent = d.maxLevel != null ? `Lv ${lv} / ${d.maxLevel}` : `Lv ${lv}`;
     }
   }
+  const dsCard = document.getElementById("dream-space-du-auto");
+  if (dsCard) dsCard.hidden = !spaceUnlocked(state);
+  const dsTg = document.getElementById("dream-toggle-autoSpaceDu");
+  if (dsTg) {
+    const owned = spaceLevel(state, "du7") > 0;
+    const on = state?.autoToggles?.autoSpaceDu === true;
+    dsTg.textContent = owned ? (on ? "开" : "关") : "未解锁";
+    dsTg.disabled = !owned;
+    dsTg.classList.toggle("off", !on);
+    dsTg.title = owned
+      ? (on ? "已开启 —— 点一下关掉" : "已解锁但未开启 —— 点一下打开")
+      : "先购买空间膨胀 du7";
+    const dsState = document.getElementById("dream-auto-space-du-state");
+    if (dsState) dsState.textContent = owned ? (on ? "已开启" : "已解锁 · 未开启") : "需购买 du7";
+  }
+
   const badge = document.getElementById("dream-badge");
   if (badge) badge.textContent = `${ownedCount} / ${DREAM_UPGRADES.length}`;
+}
+
+/** du7 的自动化开关：只在梦想页，买下后仍需手动开。 */
+function bindSpaceDuAutoToggle() {
+  const btn = document.getElementById("dream-toggle-autoSpaceDu");
+  if (!btn || btn.dataset.bound === "1") return;
+  btn.dataset.bound = "1";
+  btn.addEventListener("click", () => {
+    const st = stateRef;
+    if (!st || spaceLevel(st, "du7") <= 0) return;
+    st.autoToggles ??= {};
+    if (st.autoToggles.autoSpaceDu === true) delete st.autoToggles.autoSpaceDu;
+    else st.autoToggles.autoSpaceDu = true;
+    renderDreamPage(st);
+  });
 }
 
 /** 本地判定（不 import engine，避免循环）—— 与 `dreamUpgradeLevelOf` 同口径：存 true/数字 ✓ */

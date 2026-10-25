@@ -93,7 +93,7 @@ function build() {
   intro.appendChild(h("p", "note",
     "EP ≥ 1e1200 解锁；挑战内所有最终收益 ^0.5，退出后全额，SE 只在挑战内按 IP 峰值结算。"
     + "ST 基础公式的上一轮结果固定取 SE。实测 EP 1e1296，本阶段目标重定为 1e3600；"
-    + "挑战、SE/ST、du1~6/9/11 已接；du7 效果口径待接。"));
+    + "挑战、SE/ST、du1~6/9/11 与 du7 自动化已接。"));
   head.appendChild(intro);
 
   const curs = h("div", "space-currencies");
@@ -164,7 +164,7 @@ function build() {
   root.appendChild(stList);
 
   const note = h("p", "note space-footnote");
-  note.textContent = "du1~du6 用 SE 复购；du9/du11 用 ST 单次；du7 效果口径待接，du8/du10 价格侧暂缓。"
+  note.textContent = "du1~du6 用 SE 复购；du9/du11 用 ST 单次；du7 是单次解锁 du1~du6 自动化（开关在梦想页）。"
     + " du11 是单次 1e5 ST，用当前 ST 把暗能量超载强度下限从 0.3 抬向 0.95（不会到 1）。";
   root.appendChild(note);
 
@@ -266,6 +266,6 @@ export function renderSpace(state) {
   if (pageBadge) {
     pageBadge.textContent = !unlocked
       ? "未解锁"
-      : (SPACE_DESIGN.wired ? "已接线" : "du1~6/9/11 已接 · du7待");
+      : (SPACE_DESIGN.wired ? "已接线" : "du 已接 · du7 自动化");
   }
 }

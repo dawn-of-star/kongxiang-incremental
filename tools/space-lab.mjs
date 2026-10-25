@@ -8,10 +8,10 @@ import Decimal from "../dist/break_eternity.esm.js";
 import { newState, serialize, deserialize } from "../src/state.js";
 import { bigCrunchGain, overloadFactor } from "../src/formulas.js";
 import { startSpaceChallenge } from "../src/engine.js";
-import { buySpaceUpgrade, spaceCanBuy, spaceUpgradeCost } from "../src/space-upgrades.js";
+import { autoBuySpaceDu, buySpaceUpgrade, spaceUpgradeCost } from "../src/space-upgrades.js";
 import {
   SPACE_UNLOCK_EP, spaceSeFromIp, spaceStRate, spaceChallengePower,
-  enterSpaceChallenge, exitSpaceChallenge, spaceTick,
+  enterSpaceChallenge, exitSpaceChallenge, spaceTick, spaceLevel,
   spaceDuMult, spaceDu4EngineLevels, spaceDu5Mult, spaceDu6Mult, spaceDu9Mult, spaceDu11Floor,
 } from "../src/space.js";
 
@@ -129,17 +129,36 @@ console.log("=".repeat(96));
   const s = newState();
   s.eternityPoints = D("1e1200");
   s.space.se = D(100);
-  s.space.st = D("1e5");
+  s.space.st = D("2e5");
   const c1 = spaceUpgradeCost(s, "du1");
   const b1 = buySpaceUpgrade(s, "du1");
   const c2 = spaceUpgradeCost(s, "du1");
+  const b7 = buySpaceUpgrade(s, "du7");
   const b11 = buySpaceUpgrade(s, "du11");
-  const du7Blocked = !spaceCanBuy(s, "du7") && !buySpaceUpgrade(s, "du7").ok;
-  ck("du 购买 / 价格 / du7 待接 / du11 单次",
+  ck("du 购买 / 价格 / du7 自动化解锁 / du11 单次",
     c1.eq(1) && b1.ok && s.space.se.eq(99) && c2.eq(1.5)
-      && b11.ok && s.space.st.eq(0) && s.space.upgrades.du11 === true
-      && du7Blocked && Math.abs(spaceDu11Floor(s) - 0.3) < 1e-12,
-    `du1 ${c1}→${c2}｜SE=${s.space.se}｜du11 ST=${s.space.st}｜floor=${spaceDu11Floor(s)}`);
+      && b7.ok && s.space.upgrades.du7 === true
+      && b11.ok && s.space.st.eq(D("99990")) && s.space.upgrades.du11 === true
+      && Math.abs(spaceDu11Floor(s) - 0.3) < 1e-12,
+    `du1 ${c1}→${c2}｜SE=${s.space.se}｜du7=${b7.ok}｜du11 ST=${s.space.st}｜floor=${spaceDu11Floor(s)}`);
+}
+
+{
+  const s = newState();
+  s.eternityPoints = D("1e1200");
+  s.space.upgrades.du7 = true;
+  s.space.se = D("1e15");
+  s.autoToggles.autoSpaceDu = true;
+  const bought = autoBuySpaceDu(s, 1);
+  ck("du7 自动化：按秒买 du1~du6、与手动开关联动",
+    bought > 0 && spaceLevel(s, "du1") > 0 && spaceLevel(s, "du6") > 0
+      && spaceLevel(s, "du7") === 1 && spaceLevel(s, "du4") > 0,
+    `1 秒买 ${bought} 级｜du1=${spaceLevel(s, "du1")}｜du4=${spaceLevel(s, "du4")}｜du6=${spaceLevel(s, "du6")}`);
+  const before = spaceLevel(s, "du1");
+  s.autoToggles.autoSpaceDu = false;
+  const off = autoBuySpaceDu(s, 1);
+  ck("du7 自动开关关闭则不再买", off === 0 && spaceLevel(s, "du1") === before,
+    `off bought=${off}｜du1=${spaceLevel(s, "du1")}`);
 }
 
 {

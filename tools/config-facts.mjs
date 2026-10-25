@@ -28,6 +28,7 @@ const OUT = join(ROOT, "docs", "CONFIG-FACTS.md");
 const WRITE = process.argv.includes("--write");
 
 const c = await import(new URL("../src/config.js", import.meta.url).href);
+const space = await import(new URL("../src/space-config.js", import.meta.url).href);
 
 /** 逐项事实（**只放能从代码直接读出来的**，不放解释性文字） */
 const facts = () => [
@@ -58,6 +59,8 @@ const facts = () => [
   ["DE_AUTO.buyPerSecond", c.DE_AUTO.buyPerSecond,
     "每条自动买 DE 的升级 **级/游戏秒**（预算 = buyPerSecond × dt，带小数进位）；"
     + "⚠️ 原来按帧（1 级/tick）⇒ 低帧率会掉速 ✗"],
+  ["SPACE_DU_AUTO.buyPerSecond", space.SPACE_DU_AUTO.buyPerSecond,
+    "du7 解锁后每条可重复 du 的自动购买速率（级/游戏秒）；开关在梦想（自动化）页"],
   ["NEKO.tiers（好感度档位）", c.NEKO.tiers.length,
     c.NEKO.tiers.map((t) => `>${t.need} ⇒ ×${t.pow}`).join("｜")],
   ["NEKO 叠乘总指数", c.NEKO.tiers.reduce((a, t) => a * t.pow, 1).toFixed(7), "em2 达成后 ×2 加成部分"],

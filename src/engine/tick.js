@@ -11,6 +11,7 @@ import { BASE, COLLAPSE, DE_EFF_CAP, INFINITY_UPGRADES, crunchThreshold, deEngin
 import { sci } from "../format.js";
 import { D, bigCrunchGain, checkDeMilestones, checkQuantumMilestones, checkZpeMilestones, collapseUnlocked, darkEnergyRate, floorDiv, globalMultiplier, matterGainOver, zpeRate } from "../formulas.js";
 import { spaceApplyFinalGain, spaceTick } from "../space.js";
+import { autoBuySpaceDu } from "../space-upgrades.js";
 import { unlockZpeEngine } from "./purchases.js";
 import { awardDream, isQuantumLogLevel, pushLog } from "../state.js";
 import { applyTangramPassiveIp } from "../tangram-passive.js";
@@ -424,6 +425,8 @@ export function tickBody(state, dt) {
   runAutoCrunchAndPassive(state, dt);
   // ★ 2026-10-25：空间膨胀 SE/ST（挑战内最终收益 ^0.5 由 bigCrunchGain 唯一包装）
   spaceTick(state, dt, globalMultiplier(state));
+  // du7 解锁后：梦想页开关控制 du1~du6 自动购买；用新到账的 SE
+  autoBuySpaceDu(state, dt);
 
   return state;
 }
