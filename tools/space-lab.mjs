@@ -6,7 +6,8 @@
  */
 import Decimal from "../dist/break_eternity.esm.js";
 import { newState, serialize, deserialize } from "../src/state.js";
-import { bigCrunchGain, overloadFactor } from "../src/formulas.js";
+import { bigCrunchGain, darkEnergyMultiplier, darkEnergyRate, overloadFactor } from "../src/formulas.js";
+import { darkMatterAdditiveTerm } from "../src/config.js";
 import { startSpaceChallenge } from "../src/engine.js";
 import { autoBuySpaceDu, buySpaceUpgrade, spaceUpgradeCost } from "../src/space-upgrades.js";
 import {
@@ -188,6 +189,26 @@ console.log("=".repeat(96));
   const floored = overloadFactor(s, D("1e100000"));
   ck("du11 接到 DE 超载因子的下限", raw.lt(0.3) && floored.gte(0.3),
     `无du11=${raw.toPrecision?.(4) ?? raw}｜有du11=${floored.toPrecision?.(4) ?? floored}`);
+}
+
+{
+  const s = newState();
+  s.eternityCount = D(4);
+  s.eternityDarkMatter = D(122);
+  s.v1Log10 = 130;
+  s.darkEnergy = D("1e300");
+  s.darkEnergyTotal = D("1e300");
+  s.zpe = D("1e300");
+  s.phaseTransmuterUnlocked = true;
+  s.zpeEngineUnlocked = true;
+  s.zpeEngineLevel = D(100);
+  s.space.upgrades = { du1: 1e6, du2: 1e6, du3: 1e6 };
+  const term = darkMatterAdditiveTerm(s);
+  const dm = darkEnergyMultiplier(s);
+  const dr = darkEnergyRate(s);
+  ck("du 大等级 + 暗物质：DE 倍率/速率/加法项都不 ∞",
+    term.isFinite() && dm.isFinite() && dr.isFinite(),
+    `du=1e6 ⇒ term=${String(term).slice(0, 20)}｜mult=${String(dm).slice(0, 20)}｜rate=${String(dr).slice(0, 20)}`);
 }
 
 console.log();

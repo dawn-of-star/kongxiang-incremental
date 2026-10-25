@@ -62,20 +62,20 @@ export function tangramAxisParams(state) {
 /** 斜轴：计数频率每级的**倍率**（相对基线 0.05）✓ —— `countFreqAddTerm` 只加一行用这个 */
 export function tangramCountFreqMult(state) {
   const p = tangramAxisParams(state);
-  return Math.max(0, p.countFreqPerLevel / TANGRAM_AXES_RANGE.countFreqPerLevel.lo)
-    * spaceDuMult(state, "du2").toNumber();
+  return spaceDuMult(state, "du2")
+    .mul(Math.max(0, p.countFreqPerLevel / TANGRAM_AXES_RANGE.countFreqPerLevel.lo));
 }
 
 /** 纵轴：免费 ZPE 引擎等级的**额外级数** ✓ */
 export function tangramEngineBonusLevels(state) {
-  return (tangramAxisParams(state).engineLevel - TANGRAM_AXES_RANGE.engineLevel.lo)
-    * spaceDuMult(state, "du2").toNumber();
+  return spaceDuMult(state, "du2")
+    .mul(tangramAxisParams(state).engineLevel - TANGRAM_AXES_RANGE.engineLevel.lo);
 }
 
 /** 横轴：熵→粒子速率的**倍率**（相对基线 0.1）✓ */
 export function tangramConvRateMult(state) {
-  return (tangramAxisParams(state).convRate / TANGRAM_AXES_RANGE.convRate.lo)
-    * spaceDuMult(state, "du2").toNumber();
+  return spaceDuMult(state, "du2")
+    .mul(tangramAxisParams(state).convRate / TANGRAM_AXES_RANGE.convRate.lo);
 }
 
 // ⚠️ 2026：这里**不**提供 `effectiveEngineLevel()` ——

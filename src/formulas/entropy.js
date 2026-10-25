@@ -46,17 +46,17 @@ export function conversion(state) {
 
   // ⚠️ 这里原来有一个 `qe.convUncap` 分支（旧量子升级「解耦」把产出改成乘法）。
   //    那套量子升级系统已整体删除，分支永远是死路，已移除。
-  let perLevel = cfg.outputPerLevel;
+  let perLevel = D(cfg.outputPerLevel);
   // ★★★ 2026：**横轴**（覆盖率 ⇒ 熵→粒子速率 0.1 → 1e13）—— 直接乘在**斜率**上 ✓
-  perLevel *= tangramConvRateMult(state);
-  perLevel *= rewardConvSlopeMult(state);   // ★ 2026：挑战奖励（d4 全清 ⇒ ×10）✓
-  if (hasVoid(state, "v5")) perLevel += 0.5;
-  if (hasCollapse(state, "cm5")) perLevel *= transmuterIpMult(state);   // ⑤ 相变仪随 IP（对数）
+  perLevel = perLevel.mul(tangramConvRateMult(state));
+  perLevel = perLevel.mul(rewardConvSlopeMult(state));   // ★ 2026：挑战奖励（d4 全清 ⇒ ×10）✓
+  if (hasVoid(state, "v5")) perLevel = perLevel.add(0.5);
+  if (hasCollapse(state, "cm5")) perLevel = perLevel.mul(transmuterIpMult(state));   // ⑤ 相变仪随 IP（对数）
   // ★ 「凝聚斜率」：直接加在**斜率**上（不是乘一个倍率）。
   //   加法形式让转换率封顶在 perLevel/thresholdPerLevel；
   //   抬斜率才能把这个上限本身推高，而且因为 L ∝ log(资源)，
   //   上限只是**对数增长**，几乎不进 S 池。
-  perLevel += DE_UPGRADES.convOutput.perLevel * deLevelOf(state, "convOutput").toNumber();
+  perLevel = perLevel.add(DE_UPGRADES.convOutput.perLevel * deLevelOf(state, "convOutput").toNumber());
   const output = D(BASE.autoConvertOutput).add(lv.mul(perLevel));
 
   let threshold = D(BASE.autoConvertCost).add(lv.mul(cfg.thresholdPerLevel));

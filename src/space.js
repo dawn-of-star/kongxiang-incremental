@@ -138,7 +138,10 @@ export function spaceLevel(state, id) {
 export function spaceDuMult(state, id) {
   const n = spaceLevel(state, id);
   if (!(n > 0)) return D(1);
-  return Decimal.pow(10, Math.pow(n, 1.5));
+  // ⚠️ 不要用 `Math.pow(n, 1.5)`：n 很大时它会先变成 Infinity，
+  //    Decimal.pow 收到 Infinity 指数也会返回 Infinity ✗
+  //    ⇒ 指数也走 Decimal，让 break_eternity 自己处理超大层数。
+  return Decimal.pow(10, D(n).pow(1.5));
 }
 
 /**
@@ -161,13 +164,13 @@ export function spaceDu4EngineLevels(state) {
 export function spaceDu5Mult(state) {
   const n = spaceLevel(state, "du5");
   if (!(n > 0)) return D(1);
-  return Decimal.pow(10, Math.sqrt(n));
+  return Decimal.pow(10, D(n).pow(0.5));
 }
 
 /** du6：计数频率 ×(1 + 0.5√n_eff)。 */
 export function spaceDu6Mult(state) {
   const n = spaceSoftLevel(spaceLevel(state, "du6"), 1e8);
-  return n > 0 ? D(1).add(0.5 * Math.sqrt(n)) : D(1);
+  return n > 0 ? D(1).add(D(n).pow(0.5).mul(0.5)) : D(1);
 }
 
 /**

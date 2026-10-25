@@ -179,7 +179,9 @@ export function darkMatterEffectMult(state) {
  */
 export function darkMatterAdditiveTerm(state) {
   // ★ 2026-10-25：du1 直接放大暗物质的加法项（未买 = ×1，零回归）
-  return (darkMatterEffectMult(state) - 1) * spaceDuMult(state, "du1").toNumber();
+  // ⚠️ 用 Decimal 返回，不要 `.toNumber()`：du1 等级上千时 10^(n^1.5)
+  //   会超过 Number.MAX_VALUE ⇒ Infinity ⇒ 暗能量倍率 NaN/∞ ✗
+  return new Decimal(darkMatterEffectMult(state) - 1).mul(spaceDuMult(state, "du1"));
 }
 
 /**

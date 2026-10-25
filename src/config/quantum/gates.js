@@ -95,7 +95,10 @@ export function quantumPerPair(state) {
   //   全清（36 个 = 6 组）⇒ ×2^6 = ×64，再叠一个"全清额外 ×2" ⇒ **×128** ✓
   //   基线每对 2 ⇒ 全清 **256 个量子/对** ✓（与用户口径一致 ✓）
   //   ⚠️ 倍率本身抽到 `quantumPairMult()`（面板要显示它 ⇒ 同源 ✓，不写第二遍 ✗）
-  return raw * quantumPairMult(state) * spaceDuMult(state, "du3").toNumber();
+  // ⚠️ 大等级时 du3 会超过 Number.MAX_VALUE；返回 Decimal 让 tick 继续精确累加。
+  const v = new Decimal(raw).mul(quantumPairMult(state)).mul(spaceDuMult(state, "du3"));
+  const n = v.toNumber();
+  return Number.isFinite(n) ? n : v;
 }
 
 /**
