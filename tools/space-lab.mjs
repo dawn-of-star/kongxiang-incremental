@@ -46,6 +46,7 @@ console.log("=".repeat(96));
 {
   const s = newState();
   s.eternityPoints = D("1e1200");
+  s.eternityCount = D(1);
   s.infinityPoints = D("1e308");
   const enter = enterSpaceChallenge(s);
   const base = s.space.challengeSeBase;
@@ -65,11 +66,28 @@ console.log("=".repeat(96));
 {
   const s = newState();
   s.eternityPoints = D("1e1200");
+  s.eternityCount = D(1);
   s.infinityPoints = D("1e400");
   enterSpaceChallenge(s);                   // 基线 = 1000
   spaceTick(s, 1, D(10));
   ck("重进同一峰值不刷 SE", s.space.se.eq(0) && s.space.challengeSe.eq(0),
     `se=${s.space.se.toString()}（进入时 IP=1e400，基线已吃掉旧峰值）`);
+}
+
+{
+  const s = newState();
+  s.eternityPoints = D("1e1200");
+  s.eternityCount = D(1);
+  s.infinityPoints = D("1e400");
+  const first = enterSpaceChallenge(s);
+  const afterFirst = s.space.challengeEternity;
+  exitSpaceChallenge(s);
+  const retry = enterSpaceChallenge(s);             // 同一次永恒：拒绝
+  s.eternityCount = s.eternityCount.add(1);
+  const second = enterSpaceChallenge(s);            // 新永恒：允许
+  ck("挑战进入闸门：每次进入前必须先永恒重置",
+    first.ok && afterFirst === 1 && retry.ok === false && retry.reason === "need-eternity" && second.ok,
+    `首次=${first.ok}｜同永恒重进=${retry.ok}(${retry.reason})｜新永恒=${second.ok}`);
 }
 
 {
@@ -91,6 +109,7 @@ console.log("=".repeat(96));
 {
   const s = newState();
   s.eternityPoints = D("1e1200");
+  s.eternityCount = D(1);
   s.infinityPoints = D("1e400");
   enterSpaceChallenge(s);
   s.space.se = D("1e9");

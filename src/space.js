@@ -3,6 +3,7 @@
  *
  * 这一层**不碰 du 效果**；先把货币和挑战做成可运行、可存档的闭环：
  *   · EP ≥ 1e1200 解锁；
+ *   · 每次进入挑战前必须先执行一次**永恒重置**；永恒会打断当前挑战；
  *   · 挑战内：最终 IP 收益 ^0.5（由 `spaceChallengePower` 乘在唯一入口）；
  *   · SE：挑战内按 IP 峰值增量结算（进入时记基线，避免“进出刷 SE”）；
  *   · ST：基础公式按游戏秒生产，挑战内也吃 ^0.5；
@@ -86,16 +87,28 @@ export function spaceTick(state, dt, globalMult) {
   if (rate.gt(0)) sp.st = D(sp.st).add(rate.mul(d));
 }
 
-/** 进入挑战：记录 IP 峰值基线，防止“进出刷同一段 SE”。 */
+/** 进入挑战：必须先执行一次**新的永恒重置**；进入时记 IP 峰值基线。 */
 export function enterSpaceChallenge(state) {
   if (!spaceUnlocked(state)) return { ok: false, reason: "locked" };
   const sp = state?.space;
   if (!sp || sp.challenge === true) return { ok: false, reason: "active" };
+  const count = Math.max(0, Math.floor(Number(state.eternityCount ?? 0)));
+  const last = Math.max(0, Math.floor(Number(sp.challengeEternity ?? 0)));
+  if (!(count > last)) return { ok: false, reason: "need-eternity", need: last + 1 };
+  sp.challengeEternity = count;
   sp.challenge = true;
   sp.ipPeak = D(state.infinityPoints);
   sp.challengeSeBase = spaceSeFromIp(sp.ipPeak);
   sp.challengeSe = D(0);
   return { ok: true };
+}
+
+/** 永恒重置会打断当前挑战；下次进入必须再执行一次永恒。 */
+export function spaceOnEternity(state) {
+  const sp = state?.space;
+  if (!sp?.challenge) return false;
+  sp.challenge = false;
+  return true;
 }
 
 /** 退出挑战：停止 SE/挑战系数；已结算的 SE 不退。 */

@@ -8,6 +8,7 @@ import { resetForCollapse } from "./collapse.js";
 import { INFINITY_ORDER, INFINITY_UPGRADES, PAGE_KEYS, canEternity, epMultFactor, eternityPointGain, eternityGain, hasEternityMilestone, infinityUpgradeCost, markPageUnlocked } from "../config.js";
 import { applyEternityKeeps } from "../dream-effects.js";
 import { sci } from "../format.js";
+import { spaceOnEternity } from "../space.js";
 import { D } from "../formulas.js";
 import { pushLog } from "../state.js";
 
@@ -80,6 +81,8 @@ export function doEternity(state) {
   state.eternityPointsTotal = (state.eternityPointsTotal ?? D(0)).add(gained);
   // ★ 数值约定 #3：ternityCount 现在是 Decimal ⇒ 必须用 .add()（+ 会变字符串拼接 ✗）
   state.eternityCount = D(state.eternityCount ?? 0).add(1);
+  // ★ 2026-10-25：永恒会打断当前空间挑战；下次进入必须再执行一次永恒重置
+  spaceOnEternity(state);
 
   // ══════════════════════════════════════════════════════════
   // ★★★ 2025（用户实测报告 + 用户裁定）：**永恒后补齐「曾经解锁过」的记录**

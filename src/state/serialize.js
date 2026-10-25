@@ -312,7 +312,6 @@ export function deserialize(raw) {
   s.tangramChallengeThisEternity = num(raw.tangramChallengeThisEternity, 0);
   s.tangramSeed = raw.tangramSeed == null ? null : num(raw.tangramSeed, 0);
 
-  // ★ 2026-10-25：空间膨胀（UI 先行）——同样必须显式白名单，否则刷新即丢
   s.space = restoreSpace(raw.space, dec, num);
   return { state: s, ok: true };
 }
@@ -343,6 +342,7 @@ function restoreSpace(raw, dec, num) {
     bestEp: dec(sp.bestEp),
     challengeSe: dec(sp.challengeSe),
     challengeSeBase: dec(sp.challengeSeBase),
+    challengeEternity: Math.max(0, Math.floor(num(sp.challengeEternity, 0))),
     upgrades,
   };
 }
