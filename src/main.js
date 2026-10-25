@@ -46,7 +46,8 @@ import { clear as clearSave, load, save } from "./save.js";
 import { newState, pushLog, setLogSink } from "./state.js";
 // ★★★ 2025（`docs/NEKO.md`）：N.E.K.O 接入层（**无宿主时全部 no-op** ✓）
 //   `dispatchNekoActions` = §6 动作白名单的派发器（三条约束都实现在 `neko.js` 里）
-import { createNekoBridge, dispatchNekoActions } from "./neko.js";
+import { createNekoBridge, dispatchNekoActions, nekoHostPresent } from "./neko.js";
+import { createChatUi } from "./neko/chat-ui.js";
 // ★★★ 2025：**性能监视器**（用户报「数字跳动速率及其低下」⇒ 装仪表而不是猜）
 import { perfFrame, perfOn, perfSummary, perfToggle, perfFrames, perfSections } from "./perf.js";
 // ★★★ 2025：**真实 DOM 写入计数** + **构建标记**（区分"代码 bug"与"浏览器旧缓存"）
@@ -131,6 +132,10 @@ const nekoBridge = createNekoBridge({
     }
   },
 });
+// ★ 游戏内聊天面板：只在**宿主页**里出现（独立打开时不留一块"未连接"的浮窗）
+const nekoChatUi = nekoHostPresent()
+  ? createChatUi({ bridge: nekoBridge, getState: () => state })
+  : null;
 // ① 把**全部** `pushLog` 自动导向宿主（无宿主 ⇒ 桥内部直接丢弃 ✓）
 setLogSink((entry) => nekoBridge.sendLog(entry));
 // ② 探测（不阻塞：失败就是"没有宿主"，正常单机玩）
@@ -563,6 +568,8 @@ window.__game = {
   nekoStatus: () => nekoBridge.status,
   /** 主动请她看一眼（会起一个 LLM turn；没有 dialogue 能力时返回 null） */
   nekoAsk: (prompt) => nekoBridge.requestAssist(prompt),
+  /** 游戏内聊天（走聊天面板同一条路：台词 + 可选 control + 语音） */
+  nekoChat: (text) => (nekoChatUi ? nekoChatUi.send(text) : Promise.resolve(false)),
   /** ★ 2025：**性能监视器**（`__game.perf(true)` 打开 / `__game.perf()` 切换 / `F8`） */
   perf: (force) => {
     const on = perfToggle(force);

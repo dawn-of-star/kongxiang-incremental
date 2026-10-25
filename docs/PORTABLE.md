@@ -58,6 +58,14 @@ powershell -ExecutionPolicy Bypass -File release\kongxiang-portable\install.ps1 
 http://127.0.0.1:48911/static/game/games/kongxiang/index.html
 ```
 
+## 桌面 L2D 与聊天
+
+- 游戏页**不渲染** Live2D；主窗口的角色继续显示。用对话区的「独立窗口」按钮
+  （或浏览器新窗口）打开游戏，主窗口不会被顶掉。
+- 对话区已接活：打字 → 她回台词（通过 `speech.speak` 让主窗口的角色开口）→ 必要时替你操作。
+- 连上后会读宿主的 `recent-chat-summary`，把桌面聊天的摘要带进游戏。
+- 状态行显示 `connected` / 能力数 / `lastError`：对话没触发时先看这里。
+
 ## 注意
 
 - **Steam 更新会覆盖** `resources\bin`，更新后重新跑一次 `install.ps1` 即可；
