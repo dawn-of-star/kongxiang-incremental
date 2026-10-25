@@ -8,6 +8,7 @@
 import Decimal from "../../dist/break_eternity.esm.js";
 import { hasCollapse } from "./milestones.js";
 import { zpeEngineMultBonus } from "./zpe-engine.js";
+import { spaceDu9Mult } from "../space.js";
 
 export const TRANSMUTER_IP = { coeff: 0.5, cap: 100 };
 export function transmuterIpMult(state) {
@@ -79,7 +80,7 @@ export const VOID_BOOST = { coeff: 0.1 };
 export function voidBoostMult(state) {
   const m = zpeEngineMultBonus(state);
   const lg = m.lte(1) ? 0 : m.log10().toNumber();
-  return 1 + VOID_BOOST.coeff * Math.max(0, lg);
+  return (1 + VOID_BOOST.coeff * Math.max(0, lg)) * spaceDu9Mult(state);
 }
 
 /**

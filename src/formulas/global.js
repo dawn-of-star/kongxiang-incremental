@@ -10,6 +10,7 @@ import { darkEnergyMultiplier } from "./dark-energy.js";
 import { levelOf } from "../state.js";
 import { tangramCountFreqMult } from "../tangram-bonus.js";
 import { rewardCountFreqMult } from "../tangram-reward.js";
+import { spaceDu6Mult } from "../space.js";
 import Decimal from "../../dist/break_eternity.esm.js";
 
 export function countFreqAddTerm(state) {
@@ -23,7 +24,7 @@ export function countFreqAddTerm(state) {
   // ★★★ 2026：**斜轴**（覆盖率 ⇒ 计数频率每级系数 0.05 → 50）✓
   extra = D(1).add(extra.sub(1).mul(tangramCountFreqMult(state)));
   extra = D(1).add(extra.sub(1).mul(rewardCountFreqMult(state)));   // ★ 2026：d5 全清 ⇒ ×5 ✓
-  return extra;
+  return extra.mul(spaceDu6Mult(state));
 }
 
 /**

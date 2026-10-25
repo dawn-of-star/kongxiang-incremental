@@ -8,6 +8,7 @@ import { TANGRAM_CHALLENGE_REWARDS } from "../../tangram.js";
 import { tierQuantumStepMult } from "../infinity.js";
 import { hasCollapse } from "../milestones.js";
 import Decimal from "../../../dist/break_eternity.esm.js";
+import { spaceDuMult } from "../../space.js";
 
 /**
  * config/quantum.js —— 量子 / 粒子增幅 b / 跨度幂 k / 暗能量自增长 / 量子共振
@@ -94,7 +95,7 @@ export function quantumPerPair(state) {
   //   全清（36 个 = 6 组）⇒ ×2^6 = ×64，再叠一个"全清额外 ×2" ⇒ **×128** ✓
   //   基线每对 2 ⇒ 全清 **256 个量子/对** ✓（与用户口径一致 ✓）
   //   ⚠️ 倍率本身抽到 `quantumPairMult()`（面板要显示它 ⇒ 同源 ✓，不写第二遍 ✗）
-  return raw * quantumPairMult(state);
+  return raw * quantumPairMult(state) * spaceDuMult(state, "du3").toNumber();
 }
 
 /**

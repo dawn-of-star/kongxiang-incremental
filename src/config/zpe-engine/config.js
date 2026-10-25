@@ -7,6 +7,7 @@
 import { tangramEngineBonusLevels } from "../../tangram-bonus.js";
 import { tangramRewardEffects } from "../../tangram.js";
 import Decimal from "../../../dist/break_eternity.esm.js";
+import { spaceDu4EngineLevels } from "../../space.js";
 
 /**
  * config/zpe-engine.js —— ZPE 引擎（价格、等级、五条机制、唯一有效等级入口）
@@ -321,7 +322,8 @@ export function effectiveEngineLevel(state) {
   // ★★★ 2026（用户：「七巧板的加成还没实装？」）—— **挑战奖励**的免费引擎级也要进公式 ✓
   //   原来它只在面板显示（显示 ≠ 实发 ✗）；现在两条来源**相加**：覆盖率 + 挑战奖励 ✓
   const rewardBonus = tangramRewardEffects(state?.tangramCleared).freeZpeEngineLevels ?? 0;
-  return base.add(Math.max(0, covBonus)).add(Math.max(0, rewardBonus));
+  return base.add(Math.max(0, covBonus)).add(Math.max(0, rewardBonus))
+    .add(spaceDu4EngineLevels(state));
 }
 
 // ══════════════════════════════════════════════════════════

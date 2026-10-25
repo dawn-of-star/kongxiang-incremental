@@ -122,3 +122,73 @@ export function exitSpaceChallenge(state) {
 export function toggleSpaceChallenge(state) {
   return state?.space?.challenge === true ? exitSpaceChallenge(state) : enterSpaceChallenge(state);
 }
+
+// ══════════════════════════════════════════════════════════
+// du 效果辅助（只读 state；购买/价格在 space-upgrades.js）
+// ══════════════════════════════════════════════════════════
+
+/** du 等级；单次升级 true ⇒ 1。 */
+export function spaceLevel(state, id) {
+  const raw = state?.space?.upgrades?.[id];
+  if (raw === true) return 1;
+  return Math.max(0, Math.floor(Number(raw ?? 0) || 0));
+}
+
+/** du1~du3 的 ×10^(n^1.5)。 */
+export function spaceDuMult(state, id) {
+  const n = spaceLevel(state, id);
+  if (!(n > 0)) return D(1);
+  return Decimal.pow(10, Math.pow(n, 1.5));
+}
+
+/**
+ * du4/du6 的软上限等效等级：
+ *   n_eff = C + (n−C)/(1+0.5·log10(n/C))，n>C
+ * 到 100C 时超出部分的平均每级效率 = 50%。
+ */
+export function spaceSoftLevel(level, cap) {
+  const n = Math.max(0, Number(level) || 0);
+  if (n <= cap) return n;
+  return cap + (n - cap) / (1 + 0.5 * Math.log10(n / cap));
+}
+
+/** du4：免费 ZPE 引擎等级（+10·n_eff）。 */
+export function spaceDu4EngineLevels(state) {
+  return 10 * spaceSoftLevel(spaceLevel(state, "du4"), 1e6);
+}
+
+/** du5：熵→粒子倍率 ×10^√n。 */
+export function spaceDu5Mult(state) {
+  const n = spaceLevel(state, "du5");
+  if (!(n > 0)) return D(1);
+  return Decimal.pow(10, Math.sqrt(n));
+}
+
+/** du6：计数频率 ×(1 + 0.5√n_eff)。 */
+export function spaceDu6Mult(state) {
+  const n = spaceSoftLevel(spaceLevel(state, "du6"), 1e8);
+  return n > 0 ? D(1).add(0.5 * Math.sqrt(n)) : D(1);
+}
+
+/**
+ * du9：所有“虚空增幅”类升级的全局强度倍率。
+ * ∝ log10(1+量子数)，封顶 ×10（未购买 = ×1）。
+ */
+export function spaceDu9Mult(state) {
+  if (spaceLevel(state, "du9") <= 0) return 1;
+  const q = D(state?.quantum);
+  const lg = q.gt(1) ? q.add(1).log10().toNumber() : 0;
+  return 1 + Math.min(9, Math.max(0, lg));
+}
+
+/**
+ * du11：DE 超载因子下限。
+ * 未购买 ⇒ 0（不改变原行为）；购买后随当前 ST 从 0.3 抬向 0.95。
+ */
+export function spaceDu11Floor(state) {
+  if (spaceLevel(state, "du11") <= 0) return 0;
+  const C = D(1e5);
+  const st = D(state?.space?.st);
+  const x = Decimal.max(D(0), st.sub(C));
+  return Math.min(0.95, 0.3 + 0.7 * x.div(x.add(C)).toNumber());
+}

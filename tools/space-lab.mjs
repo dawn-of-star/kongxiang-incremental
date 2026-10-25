@@ -1,16 +1,18 @@
 #!/usr/bin/env node
 /**
- * tools/space-lab.mjs —— 空间膨胀核心（SE / ST / 挑战 / ^0.5）的定点断言
+ * tools/space-lab.mjs —— 空间膨胀核心（SE / ST / 挑战 / du）的定点断言
  *
- * 只测**已接线的核心闭环**；du 效果尚未接线，不在这里假装有。
+ * du7 仍是“效果口径待接”，不在这里假装有；du8/du10 按设计暂缓。
  */
 import Decimal from "../dist/break_eternity.esm.js";
 import { newState, serialize, deserialize } from "../src/state.js";
-import { bigCrunchGain } from "../src/formulas.js";
+import { bigCrunchGain, overloadFactor } from "../src/formulas.js";
 import { startSpaceChallenge } from "../src/engine.js";
+import { buySpaceUpgrade, spaceCanBuy, spaceUpgradeCost } from "../src/space-upgrades.js";
 import {
   SPACE_UNLOCK_EP, spaceSeFromIp, spaceStRate, spaceChallengePower,
   enterSpaceChallenge, exitSpaceChallenge, spaceTick,
+  spaceDuMult, spaceDu4EngineLevels, spaceDu5Mult, spaceDu6Mult, spaceDu9Mult, spaceDu11Floor,
 } from "../src/space.js";
 
 const D = (x) => new Decimal(x);
@@ -121,6 +123,52 @@ console.log("=".repeat(96));
       && s.space.upgrades.du1 === 3 && s.space.se.eq(9),
     `EP ${epBefore}→${s.eternityPoints}｜永恒=${s.eternityCount}｜七巧板=${s.tangramOwned.largeA}`
       + `｜暗物质=${s.eternityDarkMatter}｜du1=${s.space.upgrades.du1}｜challenge=${s.space.challenge}`);
+}
+
+{
+  const s = newState();
+  s.eternityPoints = D("1e1200");
+  s.space.se = D(100);
+  s.space.st = D("1e5");
+  const c1 = spaceUpgradeCost(s, "du1");
+  const b1 = buySpaceUpgrade(s, "du1");
+  const c2 = spaceUpgradeCost(s, "du1");
+  const b11 = buySpaceUpgrade(s, "du11");
+  const du7Blocked = !spaceCanBuy(s, "du7") && !buySpaceUpgrade(s, "du7").ok;
+  ck("du 购买 / 价格 / du7 待接 / du11 单次",
+    c1.eq(1) && b1.ok && s.space.se.eq(99) && c2.eq(1.5)
+      && b11.ok && s.space.st.eq(0) && s.space.upgrades.du11 === true
+      && du7Blocked && Math.abs(spaceDu11Floor(s) - 0.3) < 1e-12,
+    `du1 ${c1}→${c2}｜SE=${s.space.se}｜du11 ST=${s.space.st}｜floor=${spaceDu11Floor(s)}`);
+}
+
+{
+  const s = newState();
+  s.space.upgrades = { du1: 1, du4: 1e8, du5: 1, du6: 1, du9: true };
+  s.quantum = D(100);
+  s.space.st = D("2e5");
+  const d1 = spaceDuMult(s, "du1");
+  const d4 = spaceDu4EngineLevels(s);
+  const d5 = spaceDu5Mult(s);
+  const d6 = spaceDu6Mult(s);
+  const d9 = spaceDu9Mult(s);
+  ck("du 效果：du1/4/5/6/9 数值",
+    d1.eq(10) && d4 > 0 && d5.eq(10) && d6.eq(1.5) && Math.abs(d9 - (1 + Math.log10(101))) < 1e-12,
+    `du1=${d1}｜du4Levels=${d4.toFixed(0)}｜du5=${d5}｜du6=${d6}｜du9=${d9.toFixed(4)}`);
+  s.space.upgrades.du11 = true;
+  ck("du11 floor 随 ST 0.3→0.65", Math.abs(spaceDu11Floor(s) - 0.65) < 1e-9,
+    `ST=2e5 ⇒ floor=${spaceDu11Floor(s)}`);
+}
+
+{
+  const s = newState();
+  s.brokenInfinity = true;
+  s.space.st = D("1e5");
+  const raw = overloadFactor(s, D("1e100000"));
+  s.space.upgrades.du11 = true;
+  const floored = overloadFactor(s, D("1e100000"));
+  ck("du11 接到 DE 超载因子的下限", raw.lt(0.3) && floored.gte(0.3),
+    `无du11=${raw.toPrecision?.(4) ?? raw}｜有du11=${floored.toPrecision?.(4) ?? floored}`);
 }
 
 console.log();

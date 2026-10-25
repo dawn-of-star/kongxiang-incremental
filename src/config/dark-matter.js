@@ -6,6 +6,7 @@
  *    依赖：eternity ｜ Decimal
  */
 import Decimal from "../../dist/break_eternity.esm.js";
+import { spaceDuMult } from "../space.js";
 import { hasEternityMilestone } from "./eternity.js";
 
 export const DARK_MATTER = {
@@ -177,7 +178,8 @@ export function darkMatterEffectMult(state) {
  * 未解锁 ⇒ **恰好 0**（零回归 ✓）
  */
 export function darkMatterAdditiveTerm(state) {
-  return darkMatterEffectMult(state) - 1;
+  // ★ 2026-10-25：du1 直接放大暗物质的加法项（未买 = ×1，零回归）
+  return (darkMatterEffectMult(state) - 1) * spaceDuMult(state, "du1").toNumber();
 }
 
 /**

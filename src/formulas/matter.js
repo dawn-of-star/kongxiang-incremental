@@ -10,8 +10,8 @@ import { conversion, entropyRate } from "./entropy.js";
 import { globalMultiplier } from "./global.js";
 import { particleTimeBoost } from "./quantum.js";
 import { zpeMultiplier } from "./zpe.js";
+import { spaceDu11Floor } from "../space.js";
 import Decimal from "../../dist/break_eternity.esm.js";
-
 export function matterCoeff(state, particleCount = undefined) {
   const P = particleCount === undefined
     ? (state.resources?.particle ?? null)
@@ -205,12 +205,13 @@ export function overloadFactor(state, baseRate) {
   //    AD 的 `scaleFactor = 1.2 > 1` 乘在 **interval**（时间）上 ⇒ 只让**变慢**
   //    我们曾把 `1/1.2 < 1` 乘在 **rate** 上 ⇒ 会让**变少**（可净下降）
   //    渐近式把因子压成"有下界、极缓"的形状 ⇒ 速率与 base **同阶增长** ⇒ 回到了"变慢" ✓
-  //
   //  `knee = 8430` 的依据：用户要求「推进到 1e308.25 不费更多时间」。
   //    实测该点（11.13h）`over = 443.7` 阶 ⇒ 要因子 ≈ 1 就得 `knee ≫ 443.7`；
   //    目标「最多慢 5%」（因子 ≥ 0.95）⇒ `knee ≥ 443.7 × 0.95/0.05 = 8430` ✓
   const p = OVERLOAD.p ?? 1;
-  return new Decimal(1).div(new Decimal(1).add(over / OVERLOAD.knee).pow(p));
+  const raw = new Decimal(1).div(new Decimal(1).add(over / OVERLOAD.knee).pow(p));
+  const floor = spaceDu11Floor(state);
+  return floor > 0 ? Decimal.max(raw, floor) : raw;
 }
 
 /**

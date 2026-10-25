@@ -12,6 +12,7 @@ import { particleTimeBoost } from "./quantum.js";
 import { deLevelOf, hasDe, hasV9, hasVoid, hasZpe, levelOf } from "../state.js";
 import { tangramConvRateMult } from "../tangram-bonus.js";
 import { rewardConvSlopeMult } from "../tangram-reward.js";
+import { spaceDu5Mult } from "../space.js";
 import { effectiveTraps, zpeMultiplier } from "./zpe.js";
 
 export function entropyRate(state) {
@@ -77,7 +78,7 @@ export function conversion(state) {
   //   放在**所有修正的最后**（与 cm3、IC 同一个位置）—— 顺序不影响乘除结果，
   //   但集中在这里便于审计"阈值到底被谁改过" ✓
   if (hasEternityMilestone(state, "em6")) threshold = threshold.div(1.2);
-  return { threshold, output };
+  return { threshold, output: output.mul(spaceDu5Mult(state)) };
 }
 
 /**

@@ -10,6 +10,7 @@
 import Decimal from "../dist/break_eternity.esm.js";
 import { markPageUnlocked } from "./config.js";
 import { startSpaceChallenge } from "./engine.js";
+import { buySpaceUpgrade, spaceCanBuy, spaceUpgradeCost, spaceUpgradeLevel } from "./space-upgrades.js";
 import { exitSpaceChallenge, spaceUnlocked } from "./space.js";
 import { fmt, sci } from "./ui-core.js";
 import { SPACE_DESIGN, SPACE_UPGRADES } from "./space-config.js";
@@ -58,14 +59,20 @@ function upgradeCard(u) {
   box.appendChild(h("div", "space-upg-desc", u.desc));
   const meta = h("div", "space-upg-meta");
   meta.appendChild(h("span", "space-upg-effect", u.effect));
-  meta.appendChild(h("span", "space-upg-cost", u.cost));
+  const cost = h("span", "space-upg-cost", u.cost);
+  meta.appendChild(cost);
   box.appendChild(meta);
-  const btn = h("button", "btn space-upg-btn", u.deferred ? "暂缓（IP 禁令）" : "购买（待接线）");
+  const btn = h("button", "btn space-upg-btn", u.deferred ? "暂缓（IP 禁令）" : "购买");
   btn.type = "button";
   btn.disabled = true;
-  btn.title = u.deferred ? u.deferredReason : "UI 先行：引擎接线后启用";
+  btn.title = u.deferred ? u.deferredReason : "";
+  btn.addEventListener("click", () => {
+    if (!lastState || u.deferred) return;
+    const r = buySpaceUpgrade(lastState, u.id);
+    if (r.ok) renderSpace(lastState);
+  });
   box.appendChild(btn);
-  cardRefs.set(u.id, { box, lv, btn });
+  cardRefs.set(u.id, { box, lv, btn, cost });
   return box;
 }
 
@@ -86,7 +93,7 @@ function build() {
   intro.appendChild(h("p", "note",
     "EP ≥ 1e1200 解锁；挑战内所有最终收益 ^0.5，退出后全额，SE 只在挑战内按 IP 峰值结算。"
     + "ST 基础公式的上一轮结果固定取 SE。实测 EP 1e1296，本阶段目标重定为 1e3600；"
-    + "挑战与 SE/ST 已接，du 购买/效果待接。"));
+    + "挑战、SE/ST、du1~6/9/11 已接；du7 效果口径待接。"));
   head.appendChild(intro);
 
   const curs = h("div", "space-currencies");
@@ -149,7 +156,7 @@ function build() {
   for (const u of SPACE_UPGRADES.filter((x) => x.currency === "se")) seList.appendChild(upgradeCard(u));
   root.appendChild(seList);
 
-  const stHead = h("h2", "space-section-title", "ST 单次 · du7~du10");
+  const stHead = h("h2", "space-section-title", "ST 单次 · du7~du11");
   root.appendChild(stHead);
   const stList = h("div", "space-upgrade-grid");
   stList.id = "space-st-list";
@@ -157,8 +164,8 @@ function build() {
   root.appendChild(stList);
 
   const note = h("p", "note space-footnote");
-  note.textContent = "UI 先行：按钮暂禁用，避免“点了没反应”。"
-    + " 旧 du11（IP × ST^0.1）已删除；新 du11 是单次 1e5 ST，用当前 ST 把暗能量超载强度下限从 0.3 抬向 0.95（不会到 1）；du8/du10 为价格侧，本阶段暂缓。";
+  note.textContent = "du1~du6 用 SE 复购；du9/du11 用 ST 单次；du7 效果口径待接，du8/du10 价格侧暂缓。"
+    + " du11 是单次 1e5 ST，用当前 ST 把暗能量超载强度下限从 0.3 抬向 0.95（不会到 1）。";
   root.appendChild(note);
 
   built = true;
@@ -232,24 +239,33 @@ export function renderSpace(state) {
     const ref = cardRefs.get(u.id);
     if (!ref) continue;
     const raw = levels[u.id];
-    if (u.repeatable) {
-      const lv = Math.max(0, Math.floor(Number(raw ?? 0)) || 0);
-      ref.lv.textContent = `Lv ${fmt(D(lv), 0)}`;
-      ref.btn.textContent = u.deferred ? "暂缓（IP 禁令）" : "购买（待接线）";
+    const level = spaceUpgradeLevel(state, u.id);
+    const owned = !u.repeatable && level > 0;
+    const cost = spaceUpgradeCost(state, u.id);
+    const unit = u.currency === "se" ? "SE" : "ST";
+    if (u.deferred || u.pending) {
+      ref.lv.textContent = u.repeatable ? "Lv 0" : "未购买";
+      ref.btn.textContent = u.deferred ? "暂缓（IP 禁令）" : "效果待接";
+      ref.btn.disabled = true;
+      ref.btn.title = u.deferredReason ?? u.pendingReason ?? "本阶段暂缓";
+      ref.cost.textContent = u.cost;
     } else {
-      const owned = raw === true || Number(raw) > 0;
-      ref.lv.textContent = owned ? "已购买" : "未购买";
-      ref.btn.textContent = u.deferred
-        ? "暂缓（IP 禁令）"
-        : owned ? "已购买" : "购买（待接线）";
+      ref.lv.textContent = u.repeatable ? `Lv ${fmt(D(level), 0)}` : (owned ? "已购买" : "未购买");
+      ref.cost.textContent = `${u.repeatable ? "下一级" : "价格"} ${sci(cost)} ${unit}`;
+      const can = spaceCanBuy(state, u.id);
+      ref.btn.textContent = owned
+        ? "已购买"
+        : can ? `购买 · ${sci(cost)} ${unit}` : `${unit} 不足`;
+      ref.btn.disabled = owned || !can;
+      ref.btn.title = owned ? "单次升级已购买" : can ? "点击购买" : `还差 ${sci(cost.sub(D(u.currency === "se" ? sp.se : sp.st)))} ${unit}`;
     }
-    ref.box.classList.toggle("space-upg--owned", !u.repeatable && (raw === true || Number(raw) > 0));
+    ref.box.classList.toggle("space-upg--owned", !u.repeatable && (raw === true || level > 0));
   }
 
   const pageBadge = document.getElementById("space-page-badge");
   if (pageBadge) {
     pageBadge.textContent = !unlocked
       ? "未解锁"
-      : (SPACE_DESIGN.wired ? "已接线" : "挑战已接 · du 未接线");
+      : (SPACE_DESIGN.wired ? "已接线" : "du1~6/9/11 已接 · du7待");
   }
 }
