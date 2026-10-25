@@ -8,7 +8,7 @@
  * 设计依据：docs/SPACE-EXPANSION-FINAL.md（合并终稿）
  *   · du11 已删除（IP 倍率禁令）
  *   · du8 / du10 是价格侧，本阶段暂缓
- *   · du1~du6 用 SE 复购；du7~du11 用 ST 单次/复购
+ *   · du1~du6 用 SE 复购；du7~du11 用 ST 单次
  */
 export const SPACE_DESIGN = {
   challengePower: 0.5,
@@ -110,10 +110,10 @@ export const SPACE_UPGRADES = [
   },
   {
     id: "du11", name: "暗能量超载缓解", slot: "暗能量过载惩罚",
-    currency: "st", repeatable: true,
-    effect: "削弱后强度下限 0.3×初始（不会到 1）",
-    desc: "用膨胀时间抬高暗能量被超载削弱后的强度下限；初始为初始强度的 0.3 倍，不会完全等于无削弱。",
-    cost: "ST 复购 · 价格待定",
+    currency: "st", repeatable: false,
+    effect: "超载强度下限 0.3→0.95，随 ST 升高",
+    desc: "单次购买；用购买后的当前 ST 抬高暗能量被超载削弱后的强度下限。ST=C 时 0.3×初始，越高越接近 1，但封顶 0.95。",
+    cost: "1e5 ST · 单次",
   },
 ];
 
