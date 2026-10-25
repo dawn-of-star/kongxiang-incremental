@@ -125,10 +125,10 @@ export const SPACE_UPGRADES = [
     deferred: true, deferredReason: "IP 倍率禁令：本阶段暂缓",
   },
   {
-    id: "du11", name: "暗能量超载缓解", slot: "暗能量过载惩罚",
+    id: "du11", name: "暗能量倍率优化", slot: "DE 倍率削弱",
     currency: "st", repeatable: false,
-    effect: "超载强度下限 0.3→0.95，随 ST 升高",
-    desc: "单次购买；用购买后的当前 ST 抬高暗能量被超载削弱后的强度下限。ST=C 时 0.3×初始，越高越接近 1，但封顶 0.95。",
+    effect: "DE 倍率削弱后下限 0.3→0.95，随 ST 升高",
+    desc: "单次购买；用购买后的当前 ST 抬高有效 DE 倍率的下限。ST=1e5 时保留 0.3 倍，越高越接近 1，封顶 0.95；作用于 darkEnergyMultiplier，不接物质超载。",
     cost: "1e5 ST · 单次",
     baseCost: "1e5",
   },

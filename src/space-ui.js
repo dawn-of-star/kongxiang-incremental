@@ -165,7 +165,7 @@ function build() {
 
   const note = h("p", "note space-footnote");
   note.textContent = "du1~du6 用 SE 复购；du9/du11 用 ST 单次；du7 是单次解锁 du1~du6 自动化（开关在梦想页）。"
-    + " du11 是单次 1e5 ST，用当前 ST 把暗能量超载强度下限从 0.3 抬向 0.95（不会到 1）。";
+    + " du11 是单次 1e5 ST，用当前 ST 把有效 DE 倍率的削弱下限从 0.3 抬向 0.95（不会到 1）。";
   root.appendChild(note);
 
   built = true;

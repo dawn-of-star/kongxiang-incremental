@@ -186,9 +186,23 @@ console.log("=".repeat(96));
   s.space.st = D("1e5");
   const raw = overloadFactor(s, D("1e100000"));
   s.space.upgrades.du11 = true;
-  const floored = overloadFactor(s, D("1e100000"));
-  ck("du11 接到 DE 超载因子的下限", raw.lt(0.3) && floored.gte(0.3),
-    `无du11=${raw.toPrecision?.(4) ?? raw}｜有du11=${floored.toPrecision?.(4) ?? floored}`);
+  const after = overloadFactor(s, D("1e100000"));
+  ck("du11 已离开物质超载（overloadFactor 不吃 du11）", raw.eq(after),
+    `无du11=${raw.toPrecision?.(4) ?? raw}｜有du11=${after.toPrecision?.(4) ?? after}`);
+}
+
+{
+  const mk = (owned) => {
+    const s = newState();
+    s.darkEnergyTotal = D("1e2000");
+    s.space.st = D("1e5");
+    if (owned) s.space.upgrades.du11 = true;
+    return darkEnergyMultiplier(s);
+  };
+  const m0 = mk(false);
+  const m1 = mk(true);
+  ck("du11 接到新 DE 倍率削弱：0.3 floor 生效", m1.gt(m0) && m1.isFinite(),
+    `无du11=${String(m0).slice(0, 18)}｜有du11=${String(m1).slice(0, 18)}（ST=1e5 ⇒ floor=0.3）`);
 }
 
 {

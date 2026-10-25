@@ -10,7 +10,6 @@ import { conversion, entropyRate } from "./entropy.js";
 import { globalMultiplier } from "./global.js";
 import { particleTimeBoost } from "./quantum.js";
 import { zpeMultiplier } from "./zpe.js";
-import { spaceDu11Floor } from "../space.js";
 import Decimal from "../../dist/break_eternity.esm.js";
 export function matterCoeff(state, particleCount = undefined) {
   const P = particleCount === undefined
@@ -209,9 +208,7 @@ export function overloadFactor(state, baseRate) {
   //    实测该点（11.13h）`over = 443.7` 阶 ⇒ 要因子 ≈ 1 就得 `knee ≫ 443.7`；
   //    目标「最多慢 5%」（因子 ≥ 0.95）⇒ `knee ≥ 443.7 × 0.95/0.05 = 8430` ✓
   const p = OVERLOAD.p ?? 1;
-  const raw = new Decimal(1).div(new Decimal(1).add(over / OVERLOAD.knee).pow(p));
-  const floor = spaceDu11Floor(state);
-  return floor > 0 ? Decimal.max(raw, floor) : raw;
+  return new Decimal(1).div(new Decimal(1).add(over / OVERLOAD.knee).pow(p));
 }
 
 /**

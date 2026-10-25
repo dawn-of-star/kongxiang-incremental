@@ -5,6 +5,7 @@
  *    对外统一从 `src/formulas.js`（barrel）导入。
  */
 import { darkMatterAdditiveTerm, deGainBaseEffectMult, dreamUpgradeEffects, effectiveDarkEnergyLog10Of, engineBonusMult, qOf, quantumDeGainBonus, quantumDeMultBonus, zpeEngineMultBonus } from "../config.js";
+import { spaceDeEffectiveLog10 } from "../space.js";
 import { D } from "./core.js";
 import { deLevelOf, hasDe } from "../state.js";
 import Decimal from "../../dist/break_eternity.esm.js";
@@ -30,7 +31,10 @@ export function darkEnergyMultiplier(state) {
   const de = state.darkEnergyTotal.gt(0) ? state.darkEnergyTotal : D(0);
   // ★ 2026-10-25 归一化：暗能量倍率改用**有效量**（DE_EFF_CAP 渐近上限），
   //   不再削 DE 的产出/自增长。用累计总量算，避免花钱导致倍率下降。
-  const effLog10 = effectiveDarkEnergyLog10Of(de);
+  //   du11 在此抬“被削弱后的下限”，不再碰物质 overload。
+  const rawLog10 = de.gt(0) ? de.log10().toNumber() : 0;
+  const cappedLog10 = effectiveDarkEnergyLog10Of(de);
+  const effLog10 = spaceDeEffectiveLog10(state, rawLog10, cappedLog10);
   const x = D(effLog10 * 3.321928094887362);   // log2(10^L) = L·log2(10)
   const coeff = Decimal.min(D(0.1).add(x.div(20).mul(0.15)), D(0.25));
   // ★ 量子：作为**基础加成**加进括号里（a区），量是 q²。

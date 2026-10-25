@@ -185,8 +185,9 @@ export function spaceDu9Mult(state) {
 }
 
 /**
- * du11：DE 超载因子下限。
- * 未购买 ⇒ 0（不改变原行为）；购买后随当前 ST 从 0.3 抬向 0.95。
+ * du11：新的 DE 倍率削弱下限（0.3→0.95）。
+ * 未购买 ⇒ 0（不改变原行为）；购买后随当前 ST 抬升。
+ * ⚠️ 落点是 `darkEnergyMultiplier` 的有效量，不再接物质 `overloadFactor()`。
  */
 export function spaceDu11Floor(state) {
   if (spaceLevel(state, "du11") <= 0) return 0;
@@ -194,4 +195,18 @@ export function spaceDu11Floor(state) {
   const st = D(state?.space?.st);
   const x = Decimal.max(D(0), st.sub(C));
   return Math.min(0.95, 0.3 + 0.7 * x.div(x.add(C)).toNumber());
+}
+
+/**
+ * 给“DE 有效量”应用 du11 下限：
+ *   L_eff' = max(L_capped, floor × L_raw)
+ * 因为 darkEnergyMultiplier 的 DE 项与 log 线性，这等价于
+ * “被削弱后的倍率至少保留 floor 比例”。
+ */
+export function spaceDeEffectiveLog10(state, rawLog10, cappedLog10) {
+  const floor = spaceDu11Floor(state);
+  const raw = Number(rawLog10);
+  const capped = Number(cappedLog10);
+  if (!(floor > 0) || !Number.isFinite(raw) || !Number.isFinite(capped)) return capped;
+  return Math.max(capped, floor * Math.max(0, raw));
 }
