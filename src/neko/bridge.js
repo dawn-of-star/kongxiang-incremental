@@ -28,7 +28,7 @@ export function nekoHostPresent(doc = globalThis.document) {
  * 单独给（默认等于 `gameId`）。
  */
 export const NEKO_GAME_ID = "kongxiang-incremental";
-export const NEKO_GAME_VERSION = "0.7.5";
+export const NEKO_GAME_VERSION = "0.7.6";
 export const NEKO_PROTOCOL_VERSION = "1";
 
 /**
@@ -194,6 +194,8 @@ const NEKO_ASK_SYSTEM_PROMPT = [
  */
 export function createNekoBridge({ getState, onStatus, actionApi } = {}) {
   const status = { available: false, connected: false, capabilities: [], declared: null, lastError: null, lastAsk: null };
+  // 响应路径与 drain 路径可能送来同一条 control（宿主有生产者时）⇒ 3 秒内同签名只执行一次
+  let lastControlSig = { sig: "", at: 0 };
   // 主动问话的节流状态（每座桥独立；读档时"已达成点"会在首帧被预标记）
   const askState = { asked: new Set(), primed: false, lastAt: 0, count: 0, failedUntil: 0, sinceT: 0 };
   const report = (phase, detail) => {
@@ -213,6 +215,16 @@ export function createNekoBridge({ getState, onStatus, actionApi } = {}) {
   function handleControl(client, envelope) {
     const payload = envelope?.payload ?? {};
     const type = String(payload?.type ?? "");
+    // ★ 统一去重：同一条 control 可能**同时**从两条路到达 ——
+    //   ① dialogue 响应的 `data.control`（我们主动问时）；
+    //   ② `/route/drain` 的 outputs（宿主有生产者时，例如语音劫持/主动推送）。
+    //   两条路都走这里 ⇒ 3 秒内同签名只执行一次，避免"买一次变买两次"。
+    const signature = `${type}|${payload?.id ?? ""}|${payload?.max === true}`;
+    const now = Date.now();
+    if (lastControlSig.sig === signature && now - lastControlSig.at < 3000) {
+      return { type, status: "duplicate", reason: "3 秒内重复的 control，已忽略" };
+    }
+    lastControlSig = { sig: signature, at: now };
     let result = { type, status: "unknown_action" };
     try {
       const api = actionApi ?? {};
@@ -366,7 +378,20 @@ export function createNekoBridge({ getState, onStatus, actionApi } = {}) {
         return null;
       }
       try {
-        return await client.dialogue.request(prompt ? { prompt } : {});
+        const response = await client.dialogue.request(prompt ? { prompt } : {});
+        // ★★ 响应里自带**已按契约校验过**的 control（SDK: `data.control`）。
+        //    这意味着"她替玩家操作"**不依赖宿主侧的生产者** —— 只有"宿主主动推送"
+        //    （语音/文本被游戏路由劫持时的那几处）才需要 `/route/drain`。
+        //    这里直接执行，省掉 700ms 轮询延迟；drain 那条路仍保留作兜底。
+        const control = response?.data?.control;
+        const payload = control && typeof control === "object" ? control.action : null;
+        if (payload && typeof payload === "object") {
+          // 去重统一在 handleControl 里做（响应路径与 drain 路径共用同一判据）
+          try {
+            handleControl(client, { payload });
+          } catch { /* 执行失败不影响对话本身 */ }
+        }
+        return response;
       } catch (err) {
         report("error", err);
         return null;

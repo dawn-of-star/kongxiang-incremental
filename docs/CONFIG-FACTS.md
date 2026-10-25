@@ -54,7 +54,7 @@
 | epMult.costMultTiers | **[5,10,100,500]** |  |
 | epMult.costThresholds | **["1e30","1e1000","1e10000",null]** | 末段 null = 永不切换（无封顶） |
 | 默认批跑脚本数 | **52** | 权威来源 = `node tools/run-all.mjs --list` |
-| tools/ 下脚本总数 | **59** | .mjs + .cjs |
+| tools/ 下脚本总数 | **60** | .mjs + .cjs |
 | --strict 已知失败数 | **6** | 见 `docs/TODO.md` M 段（过期断言/坏工具/数值漂移） |
 
 ---

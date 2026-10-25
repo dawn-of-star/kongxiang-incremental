@@ -7,6 +7,29 @@
 
 ---
 
+## 0.7.6 — 零宿主改动接入 N.E.K.O（便携包）
+
+> **公告**：这一版换了一条"过江"的路 —— 不再要求宿主改代码。把游戏放进
+> N.E.K.O 的静态目录即可联动：SDK 握手、对话、以及"她替玩家操作"全部成立。
+> `control` 现在优先从 `dialogue.request` 的**响应**里读（SDK 已按契约校验过），
+> 只有在"宿主主动推送"的场合才需要那条可选的 `/route/drain` 生产者。
+>
+> 用法见 [`docs/PORTABLE.md`](docs/PORTABLE.md)：`node tools/pack-portable.mjs`
+> 生成便携包 → 运行 `install.ps1`（自动定位 Steam 安装目录）→ 打开
+> `/static/game/games/kongxiang/index.html`。
+>
+> 统计：自 `0.7.5` 起 **1 个提交**（feat 1）。
+
+**为什么这样能成（三条都验证过）**
+
+1. **同源**：宿主 `/static` 是通用挂载 ⇒ 放进 `resources\bin\static\game\games\kongxiang\`
+   的页面与宿主 API 同源，SDK 才能握手；
+2. **她代操作不需要宿主补丁**：`dialogue.request` 的响应自带已校验的 `control`。
+   实测：把宿主生产者整段禁用（日志 `game_control` 0 行），她仍完成了购买
+   （`status:"ok"`）；
+3. **不会重复执行**：响应路径与 drain 路径共用 3 秒同签名去重 ——
+   两条路同时到达也只执行一次。
+
 ## 0.7.5 — 七巧板系统基本完成
 
 > **公告**：这一版把七巧板从"能拼"补成"**能看、能对、能拿奖**" —— 挑战目标直接画在

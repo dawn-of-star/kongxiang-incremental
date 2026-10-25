@@ -41,7 +41,7 @@ import { tmpdir, availableParallelism } from "node:os";
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 /** 需要 GUI（electron）或打包产物的脚本，不进自动批跑 */
-const SKIP = new Set(["run-all.mjs", "smoke-electron.cjs", "inspect-asar.cjs"]);
+const SKIP = new Set(["run-all.mjs", "smoke-electron.cjs", "inspect-asar.cjs", "pack-portable.mjs"]);
 
 /**
  * ★★★ 2025 提速：**重诊断脚本**（默认不跑，需要时显式点名）。
