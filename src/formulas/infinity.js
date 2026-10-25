@@ -6,6 +6,7 @@
  */
 import { COLLAPSE, DE_MILESTONES, ZPE_MILESTONES, crunchThreshold, em5IpMult, engineBonusMult, infinityPointGain, ipDoubleMult, quantumToIPGain } from "../config.js";
 import { hasV9, hasZpe } from "../state.js";
+import { spaceChallengePower } from "../space.js";
 
 export function collapseUnlocked(state) {
   return state.peakMatter.gte(COLLAPSE.unlockMatter);
@@ -33,7 +34,8 @@ export function bigCrunchGain(state) {
   return infinityPointGain(state.resources.matter, state.brokenInfinity, state)
     .mul(ipMult)
     .add(quantumToIPGain(state).mul(engineBonusMult(state)))
-    .mul(em5IpMult(state));
+    .mul(em5IpMult(state))
+    .mul(spaceChallengePower(state));
 }
 
 // ══════════════════════════════════════════════════════════

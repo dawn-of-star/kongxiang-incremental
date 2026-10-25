@@ -9,7 +9,8 @@ import { maybeAutoCrunch } from "../autocrunch.js";
 import { doBigCrunch } from "./collapse.js";
 import { BASE, COLLAPSE, DE_EFF_CAP, INFINITY_UPGRADES, crunchThreshold, deEngineLevelBonus, deGrowthRate, hasEternityMilestone, ipDoubleMult, markPageUnlocked, quantumPerPair, quantumStepMult, quantumZpeRequirement, zpeEngineLevel, zpeEngineUnlocked } from "../config.js";
 import { sci } from "../format.js";
-import { D, bigCrunchGain, checkDeMilestones, checkQuantumMilestones, checkZpeMilestones, collapseUnlocked, darkEnergyRate, floorDiv, matterGainOver, zpeRate } from "../formulas.js";
+import { D, bigCrunchGain, checkDeMilestones, checkQuantumMilestones, checkZpeMilestones, collapseUnlocked, darkEnergyRate, floorDiv, globalMultiplier, matterGainOver, zpeRate } from "../formulas.js";
+import { spaceApplyFinalGain, spaceTick } from "../space.js";
 import { unlockZpeEngine } from "./purchases.js";
 import { awardDream, isQuantumLogLevel, pushLog } from "../state.js";
 import { applyTangramPassiveIp } from "../tangram-passive.js";
@@ -122,9 +123,9 @@ function applyTimedIncome(state, dt) {
     const before = Math.min(state.infinityElapsed - dt, cap);   // 本帧之前的可计时长
     const after = Math.min(state.infinityElapsed, cap);         // 本帧之后
     if (after > before) {
-      const gain = D(after - before)
+      const gain = spaceApplyFinalGain(state, D(after - before)
         .div(INFINITY_UPGRADES.ipTime.secondsPerPoint)
-        .mul(ipDoubleMult(state));
+        .mul(ipDoubleMult(state)));
     state.infinityPoints = state.infinityPoints.add(gain);
       // 本次无限"实时累计了多少"（仅供日志与界面显示；上限 = 30 分钟那笔）
     // ★ 数值约定 #3：别再 toNumber ✗（IP 累加量会超过 1.8e308）
@@ -421,6 +422,8 @@ export function tickBody(state, dt) {
   runAutomation(state, dt);
   checkInfinityGuard(state);
   runAutoCrunchAndPassive(state, dt);
+  // ★ 2026-10-25：空间膨胀 SE/ST（挑战内最终收益 ^0.5 由 bigCrunchGain 唯一包装）
+  spaceTick(state, dt, globalMultiplier(state));
 
   return state;
 }

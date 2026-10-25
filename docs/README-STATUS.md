@@ -26,7 +26,7 @@
 
 | 项 | 实测值 | 权威来源 |
 |---|---|---|
-| 默认批跑脚本数 | **51** | `node tools/run-all.mjs --list` |
+| 默认批跑脚本数 | **52** | `node tools/run-all.mjs --list` |
 | `npm test` 结果 | **✅ 默认全绿**；`--strict` 有 **6 个失败** | `tools/run-all.mjs` |
 | `--strict` 的 6 个失败 | `base-vs-quantum` / `cap-monotonic-lab` / `check-web-bundle` / `ip-economy-lab` / `quantum-particle-lab` / `zpe-engine-lab`（属"过期断言/坏工具/数值漂移"，非坏实现） | `docs/TODO.md` M 段 |
 | 版本 | **0.7.5**（`package.json` 是唯一出处） | `package.json` |
@@ -48,7 +48,7 @@
 | **[CONFIG-FACTS.md](CONFIG-FACTS.md)** | ✅ 权威（**机器生成**） | ★ **所有计数/常量的唯一出处** —— 由 `tools/config-facts.mjs` 生成并校验，与代码不同步会**测试失败** ✓ |
 | **ZONES.md** | ✅ 权威 | 乘区归属（**改乘区必看**）。计数见 `CONFIG-FACTS.md` |
 | **[BONUS-POSITIONS.md](BONUS-POSITIONS.md)** | ✅ 权威 | ★ **全增益落点总表（a区 / b区 / c区 / 斜率）** + 中期为什么进不了指数区；加中期增益前必看 |
-| **[SPACE-EXPANSION-FINAL.md](SPACE-EXPANSION-FINAL.md)** | ⚠️ 设计合并终稿 + **UI 先行**（引擎未接线；1e3600 静态结论已被实测 EP 1e1296 修正） | ★ **空间膨胀**：du1~du10 / SE / ST / `^0.5` 挑战；目标重定 1e3600，见 §2.7；IP 倍率合规见 §2.8 |
+| **[SPACE-EXPANSION-FINAL.md](SPACE-EXPANSION-FINAL.md)** | ⚠️ 设计终稿 + **核心已接**（SE/ST/挑战已接线；du 效果未接） | ★ **空间膨胀**：du1~du11 / SE / ST / `^0.5` 挑战；解锁 EP 1e1200，目标 1e3600；IP 倍率合规见 §2.8 |
 | **ZPE-ENGINE.md** | ✅ 权威 | ZPE 引擎（含第 5 条机制：基于自身倍数提升前 8 个虚空升级） |
 | **QUANTUM-MILESTONES.md** | ✅ 权威 | 量子里程碑（qm1~qm7）的定义与阈值 |
 | **COLLAPSE-MILESTONES-8.md** | ✅ 已落地 | `cm1`~`cm8` **全部实装并接线**；本文保留**设计依据与理由** |

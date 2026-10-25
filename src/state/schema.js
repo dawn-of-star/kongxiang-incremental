@@ -224,6 +224,7 @@ export function newState() {
       bestIp: D(0),
       bestEp: D(0),
       challengeSe: D(0),
+      challengeSeBase: D(0),
       upgrades: {},
     },
     /** 已大坍缩次数 */

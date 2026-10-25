@@ -9,12 +9,14 @@
  */
 import Decimal from "../dist/break_eternity.esm.js";
 import { markPageUnlocked } from "./config.js";
+import { enterSpaceChallenge, exitSpaceChallenge, spaceUnlocked } from "./space.js";
 import { fmt, sci } from "./ui-core.js";
 import { SPACE_DESIGN, SPACE_UPGRADES } from "./space-config.js";
 
 const D = (x) => new Decimal(x ?? 0);
 const cardRefs = new Map();
 let built = false;
+let lastState = null;
 
 function h(tag, cls, text) {
   const n = document.createElement(tag);
@@ -83,7 +85,7 @@ function build() {
   intro.appendChild(h("p", "note",
     "EP ≥ 1e1200 解锁；挑战内所有最终收益 ^0.5，退出后全额，SE 只在挑战内按 IP 峰值结算。"
     + "ST 基础公式的上一轮结果固定取 SE。实测 EP 1e1296，本阶段目标重定为 1e3600；"
-    + "本页先做 UI，购买/结算/收益接线在下一步。"));
+    + "挑战与 SE/ST 已接，du 购买/效果待接。"));
   head.appendChild(intro);
 
   const curs = h("div", "space-currencies");
@@ -99,11 +101,18 @@ function build() {
   const chalLine = h("div", "space-status-line", "当前：未进入");
   chalLine.id = "space-challenge-line";
   chal.appendChild(chalLine);
-  const chalBtn = h("button", "btn space-challenge-btn", "进入挑战（待接线）");
+  const chalBtn = h("button", "btn space-challenge-btn", "进入挑战");
   chalBtn.id = "space-challenge-btn";
   chalBtn.type = "button";
   chalBtn.disabled = true;
-  chalBtn.title = "UI 先行：引擎接线后启用";
+  chalBtn.title = "需要 EP 1e1200";
+  chalBtn.addEventListener("click", () => {
+    if (!lastState) return;
+    const ok = lastState.space?.challenge === true
+      ? exitSpaceChallenge(lastState)
+      : enterSpaceChallenge(lastState);
+    if (ok?.ok) renderSpace(lastState);
+  });
   chal.appendChild(chalBtn);
   statusRow.appendChild(chal);
 
@@ -167,6 +176,7 @@ export function renderSpace(state) {
   if (typeof document === "undefined") return;
   build();
   if (!built || !state) return;
+  lastState = state;
 
   const sp = state.space ?? {};
   const se = D(sp.se);
@@ -175,7 +185,7 @@ export function renderSpace(state) {
   const ipPeak = D(sp.ipPeak ?? state.maxIpThisEternity ?? state.infinityPoints);
   const challenge = sp.challenge === true;
   const unlockEp = D(SPACE_DESIGN.unlockEp);
-  const unlocked = ep.gte(unlockEp);
+  const unlocked = spaceUnlocked(state);
   if (unlocked) markPageUnlocked(state, "space");
   const targetEp = D(SPACE_DESIGN.targetEp);
 
@@ -186,6 +196,15 @@ export function renderSpace(state) {
     flyout.setAttribute("aria-disabled", unlocked ? "false" : "true");
     if (unlocked) flyout.removeAttribute("title");
     else flyout.title = `尚未解锁：需要永恒点达到 ${sci(unlockEp)}`;
+  }
+
+  const chalBtn = document.getElementById("space-challenge-btn");
+  if (chalBtn) {
+    chalBtn.disabled = !unlocked;
+    chalBtn.textContent = challenge ? "退出挑战" : "进入挑战";
+    chalBtn.title = unlocked
+      ? (challenge ? "退出后最终收益恢复全额；已结算 SE 保留" : "进入后所有最终收益 ^0.5")
+      : `需要永恒点达到 ${sci(unlockEp)}`;
   }
 
   setText("space-se", fmt(se, 0));
@@ -228,6 +247,6 @@ export function renderSpace(state) {
   if (pageBadge) {
     pageBadge.textContent = !unlocked
       ? "未解锁"
-      : (SPACE_DESIGN.wired ? "已接线" : "UI 先行 · 未接线");
+      : (SPACE_DESIGN.wired ? "已接线" : "挑战已接 · du 未接线");
   }
 }
