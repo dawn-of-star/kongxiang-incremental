@@ -5,7 +5,7 @@
  *    对外统一从 `src/engine.js`（barrel）导入。
  */
 import { DE_UPGRADES, DREAM_BY_ID, VOID_UPGRADES, dreamUpgradeCostAt, dreamUpgradeLevelOf, markPageUnlocked } from "../../config.js";
-import { deUpgradeCost, voidUpgradeCost } from "../../formulas.js";
+import { deLevelsAffordable, deUpgradeCost, voidUpgradeCost } from "../../formulas.js";
 import { awardDream, deLevelOf, pushLevelLog, pushLog } from "../../state.js";
 
 /**
@@ -78,6 +78,71 @@ export function buyDeUpgrade(state, id) {
     pushLog(state, `💭 首次购买「${cfg.name}」，获得 1 梦想点`);
   }
   return true;
+}
+
+/**
+ * ★★★ 2026：**批量购买一个暗能量升级**（O(1) 闭式解）—— 「买满」按钮与自动化**共用**它。
+ *
+ * ── 历史（两次都踩在"逐级循环"上）──
+ *   ① `main.js` 的买满：`while (n < 500 && buyDeUpgrade(...))` ⇒ **500 级硬上限** ✗
+ *      实测池 1e300：deGainBase 真正可买 1663 级、convOutput 989 级，却只买 500 ✗
+ *   ② 自动化：`for (i < 1)`（每次 1 级）⇒ 速率 = 帧率 ✗；后来改成 5000 级/次循环
+ *      ⇒ 百万级时仍然跑不完 ✗
+ *
+ * ── 现在 ──
+ *   级数由 `deLevelsAffordable`（formulas/costs.js）**按段闭式求**，
+ *   价格与付款仍走同一套公式 ⇒ 百万级也是**常数时间**、不卡帧 ✓
+ *   `dreamAnnihilation`（梦想点 + 物质、上限 10）单独走 ≤10 次循环 ✓
+ *
+ * @param {number} cap 本次最多买几级（自动化按时间预算传入；买满传安全上限）
+ * @returns {number} 实际买到的级数
+ */
+export function buyDeUpgradeBatch(state, id, cap = 1e9) {
+  const cfg = DE_UPGRADES[id];
+  if (!cfg) return 0;
+  const limit = Math.max(0, Math.floor(Number(cap) || 0));
+  if (limit < 1) return 0;
+  const lv = deLevelOf(state, id);
+  if (cfg.maxLevel != null && lv.gte(cfg.maxLevel)) return 0;
+
+  // ── 梦想烬灭虚无：梦想点 + 物质双币种，但**上限 10 级** ⇒ 逐级最省事也最安全 ✓
+  if (!deLevelsAffordableSupported(id)) {
+    let n = 0;
+    while (n < limit && buyDeUpgrade(state, id)) n++;
+    return n;
+  }
+
+  const r = deLevelsAffordable(state, id, limit);
+  if (!r || r.k < 1) return 0;
+
+  // 付款（价格 ← 同一个 deUpgradeCost 推导出的等比和）
+  if (r.pool === "particle") state.resources.particle = state.resources.particle.sub(r.spent).max(0);
+  else if (r.pool === "zpe") state.zpe = state.zpe.sub(r.spent).max(0);
+  else state.darkEnergy = state.darkEnergy.sub(r.spent).max(0);
+
+  state.deUpgradeLevels[id] = lv.add(r.k);
+  pushLevelLog(state, cfg.name, lv.toNumber(), lv.add(r.k).toNumber());
+
+  // ★ 首购梦想点只发一次（与 `buyDeUpgrade` 同语义；批量买也必须补上）
+  if (cfg.firstRewardDream && !state.deFirstPurchase[id]) {
+    state.deFirstPurchase[id] = true;
+    state.dreamPoints = state.dreamPoints.add(1);
+    pushLog(state, `💭 首次购买「${cfg.name}」，获得 1 梦想点`);
+  }
+  return r.k;
+}
+
+/** 这批升级是否支持闭式批量（不支持 ⇒ 逐级，见 `buyDeUpgradeBatch`） */
+function deLevelsAffordableSupported(id) {
+  return id === "phaseShift" || id === "vacuumAccel" || id === "convOutput" || id === "deGainBase";
+}
+
+/**
+ * 暗能量升级的「买满」：**买到买不起为止**（O(1)，不再有 500 级截断）✓
+ * @param {number} cap 安全上限（只防异常；闭式解不会循环）
+ */
+export function buyDeUpgradeMax(state, id, cap = 1e9) {
+  return buyDeUpgradeBatch(state, id, cap);
 }
 
 // ══════════════════════════════════════════════════════════

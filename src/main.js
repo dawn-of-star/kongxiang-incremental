@@ -26,7 +26,7 @@ import { BASE, DE_MILESTONES, qOf, quantumZpeMultBonus, ETERNITY, eternityPointG
   //   （原来这里直接读 `BASE.offlineCapSeconds`，两处各读一次 ⇒ 加了升级必然不一致 ✗）
   offlineCapSeconds } from "./config.js";
 import {
-  advance, breakInfinity, buyDeUpgrade, buyDreamUpgrade, buyInfinityUpgrade, buyIpDoubleMax, buyRepeatable, affordableCount, zpeEngineAffordable, tick,
+  advance, breakInfinity, buyDeUpgrade, buyDeUpgradeMax, buyDreamUpgrade, buyInfinityUpgrade, buyIpDoubleMax, buyRepeatable, affordableCount, zpeEngineAffordable, tick,
   // ★★★ 2025：永恒升级「永恒增幅」（第三层设计稿 33~35 行）
   buyEpMult,
   // ★★ 2025 修复：这四个**被 handlers 调用却从未 import** ⇒ 每次点击都抛
@@ -217,8 +217,11 @@ const handlers = {
   /** @param {boolean} max 连续购买直到买不起 */
   onBuyDe(id, max) {
     if (max) {
-      let n = 0;
-      while (n < 500 && buyDeUpgrade(state, id)) n++;
+      // ★★★ 2026 修 bug（用户：「买满按钮不买满又怎么回事？」）——
+      //   原来这里是 `while (n < 500 && buyDeUpgrade(...)) n++`：**硬上限 500 级**，
+      //   而单买一次只 +1 级 ⇒ 真正可买 1663 级时也只买 500 ✗
+      //   ⇒ 改用 `buyDeUpgradeMax`（只由"买得起吗"决定，20000 只是安全阀）✓
+      const n = buyDeUpgradeMax(state, id);
       if (n > 0) save(state);
     } else if (buyDeUpgrade(state, id)) {
       save(state);

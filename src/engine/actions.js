@@ -4,12 +4,12 @@
  * ★ 2026 模块化：由 1,660 行的 engine.js 按动作领域拆出（声明与注释逐字保留）。
  *    对外统一从 `src/engine.js`（barrel）导入。
  */
-import { BASE, DE_UPGRADES, DREAM_UPGRADES, REPEATABLE, dreamUpgradeEffects, piecewiseDeCost } from "../config.js";
+import { BASE, DE_AUTO, DE_UPGRADES, DREAM_UPGRADES, REPEATABLE, dreamUpgradeEffects } from "../config.js";
 import { autoEnabled, dreamAutoBuyTick } from "../dream-effects.js";
 import { D, clampToAffordable, floorDiv, geometricSum, isAutoAcquire, repeatableCost, trapCost } from "../formulas.js";
-import { buyIpDoubleMax, buyZpeEngineLevel } from "./purchases.js";
-import { addLevel, deLevelOf, levelOf, pushLevelLog, pushLog } from "../state.js";
-import Decimal from "../../dist/break_eternity.esm.js";
+import { buyDeUpgradeBatch, buyIpDoubleMax, buyZpeEngineLevel } from "./purchases.js";
+import { addLevel, levelOf, pushLevelLog, pushLog } from "../state.js";
+
 
 export function doClick(state) {
   let gain = D(BASE.clickGain);
@@ -135,76 +135,20 @@ export function buyTrap(state, max = false) {
   return k;
 }
 
-/** 购买虚空升级 */
-export function autoBuyDeUpgrade(state, id) {
-  const cfg = DE_UPGRADES[id];
-  if (!cfg) return 0;
-  const lv = deLevelOf(state, id);
-  // ★★★ 2026：**自动购买必须尊重 maxLevel**（原来没查 ⇒ 能买到 659 级 ✗）
-  if (cfg.maxLevel != null && lv.gte(cfg.maxLevel)) return 0;
-  const d = dreamUpgradeEffects(state);
-
-  let r, base, pool, isParticle, isDarkEnergy = false;
-  if (id === "phaseShift") {
-    r = d.phaseShiftCostMult;
-    base = D(cfg.baseCost ?? 100).mul(Decimal.pow(r, lv));
-    pool = state.resources.particle;
-    isParticle = true;
-  } else if (id === "vacuumAccel") {
-    r = 10;
-    base = Decimal.pow(10, lv);
-    pool = state.zpe;
-    isParticle = false;
-  } else if (id === "convOutput") {
-    // 凝聚斜率：等比数列，价格 = baseCost × costMult^等级，烧暗能量
-    r = cfg.costMult;
-    base = D(cfg.baseCost).mul(Decimal.pow(r, lv));
-    pool = state.darkEnergy;
-    isParticle = false;
-    isDarkEnergy = true;
-  } else if (id === "deGainBase") {
-    // 相变增幅：**分段价格**（×3 -> ×1.5 -> ×2），没有单一公比。
-    // 用有界的逐级累加 —— 每一级只调一次 O(1) 的 piecewiseDeCost，
-    // 而且上限 200 级封死，所以是常数代价（不像当年那个无界的 while）。
-    pool = state.darkEnergy;
-    let k2 = 0;
-    let acc = D(0);
-    // ★★★ 2026（用户：「前期启动自动化后一整个逻辑都有问题」）——
-    //   原来一次买满（最多 200 级）⇒ **每帧复利** ⇒ 暗能量 10 分钟从 3e2 冲到 6e19 ✗
-    //   ⇒ 自动化改成**每次只买 1 级**（与 AD 的 autobuyer 间隔语义一致）✓
-    for (let i = 0; i < 1; i++) {
-      const one = piecewiseDeCost(cfg.baseCost, lv.add(k2));
-      if (pool.lt(acc.add(one))) break;
-      acc = acc.add(one);
-      k2++;
-    }
-    if (k2 < 1) return 0;
-    state.darkEnergy = pool.sub(acc);
-    state.deUpgradeLevels[id] = lv.add(k2);
-    pushLevelLog(state, cfg.name, lv.toNumber(), lv.add(k2).toNumber());
-    return k2;
-  } else {
-    return 0;   // 其他升级价格形态不同，不支持自动
-  }
-
-  if (r <= 1 || pool.lt(base)) return 0;
-
-  let k = Math.floor(pool.mul(r - 1).div(base).add(1).log(r).toNumber());
-  if (!Number.isFinite(k) || k < 1) return 0;
-  k = Math.min(k, 1);   // ★ 2026：每次只买 1 级（防每帧复利 ✗）
-
-  // 浮点误差兜底：算出来的总价可能略微超过资源（抽到 formulas.js 里了）
-  k = clampToAffordable(base, r, pool, k);
-  const total = geometricSum(base, r, k);
-  if (pool.lt(total)) return 0;
-
-  if (isDarkEnergy) state.darkEnergy = pool.sub(total);
-  else if (isParticle) state.resources.particle = pool.sub(total);
-  else state.zpe = pool.sub(total);
-
-  state.deUpgradeLevels[id] = lv.add(k);
-  pushLevelLog(state, cfg.name, lv.toNumber(), lv.add(k).toNumber());
-  return k;
+/**
+ * 自动买暗能量升级（**自动化专用**）。
+ *
+ * ★★★ 2026（用户：「自动购买速度还是太慢了」）：**单次可买多级**，上限由调用方按时间给。
+ *   @param {number} allow 本次最多买几级（`autoAcquireDream` 按 `DE_AUTO.buyPerSecond × dt` 算）
+ *   ⚠️ 原来写死"每次 1 级" ⇒ 速率 = 帧率（6fps 时只有 6 级/秒）✗
+ *   ⚠️ 不能改成"每帧买满"（2026 初版那样 ⇒ 每帧复利、DE 10 分钟冲到 6e19）⇒ 必须有 `allow` 这个界 ✓
+ */
+export function autoBuyDeUpgrade(state, id, allow = 1) {
+  // ★★★ 2026（用户：「我现在的购买量级马上到百万了」）：
+  //   级数由**闭式解**给出（`buyDeUpgradeBatch` ⇒ `deLevelsAffordable`），O(1) ⇒ 百万级也是常数时间 ✓
+  //   `allow` = 本次的时间预算（`DE_AUTO.buyPerSecond × dt`）⇒ 速率有界、不随帧率变化 ✓
+  //   ⚠️ 不再有"每次 1 级"（速率=帧率 ✗）也不再逐级循环（百万级会卡死 ✗）
+  return buyDeUpgradeBatch(state, id, Math.max(0, Math.floor(Number(allow) || 0)));
 }
 
 /**
@@ -245,7 +189,7 @@ export function autoAcquire(state) {
  *    为真时才跑 —— 于是买了梦想点自动化却什么都不发生（实测等级一直是 0）。
  *    梦想点和虚空升级是两条独立的系统，不该互相门控。
  */
-export function autoAcquireDream(state) {
+export function autoAcquireDream(state, dtSec = 0) {
   // ★★★ 2026 修 bug（用户报：「梦想（自动化）页面的自动化升级都不正常工作」）
   //
   // ── 原 bug（4 条「自动买暗能量升级」全死）──
@@ -261,10 +205,25 @@ export function autoAcquireDream(state) {
   //   再用 `effect.deUpgrade` 去真正购买 ⇒ 两个 id 各归各位 ✓
   //   ⚠️ `dreamUpgradeEffects().autoBuyDe` **保留原样**（UI 用它显示"已开启哪几条 DE 升级"，
   //     那里要的就是 DE 名字）✓ 两处语义不同，不要合并。
+  // ★★★ 2026（用户：「自动购买速度还是太慢了」）：**速率改成按游戏时间算** ✓
+  //   `本次预算 = DE_AUTO.buyPerSecond × dt`，带**小数进位**（`state.deAutoCarry`）⇒
+  //   · 与**帧率无关**：6fps 与 120fps 都是同样级/秒（这是原来最难受的一条 —— 1 级/帧）✓
+  //   · 单次可买多级 ⇒ 大池子能**追平**，不用等几千帧 ✓
+  //   · 仍**有界** ⇒ 不会回到"每帧买满"的复利爆炸（2026 初版那样 DE 10 分钟冲到 6e19 ✗）✓
+  //   ⚠️ `deAutoCarry` **不进存档**：只是 <1 级的小数余量，丢了最多影响 1 级 ✓
+  const dt = Math.max(0, Number(dtSec) || 0);
+  const perSec = Math.max(0, Number(DE_AUTO?.buyPerSecond) || 0);
+  state.deAutoCarry ??= {};
   for (const d of DREAM_UPGRADES) {
     const e = d.effect;
     if (e?.kind === "autoBuy" && e.deUpgrade && autoEnabled(state, d.id)) {
-      autoBuyDeUpgrade(state, e.deUpgrade);
+      let budget = 0;
+      if (perSec > 0 && dt > 0) {
+        const acc = perSec * dt + (Number(state.deAutoCarry[e.deUpgrade]) || 0);
+        budget = Math.floor(acc);
+        state.deAutoCarry[e.deUpgrade] = acc - budget;
+      }
+      if (budget >= 1) autoBuyDeUpgrade(state, e.deUpgrade, budget);
     }
   }
   // ★★★ 2026：另两条「自动买满」（IP 点倍增 / ZPE 引擎）✓ 买手由本文件注入（避免循环 import）

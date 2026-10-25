@@ -47,6 +47,8 @@ import { BASE, COLLAPSE, DE_MILESTONES, DE_UPGRADES, REPEATABLE, VOID_UPGRADES, 
   // ★★★ 2025：两个新修复（ipDouble 封顶平台 / ZPE 引擎 2000 级后增幅）断言要用
   //   ⚠️ `ipDoublePriceAt` 上面已经导过了 ⇒ 这里**不要**再列一次（会 `already been declared` ✗）
   IP_DOUBLE_AD, zpeEngineStepMult, zpeEngineCostMult, zpeEngineCost,
+  // ★★★ 2026：梦想自动化的购买速率（按秒，与帧率无关）断言要用 ✓
+  DE_AUTO,
   // ★★★ 2026：量子共振（原名「跨度层」）的硬上限断言要用 ✓
   matterSpanStatus, matterSpanMult,
   ZPE_ENGINE, zpeEngineAffordableIn, zpeEngineTotalCost,
@@ -68,7 +70,9 @@ import { breakInfinity, buyDeUpgrade, buyDreamUpgrade, buyRepeatable, buyTrap, b
   buyEpMult, doEternity,
   // ⚠️ 2026：`icAutoAdvance` **已随 IC 删除**（em7 退回 pending）⇒ 不再导入 ✓
   // ★★★ 2025：ZPE 引擎 2000 级后的价格增幅断言要它们 ✓
-  buyZpeEngineLevel, buyIpDoubleMax } from "../src/engine.js";
+  buyZpeEngineLevel, buyIpDoubleMax,
+  // ★★★ 2026：暗能量升级「买满」断言要用（原来 main.js 写死 500 级上限 ✗）
+  buyDeUpgradeMax } from "../src/engine.js";
 // ★★★ 2025：em7 的详情文案要 `sci`（统一科学计数法）✓
 import { fmt, sci } from "../src/format.js";
 
@@ -782,6 +786,110 @@ console.log();
   });
 
   // ══════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════
+  // ★★★ 2026：**梦想自动化④：购买速率按游戏秒计（与帧率无关）**
+  // ══════════════════════════════════════════════════════════
+  // 用户：「所有的暗能量升级说是自动购买但购买速度还是太慢了」
+  // 根因：原来「每 tick 最多买 1 级」⇒ 速率 = **帧率**（6fps ⇒ 6 级/秒）✗
+  // 现在：预算 = `DE_AUTO.buyPerSecond × dt`（带小数进位）⇒ 任何帧率都是同样级/秒 ✓
+  // 本断言：同状态、同 1 秒、三种帧率 ⇒ 每条的级数必须**几乎相同**且 ≈ buyPerSecond
+  //   ⚠️ 容差用**相对 0.5%**（不是固定 ±3）：速率 1e6/秒时，144 次 tick 的小数进位
+  //     最多截断 ~144 级（0.014%），固定 ±3 会假红 ✗
+  //   ⚠️ 池子必须给到能买 1e6 级（1e400 只够几千级 ⇒ 会被资源限制、断言假红）——
+  //     1e200000 对 phaseShift(×1.5) 够 log1.5(1e200000) ≈ 113 万级 ✓
+  check("★ 梦想自动化④：自动买 DE 的速率按秒计（6/60/144fps 必须一致）", () => {
+    const perSec = Number(DE_AUTO.buyPerSecond);
+    const IDS = ["phaseShift", "vacuumAccel", "deGainBase", "convOutput"];
+    const mk = () => {
+      const s = { ...newState(), brokenInfinity: true };   // 已破∞ ⇒ 不会被强制大坍缩
+      s.peakMatter = D("1e40");
+      s.eternityCount = 3;                                  // em3：捕获量子不重置 ZPE
+      s.thresholdFlatBought = true;
+      s.spanDeBase = D(1e6);
+      s.zpeEngineUnlocked = true;
+      s.zpeEngineLevel = D(20);
+      s.phaseTransmuterUnlocked = true;
+      // 池子给大 ⇒ 不受资源限制，才能干净地量"速率"本身
+      s.darkEnergy = D("1e2000000");
+      s.zpe = D("1e2000000");
+      s.resources.particle = D("1e2000000");
+      s.resources.matter = D("1e20");
+      s.quantum = D(100);
+      for (const id of ["autoPhase", "autoVacuum", "autoDeGainBase", "autoConvOutput"]) {
+        s.dreamUpgrades[id] = true;
+        s.autoToggles[id] = true;
+      }
+      return s;
+    };
+    const lvOf = (s, deId) => Number(deLevelOf(s, deId).toString());
+    const runs = [6, 60, 144].map((fps) => {
+      const s = mk();
+      for (let i = 0; i < fps; i++) tick(s, 1 / fps);        // 恰好 1 游戏秒
+      return { fps, lv: Object.fromEntries(IDS.map((id) => [id, lvOf(s, id)])) };
+    });
+    const tol = Math.max(3, perSec * 0.005);
+    const bad = [];
+    for (const id of IDS) {
+      const vals = runs.map((r) => r.lv[id]);
+      const nearRate = vals.every((v) => Math.abs(v - perSec) <= tol);
+      const sameAcrossFps = Math.max(...vals) - Math.min(...vals) <= tol;
+      if (!nearRate || !sameAcrossFps) bad.push(`${id}: 6/60/144fps ⇒ ${vals.join("/")}（应 ≈${perSec} 且互相接近）`);
+    }
+    return {
+      ok: bad.length === 0 && perSec > 0,
+      detail: bad.length === 0
+        ? `buyPerSecond=${perSec}｜1 秒内 6/60/144fps 都是 `
+          + `${IDS.map((id) => `${id.slice(0, 6)}…=${runs[0].lv[id]}`).join("、")} 级 ⇒ **与帧率无关** ✓`
+        : bad.join("｜"),
+    };
+  });
+
+  // ★★★ 2026（用户：「购买量级马上到百万」）：**买满 = 真买满**，且百万级也要 O(1)
+  //   旧实现两个坑：① main.js 写死 `n < 500` ② 自动化逐级循环（百万级会卡死）
+  //   本断言把"闭式解"钉在"逐级实买"上：**级数与扣款都必须一致** ✓
+  check("★ 暗能量升级「买满」：闭式解 == 逐级实买（含百万级、含扣款）", () => {
+    const IDS = ["phaseShift", "vacuumAccel", "convOutput", "deGainBase"];
+    const mk = (pool) => {
+      const s = { ...newState(), brokenInfinity: true };
+      s.phaseTransmuterUnlocked = true;
+      s.dreamPoints = D("1e9");
+      s.darkEnergy = D(pool);
+      s.resources.particle = D(pool);
+      s.zpe = D(pool);
+      s.resources.matter = D(pool);
+      return s;
+    };
+    const poolOf = (s, id) => (id === "phaseShift" ? s.resources.particle
+      : id === "vacuumAccel" ? s.zpe : s.darkEnergy);
+    const rows = [];
+    for (const pool of ["1e100", "1e300", "1e1000"]) {
+      for (const id of IDS) {
+        const a = mk(pool);
+        const kFast = buyDeUpgradeMax(a, id);            // 闭式（买满按钮的入口）
+        const b = mk(pool);
+        let kLoop = 0;
+        while (kLoop < 20000 && buyDeUpgrade(b, id)) kLoop++;   // 逐级实买（真值；上限只是护身符）
+        const sameLv = kFast === kLoop;
+        const samePay = poolOf(a, id).sub(poolOf(b, id)).abs().lte(poolOf(b, id).mul(1e-9).add(1e-9));
+        rows.push({ pool, id, kFast, kLoop, sameLv, samePay });
+      }
+    }
+    // ★ 百万级：闭式解必须**瞬间**给出（< 200ms 就算过；实测 ~0.05ms）
+    const big = mk("1e3000000");
+    const t0 = Date.now();
+    const kBig = buyDeUpgradeMax(big, "deGainBase");
+    const costMs = Date.now() - t0;
+    const bad = rows.filter((r) => !r.sameLv || !r.samePay);
+    return {
+      ok: bad.length === 0 && kBig > 1e5 && costMs < 200,
+      detail: bad.length === 0 && kBig > 1e5
+        ? `3 个池子 × 4 条升级全部「级数 + 扣款」一致 ✓｜`
+          + `百万级：deGainBase 一次买 ${kBig.toLocaleString()} 级、耗时 ${costMs}ms（O(1)）✓`
+        : `${bad.map((r) => `${r.pool}/${r.id} 闭式=${r.kFast} 逐级=${r.kLoop} 扣款一致=${r.samePay}`).join("｜")}`
+          + `｜百万级 k=${kBig} 耗时=${costMs}ms`,
+    };
+  });
+
   // ★★★ 2026：**梦想页「自动化升级」的效果侧**（用户报：「自动化升级都不正常工作」）
   // ══════════════════════════════════════════════════════════
   // 当时三个真 bug：

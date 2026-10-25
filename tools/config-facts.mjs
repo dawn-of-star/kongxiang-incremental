@@ -54,6 +54,10 @@ const facts = () => [
     "基础物质 **> 1e" + c.DE_SPAN.offAboveMatterLog10 + "** ⇒ 量子共振失效（乘数恒 ×1）；"
     + "⚠️ 严格「大于」：正好 = 1e" + c.DE_SPAN.offAboveMatterLog10 + " 仍生效"],
   ["ZONE_OF（id 乘区登记）", Object.keys(c.ZONE_OF).length, "由 dom-smoke 的「乘区登记」断言守"],
+  // ★★★ 2026：梦想自动化买暗能量升级的速率（**按游戏秒计，与帧率无关**）
+  ["DE_AUTO.buyPerSecond", c.DE_AUTO.buyPerSecond,
+    "每条自动买 DE 的升级 **级/游戏秒**（预算 = buyPerSecond × dt，带小数进位）；"
+    + "⚠️ 原来按帧（1 级/tick）⇒ 低帧率会掉速 ✗"],
   ["NEKO.tiers（好感度档位）", c.NEKO.tiers.length,
     c.NEKO.tiers.map((t) => `>${t.need} ⇒ ×${t.pow}`).join("｜")],
   ["NEKO 叠乘总指数", c.NEKO.tiers.reduce((a, t) => a * t.pow, 1).toFixed(7), "em2 达成后 ×2 加成部分"],

@@ -333,11 +333,15 @@ function updateTransmuterAccumulator(state, dt) {
   }
 }
 
-/** 第 10 阶段：自动获取（v9）+ 梦想自动化 + ZPE 引擎自动解锁。 */
-function runAutomation(state) {
+/**
+ * 第 10 阶段：自动获取（v9）+ 梦想自动化 + ZPE 引擎自动解锁。
+ * ★ 2026：**必须传 dt** —— 梦想自动化的购买速率按游戏秒计（`DE_AUTO.buyPerSecond`），
+ *   不传 dt 它会退化成"没有预算"（一级也不买）✗
+ */
+function runAutomation(state, dt) {
   // ── 10. 自动化 ──
   if (state.voidUpgrades.v9) autoAcquire(state);
-  autoAcquireDream(state);   // 独立于 v9，见函数注释
+  autoAcquireDream(state, dt);   // 独立于 v9，见函数注释；速率按秒 ✓
   // ★★★ 2026：**自动无限**（AD 的 Big Crunch autobuyer）——
   //   独立模块 `src/autocrunch.js`；把 `doBigCrunch` 当参数传进去，避免循环 import ✓
   //   ⚠️ 判据成立后再等 0.1s（用户裁定）⇒ 冷却在模块里判 ✓
@@ -414,7 +418,7 @@ export function tickBody(state, dt) {
   phaseQuantumCapture(state);
 
   // ── 10. 自动化 + 守卫 ──
-  runAutomation(state);
+  runAutomation(state, dt);
   checkInfinityGuard(state);
   runAutoCrunchAndPassive(state, dt);
 

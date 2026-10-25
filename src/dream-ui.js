@@ -10,7 +10,7 @@
  * 开关语义（用户裁定）：「买下只是解锁能力，要**手动开**」⇒ `state.autoToggles[id] === true` 才生效；
  *   没买的开关是**可点的**（点了只改偏好，无副作用）—— 上一版把它 `disabled` 了，用户实测「点不动」✗
  */
-import { DREAM_UPGRADES, dreamUpgradeLevelOf, dreamUpgradeCostAt, hasEternityMilestone } from "./config.js";
+import { DE_AUTO, DREAM_UPGRADES, dreamUpgradeLevelOf, dreamUpgradeCostAt, hasEternityMilestone } from "./config.js";
 import { sci } from "./format.js";
 
 /** 这 7 条是「有开关」的自动化（4 条自动购物 + 自动无限 + 2 条自动购买新对象）✓ */
@@ -187,8 +187,12 @@ export function renderDreamPage(state) {
       tg.textContent = owned ? (on ? "开" : "关") : "关";
       tg.disabled = false;                          // ★ 一律可点（上一版 disabled ⇒ 用户「点不动」✗）
       tg.classList.toggle("off", !on);
+      // ★ 2026：把**速率**写进 tooltip —— 用户报「自动购买还是太慢」，光有开/关看不出多快 ✓
+      //   用"万级/秒"而非裸数字（1e6 时代裸数字太长，进 tooltip 不好读）
+      const rateNote = ["autoPhase", "autoVacuum", "autoDeGainBase", "autoConvOutput"].includes(d.id)
+        ? `（${(DE_AUTO.buyPerSecond / 1e4).toLocaleString()} 万级/秒，按游戏时间、与帧率无关）` : "";
       tg.title = owned
-        ? (on ? "已开启 —— 点一下关掉" : "已解锁但**未开启** —— 点一下打开")
+        ? (on ? `已开启${rateNote} —— 点一下关掉` : `已解锁但**未开启** —— 点一下打开${rateNote}`)
         : "还没买这条升级（买下后点这里开关）";
     }
     const st = document.getElementById(`dream-${d.id}-state`);
