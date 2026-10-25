@@ -8,6 +8,7 @@
  *    这里已经预留 `state.space = { se, st, challenge, ipPeak, epPeak, upgrades }`。
  */
 import Decimal from "../dist/break_eternity.esm.js";
+import { markPageUnlocked } from "./config.js";
 import { fmt, sci } from "./ui-core.js";
 import { SPACE_DESIGN, SPACE_UPGRADES } from "./space-config.js";
 
@@ -80,8 +81,9 @@ function build() {
   title.appendChild(badge);
   intro.appendChild(title);
   intro.appendChild(h("p", "note",
-    "挑战内所有最终收益 ^0.5；退出后全额。SE 只在挑战内按 IP 峰值结算。"
-    + "实测 EP 已到 1e1296，本阶段目标重定为 1e3600；本页先做 UI，购买/结算/收益接线在下一步。"));
+    "EP ≥ 1e1200 解锁；挑战内所有最终收益 ^0.5，退出后全额，SE 只在挑战内按 IP 峰值结算。"
+    + "ST 基础公式的上一轮结果固定取 SE。实测 EP 1e1296，本阶段目标重定为 1e3600；"
+    + "本页先做 UI，购买/结算/收益接线在下一步。"));
   head.appendChild(intro);
 
   const curs = h("div", "space-currencies");
@@ -146,7 +148,7 @@ function build() {
 
   const note = h("p", "note space-footnote");
   note.textContent = "UI 先行：按钮暂禁用，避免“点了没反应”。"
-    + " du11（IP × ST^0.1）已按 IP 倍率禁令删除；du8/du10 为价格侧，本阶段暂缓。";
+    + " 旧 du11（IP × ST^0.1）已删除；新 du11 是 ST 缓解暗能量超载（初始被削弱值 0.3）；du8/du10 为价格侧，本阶段暂缓。";
   root.appendChild(note);
 
   built = true;
@@ -172,8 +174,19 @@ export function renderSpace(state) {
   const ep = D(state.eternityPoints);
   const ipPeak = D(sp.ipPeak ?? state.maxIpThisEternity ?? state.infinityPoints);
   const challenge = sp.challenge === true;
-  const unlocked = (state.eternityCount ?? 0) > 0 || state.pageUnlocked?.space === true;
+  const unlockEp = D(SPACE_DESIGN.unlockEp);
+  const unlocked = ep.gte(unlockEp);
+  if (unlocked) markPageUnlocked(state, "space");
   const targetEp = D(SPACE_DESIGN.targetEp);
+
+  // 解锁点是 EP ≥ 1e1200，不是第一次永恒：flyout 保留可见，但未达成时锁住。
+  const flyout = document.getElementById("flyout-eternity-space");
+  if (flyout) {
+    flyout.classList.toggle("locked", !unlocked);
+    flyout.setAttribute("aria-disabled", unlocked ? "false" : "true");
+    if (unlocked) flyout.removeAttribute("title");
+    else flyout.title = `尚未解锁：需要永恒点达到 ${sci(unlockEp)}`;
+  }
 
   setText("space-se", fmt(se, 0));
   setText("space-st", fmt(st, 2));
@@ -181,7 +194,7 @@ export function renderSpace(state) {
   setText("space-ip-peak", fmt(ipPeak, 0));
   setText("space-challenge-badge", !unlocked ? "未解锁" : (challenge ? "挑战中" : "未进入"));
   setText("space-challenge-line", !unlocked
-    ? "首次永恒后解锁（当前只展示 UI）"
+    ? `需要永恒点达到 ${sci(unlockEp)} 后解锁（当前只展示 UI）`
     : (challenge ? "当前：挑战中 · 最终收益 ^0.5" : "当前：未进入 · 收益全额"));
 
   const pct = (() => {

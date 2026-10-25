@@ -8,7 +8,7 @@
  * 设计依据：docs/SPACE-EXPANSION-FINAL.md（合并终稿）
  *   · du11 已删除（IP 倍率禁令）
  *   · du8 / du10 是价格侧，本阶段暂缓
- *   · du1~du6 用 SE 复购；du7~du9 用 ST 单次
+ *   · du1~du6 用 SE 复购；du7~du11 用 ST 单次/复购
  */
 export const SPACE_DESIGN = {
   challengePower: 0.5,
@@ -20,6 +20,8 @@ export const SPACE_DESIGN = {
    * 当前阶段目标 = 1e3600（见 docs/SPACE-EXPANSION-FINAL.md §2.7）。
    */
   targetEp: "1e3600",
+  /** 2026-10-25 用户裁定：空间膨胀改为 EP ≥ 1e1200 解锁（不是第一次永恒）。 */
+  unlockEp: "1e1200",
   /** UI 阶段：所有按钮先禁用，避免“点了没反应” */
   wired: false,
 };
@@ -58,8 +60,8 @@ export const SPACE_UPGRADES = [
   {
     id: "du4", name: "免费 ZPE 引擎", slot: "有效引擎等级",
     currency: "se", repeatable: true,
-    effect: "+10n 级",
-    desc: "按购买次数给七巧板系统增加免费 ZPE 引擎等级。",
+    effect: "+10n 级 · 软上限 1e6 级",
+    desc: "按购买次数给七巧板系统增加免费 ZPE 引擎等级；1e6 级后仍可买，边际效果每 +2 数量级减半。",
     cost: "4 SE 起 · ×1.6^n",
   },
   {
@@ -72,8 +74,8 @@ export const SPACE_UPGRADES = [
   {
     id: "du6", name: "计数频率倍率", slot: "计数频率加法项",
     currency: "se", repeatable: true,
-    effect: "×(1 + 0.5√n)",
-    desc: "按购买次数的开根，给计数频率一个倍率加成。",
+    effect: "×(1 + 0.5√n) · 软上限 1e8 级",
+    desc: "按购买次数的开根，给计数频率一个倍率加成；1e8 级后仍可买，边际效果每 +2 数量级减半。",
     cost: "6 SE 起 · ×1.6^n",
   },
   {
@@ -105,6 +107,13 @@ export const SPACE_UPGRADES = [
     desc: "ZPE 倍率对可重复膨胀升级执行价格修正；价格侧，暂缓。",
     cost: "1e4 ST · 单次",
     deferred: true, deferredReason: "IP 倍率禁令：本阶段暂缓",
+  },
+  {
+    id: "du11", name: "暗能量超载缓解", slot: "暗能量过载惩罚",
+    currency: "st", repeatable: true,
+    effect: "削弱值下限 0.3（不会到 1）",
+    desc: "用膨胀时间缓解暗能量被超载削弱的效果；不会完全等于无削弱，初始被削弱值 0.3。",
+    cost: "ST 复购 · 价格待定",
   },
 ];
 

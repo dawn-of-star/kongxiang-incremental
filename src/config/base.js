@@ -190,7 +190,7 @@ export const ZPE_EXPONENT = 0.02;
  *   `at` = 需要的大坍缩次数（每次大坍缩推一个）。第 1 条在**首次无限**时立刻达成 ✓
  *   八条的落点全部已接线（哪个函数读它，见每条后面的注释）。
  */
-export const PAGE_KEYS = ["void", "zpe", "de", "quantum", "infinity", "eternity", "space"];
+export const PAGE_KEYS = ["void", "zpe", "de", "quantum", "infinity", "eternity"];
 
 /** 该页面是否已解锁过（**永久**：第一次达成后就一直为真） */
 export function pageUnlocked(state, key) {

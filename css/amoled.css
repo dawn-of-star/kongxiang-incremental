@@ -1224,3 +1224,5 @@ button { font: inherit; cursor: pointer; }
   .space-currencies { width: 100%; }
   .space-cur { flex: 1 1 0; }
 }
+/* 空间膨胀：未到 EP 1e1200 时，flyout 入口锁住（仍可见，符合 AD 式锁态） */
+.flyout-item.locked { opacity: .55; cursor: not-allowed; }
