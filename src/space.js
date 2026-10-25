@@ -2,8 +2,9 @@
  * space.js —— 空间膨胀核心闭环（SE / ST / 挑战）
  *
  * 这一层**不碰 du 效果**；先把货币和挑战做成可运行、可存档的闭环：
- *   · EP ≥ 1e1200 解锁；
- *   · 每次进入挑战前必须先执行一次**永恒重置**；永恒会打断当前挑战；
+ *   · EP ≥ 1e1200 解锁，之后随时能进；
+ *   · **进入时自动执行一次永恒重置**（保留七巧板 / 暗物质；不发 EP、不涨永恒次数）；
+ *     初始已有挑战会被永恒打断，重复进入就重复这套重置；
  *   · 挑战内：最终 IP 收益 ^0.5（由 `spaceChallengePower` 乘在唯一入口）；
  *   · SE：挑战内按 IP 峰值增量结算（进入时记基线，避免“进出刷 SE”）；
  *   · ST：基础公式按游戏秒生产，挑战内也吃 ^0.5；
@@ -18,9 +19,9 @@ export const SPACE_UNLOCK_EP = new Decimal("1e1200");
 export const SPACE_SE_DIVISOR = 40;
 export const SPACE_SE_OFFSET = -7;
 
-/** 是否已解锁空间膨胀（以**当前 EP** 判定；不是第一次永恒）。 */
+/** 是否已解锁空间膨胀：EP 达标，或曾经达标（挑战重置会清 EP，但页面永久解锁）。 */
 export function spaceUnlocked(state) {
-  return D(state?.eternityPoints).gte(SPACE_UNLOCK_EP);
+  return state?.pageUnlocked?.space === true || D(state?.eternityPoints).gte(SPACE_UNLOCK_EP);
 }
 
 /** 挑战内最终收益系数；退出后 1。 */
@@ -92,10 +93,9 @@ export function enterSpaceChallenge(state) {
   if (!spaceUnlocked(state)) return { ok: false, reason: "locked" };
   const sp = state?.space;
   if (!sp || sp.challenge === true) return { ok: false, reason: "active" };
-  const count = Math.max(0, Math.floor(Number(state.eternityCount ?? 0)));
-  const last = Math.max(0, Math.floor(Number(sp.challengeEternity ?? 0)));
-  if (!(count > last)) return { ok: false, reason: "need-eternity", need: last + 1 };
-  sp.challengeEternity = count;
+  // 挑战重置会清空当前 EP；用永久页面记录保持解锁。
+  state.pageUnlocked ??= {};
+  state.pageUnlocked.space = true;
   sp.challenge = true;
   sp.ipPeak = D(state.infinityPoints);
   sp.challengeSeBase = spaceSeFromIp(sp.ipPeak);
@@ -103,7 +103,7 @@ export function enterSpaceChallenge(state) {
   return { ok: true };
 }
 
-/** 永恒重置会打断当前挑战；下次进入必须再执行一次永恒。 */
+/** 永恒重置会打断当前挑战；下次进入时重新执行挑战重置。 */
 export function spaceOnEternity(state) {
   const sp = state?.space;
   if (!sp?.challenge) return false;

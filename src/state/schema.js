@@ -225,8 +225,6 @@ export function newState() {
       bestEp: D(0),
       challengeSe: D(0),
       challengeSeBase: D(0),
-      /** 上次进入挑战时的永恒次数；必须再执行一次永恒重置才能重新进入。 */
-      challengeEternity: 0,
       upgrades: {},
     },
     /** 已大坍缩次数 */

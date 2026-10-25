@@ -342,7 +342,6 @@ function restoreSpace(raw, dec, num) {
     bestEp: dec(sp.bestEp),
     challengeSe: dec(sp.challengeSe),
     challengeSeBase: dec(sp.challengeSeBase),
-    challengeEternity: Math.max(0, Math.floor(num(sp.challengeEternity, 0))),
     upgrades,
   };
 }

@@ -8,7 +8,7 @@ import { resetForCollapse } from "./collapse.js";
 import { INFINITY_ORDER, INFINITY_UPGRADES, PAGE_KEYS, canEternity, epMultFactor, eternityPointGain, eternityGain, hasEternityMilestone, infinityUpgradeCost, markPageUnlocked } from "../config.js";
 import { applyEternityKeeps } from "../dream-effects.js";
 import { sci } from "../format.js";
-import { spaceOnEternity } from "../space.js";
+import { enterSpaceChallenge, spaceOnEternity, spaceUnlocked } from "../space.js";
 import { D } from "../formulas.js";
 import { pushLog } from "../state.js";
 
@@ -60,8 +60,21 @@ export function applyEternityRetention(state) {
  * ⚠️ **奖励目前是占位**（暗物质要换新机制），所以第二次永恒**不会更快** ——
  *    这是占位期的已知代价，等奖励定下来再平衡（见 `docs/IP-ECONOMY.md`）。
  */
-export function doEternity(state) {
-  if (!canEternity(state)) return null;
+/**
+ * 执行一次永恒重置。
+ * @param {object} state
+ * @param {{force?:boolean, grant?:boolean, count?:boolean, log?:boolean}} [opts]
+ *   · force：跳过 `canEternity()`（空间挑战进入时使用）
+ *   · grant=false：不发放永恒点
+ *   · count=false：不增加永恒次数（挑战重置不是一次“真永恒”，防止刷次数）
+ *   · log=false：不写日志
+ */
+export function doEternity(state, opts = {}) {
+  const force = opts.force === true;
+  const grant = opts.grant !== false;
+  const countUp = opts.count !== false;
+  const logging = opts.log !== false;
+  if (!force && !canEternity(state)) return null;
 
   // ★★★ 2026 修 bug（用户：「梦想（自动化）页面的自动化升级都不正常工作」）
   //   `keepDeEternity` / `keepVoidEternity` / `engineAtStart` 三条"永恒保留"型升级
@@ -74,14 +87,16 @@ export function doEternity(state) {
     zpeMilestones: { ...(state.zpeMilestones ?? {}) },
   };
 
-  const gained = eternityGain(state);   // ★ 2026-10-22：唯一入口（含 epMultFactor）✓
+  const gained = grant ? eternityGain(state) : D(0);   // ★ 2026-10-22：唯一入口（含 epMultFactor）✓
   const ipBefore = state.infinityPoints;
-  state.eternityPoints = (state.eternityPoints ?? D(0)).add(gained);
-  // ★★ 2025：**累计 EP** —— em5 的读数源（只增不减；见 state.js 的字段说明）
-  state.eternityPointsTotal = (state.eternityPointsTotal ?? D(0)).add(gained);
-  // ★ 数值约定 #3：ternityCount 现在是 Decimal ⇒ 必须用 .add()（+ 会变字符串拼接 ✗）
-  state.eternityCount = D(state.eternityCount ?? 0).add(1);
-  // ★ 2026-10-25：永恒会打断当前空间挑战；下次进入必须再执行一次永恒重置
+  if (grant) {
+    state.eternityPoints = (state.eternityPoints ?? D(0)).add(gained);
+    // ★★ 2025：**累计 EP** —— em5 的读数源（只增不减；见 state.js 的字段说明）
+    state.eternityPointsTotal = (state.eternityPointsTotal ?? D(0)).add(gained);
+  }
+  // ★ 数值约定 #3：eternityCount 现在是 Decimal ⇒ 必须用 .add()（+ 会变字符串拼接 ✗）
+  if (countUp) state.eternityCount = D(state.eternityCount ?? 0).add(1);
+  // ★ 2026-10-25：永恒会打断当前空间挑战；下次进入时重新执行挑战重置
   spaceOnEternity(state);
 
   // ══════════════════════════════════════════════════════════
@@ -198,10 +213,31 @@ export function doEternity(state) {
     pushLog(state, `⏳ em1：保留 ${retained.length} 个非重复 ∞ 升级（${retained.map((id) => INFINITY_UPGRADES[id]?.name ?? id).join("、")}）`);
   }
 
-  pushLog(state, `⏳ 永恒第 ${state.eternityCount} 次：无限点 ${sci(ipBefore)} → ` +
-    `获得 ${sci(gained)} 永恒点（共 ${sci(state.eternityPoints)}）`);
-  pushLog(state, "⏳ 已重置除梦想系统外的一切（虚空 / 里程碑 / ∞ 层及以下）；永恒点保留");
+  if (logging) {
+    pushLog(state, `⏳ 永恒第 ${state.eternityCount} 次：无限点 ${sci(ipBefore)} → ` +
+      `获得 ${sci(gained)} 永恒点（共 ${sci(state.eternityPoints)}）`);
+    pushLog(state, "⏳ 已重置除梦想系统外的一切（虚空 / 里程碑 / ∞ 层及以下）；永恒点保留");
+  }
   return { eternityPoints: gained, count: state.eternityCount };
+}
+
+/**
+ * ★ 2026-10-25：进入空间膨胀挑战。
+ *   先执行一次“永恒重置”（不发 EP、不涨永恒次数），再清空当前/累计 EP，
+ *   保留七巧板 / 暗物质 / 梦想 / 空间系统；随后进入 ^0.5 挑战。
+ *   重复进入 = 重复这套重置。
+ */
+export function startSpaceChallenge(state) {
+  if (!spaceUnlocked(state)) return { ok: false, reason: "locked" };
+  if (state?.space?.challenge === true) return { ok: false, reason: "active" };
+  // 重置会清 EP；先打永久解锁点，否则 enterSpaceChallenge 会因 EP=0 判 locked。
+  state.pageUnlocked ??= {};
+  state.pageUnlocked.space = true;
+  const reset = doEternity(state, { force: true, grant: false, count: false, log: false });
+  if (!reset) return { ok: false, reason: "reset-failed" };
+  state.eternityPoints = D(0);
+  state.eternityPointsTotal = D(0);
+  return enterSpaceChallenge(state);
 }
 
 // ★★ 2025：**坍缩加速器已整个删除**（用户裁定 —— "否则会对机制解读有极大污染"）

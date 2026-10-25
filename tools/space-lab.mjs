@@ -7,6 +7,7 @@
 import Decimal from "../dist/break_eternity.esm.js";
 import { newState, serialize, deserialize } from "../src/state.js";
 import { bigCrunchGain } from "../src/formulas.js";
+import { startSpaceChallenge } from "../src/engine.js";
 import {
   SPACE_UNLOCK_EP, spaceSeFromIp, spaceStRate, spaceChallengePower,
   enterSpaceChallenge, exitSpaceChallenge, spaceTick,
@@ -75,22 +76,6 @@ console.log("=".repeat(96));
 }
 
 {
-  const s = newState();
-  s.eternityPoints = D("1e1200");
-  s.eternityCount = D(1);
-  s.infinityPoints = D("1e400");
-  const first = enterSpaceChallenge(s);
-  const afterFirst = s.space.challengeEternity;
-  exitSpaceChallenge(s);
-  const retry = enterSpaceChallenge(s);             // 同一次永恒：拒绝
-  s.eternityCount = s.eternityCount.add(1);
-  const second = enterSpaceChallenge(s);            // 新永恒：允许
-  ck("挑战进入闸门：每次进入前必须先永恒重置",
-    first.ok && afterFirst === 1 && retry.ok === false && retry.reason === "need-eternity" && second.ok,
-    `首次=${first.ok}｜同永恒重进=${retry.ok}(${retry.reason})｜新永恒=${second.ok}`);
-}
-
-{
   const mk = (challenge) => {
     const s = newState();
     s.brokenInfinity = true;
@@ -117,6 +102,25 @@ console.log("=".repeat(96));
   const back = deserialize(raw).state;
   ck("空间状态存档往返", back.space.challenge === true && back.space.se.eq(D("1e9"))
     && back.space.challengeSeBase.eq(D(1000)), `challenge=${back.space.challenge}｜se=${back.space.se.toString()}`);
+}
+
+{
+  const s = newState();
+  s.eternityPoints = D("1e1200");
+  s.eternityCount = D(5);
+  s.eternityDarkMatter = D(7);
+  s.tangramOwned.largeA = true;
+  s.space.upgrades.du1 = 3;
+  s.space.se = D(9);
+  const epBefore = s.eternityPoints.toString();
+  const r = startSpaceChallenge(s);
+  ck("进入挑战：自动永恒重置 + 清 EP + 保留七巧板/暗物质/空间",
+    !!r?.ok && String(s.eternityCount) === "5" && s.eternityPoints.eq(0)
+      && s.eternityPointsTotal.eq(0) && s.space.challenge === true
+      && s.tangramOwned.largeA === true && s.eternityDarkMatter.eq(7)
+      && s.space.upgrades.du1 === 3 && s.space.se.eq(9),
+    `EP ${epBefore}→${s.eternityPoints}｜永恒=${s.eternityCount}｜七巧板=${s.tangramOwned.largeA}`
+      + `｜暗物质=${s.eternityDarkMatter}｜du1=${s.space.upgrades.du1}｜challenge=${s.space.challenge}`);
 }
 
 console.log();

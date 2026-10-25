@@ -9,7 +9,8 @@
  */
 import Decimal from "../dist/break_eternity.esm.js";
 import { markPageUnlocked } from "./config.js";
-import { enterSpaceChallenge, exitSpaceChallenge, spaceUnlocked } from "./space.js";
+import { startSpaceChallenge } from "./engine.js";
+import { exitSpaceChallenge, spaceUnlocked } from "./space.js";
 import { fmt, sci } from "./ui-core.js";
 import { SPACE_DESIGN, SPACE_UPGRADES } from "./space-config.js";
 
@@ -108,10 +109,10 @@ function build() {
   chalBtn.title = "需要 EP 1e1200";
   chalBtn.addEventListener("click", () => {
     if (!lastState) return;
-    const ok = lastState.space?.challenge === true
+    const result = lastState.space?.challenge === true
       ? exitSpaceChallenge(lastState)
-      : enterSpaceChallenge(lastState);
-    if (ok?.ok) renderSpace(lastState);
+      : startSpaceChallenge(lastState);
+    if (result?.ok) renderSpace(lastState);
   });
   chal.appendChild(chalBtn);
   statusRow.appendChild(chal);
@@ -184,9 +185,6 @@ export function renderSpace(state) {
   const ep = D(state.eternityPoints);
   const ipPeak = D(sp.ipPeak ?? state.maxIpThisEternity ?? state.infinityPoints);
   const challenge = sp.challenge === true;
-  const eternityCount = Math.max(0, Math.floor(Number(state.eternityCount ?? 0) || 0));
-  const lastChallengeEternity = Math.max(0, Math.floor(Number(sp.challengeEternity ?? 0) || 0));
-  const eligible = challenge || eternityCount > lastChallengeEternity;
   const unlockEp = D(SPACE_DESIGN.unlockEp);
   const unlocked = spaceUnlocked(state);
   if (unlocked) markPageUnlocked(state, "space");
@@ -203,27 +201,23 @@ export function renderSpace(state) {
 
   const chalBtn = document.getElementById("space-challenge-btn");
   if (chalBtn) {
-    chalBtn.disabled = !unlocked || (!challenge && !eligible);
+    chalBtn.disabled = !unlocked;
     chalBtn.textContent = challenge ? "退出挑战" : "进入挑战";
     chalBtn.title = !unlocked
       ? `需要永恒点达到 ${sci(unlockEp)}`
       : challenge
         ? "退出后最终收益恢复全额；已结算 SE 保留"
-        : eligible
-          ? "进入后所有最终收益 ^0.5"
-          : "先执行一次永恒重置，再进入挑战";
+        : "进入时自动执行一次永恒重置（保留七巧板 / 暗物质）";
   }
 
   setText("space-se", fmt(se, 0));
   setText("space-st", fmt(st, 2));
   setText("space-ep-now", fmt(ep, 0));
   setText("space-ip-peak", fmt(ipPeak, 0));
-  setText("space-challenge-badge", !unlocked ? "未解锁" : (challenge ? "挑战中" : (eligible ? "未进入" : "待永恒")));
+  setText("space-challenge-badge", !unlocked ? "未解锁" : (challenge ? "挑战中" : "未进入"));
   setText("space-challenge-line", !unlocked
     ? `需要永恒点达到 ${sci(unlockEp)} 后解锁（当前只展示 UI）`
-    : (!challenge && !eligible)
-      ? "先执行一次永恒重置，再进入挑战"
-      : (challenge ? "当前：挑战中 · 最终收益 ^0.5" : "当前：未进入 · 收益全额"));
+    : (challenge ? "当前：挑战中 · 最终收益 ^0.5" : "进入时自动执行一次永恒重置（保留七巧板 / 暗物质）"));
 
   const pct = (() => {
     if (!ep.gt(0) || !targetEp.gt(0)) return 0;
