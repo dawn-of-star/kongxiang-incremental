@@ -12,7 +12,7 @@
  */
 import { DE_AUTO, DREAM_UPGRADES, dreamUpgradeLevelOf, dreamUpgradeCostAt, hasEternityMilestone } from "./config.js";
 import { sci } from "./format.js";
-import { spaceLevel, spaceUnlocked } from "./space.js";
+import { spaceLevel, spaceUnlocked } from "./space/core.js";
 
 /** 这 7 条是「有开关」的自动化（4 条自动购物 + 自动无限 + 2 条自动购买新对象）✓ */
 export const AUTOMATION_IDS = new Set([

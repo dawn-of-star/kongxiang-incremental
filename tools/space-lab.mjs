@@ -9,12 +9,12 @@ import { newState, serialize, deserialize } from "../src/state.js";
 import { bigCrunchGain, darkEnergyMultiplier, darkEnergyRate, overloadFactor } from "../src/formulas.js";
 import { darkMatterAdditiveTerm, deGrowthRate } from "../src/config.js";
 import { startSpaceChallenge } from "../src/engine.js";
-import { autoBuySpaceDu, buySpaceUpgrade, spaceUpgradeCost } from "../src/space-upgrades.js";
+import { autoBuySpaceDu, buySpaceUpgrade, spaceUpgradeCost } from "../src/space/upgrades.js";
 import {
   SPACE_UNLOCK_EP, spaceSeFromIp, spaceStRate, spaceChallengePower,
   enterSpaceChallenge, exitSpaceChallenge, spaceTick, spaceLevel,
   spaceDuMult, spaceDu4EngineLevels, spaceDu5Mult, spaceDu6Mult, spaceDu9Mult, spaceDu11Floor,
-} from "../src/space.js";
+} from "../src/space/core.js";
 
 const D = (x) => new Decimal(x);
 let fails = 0;

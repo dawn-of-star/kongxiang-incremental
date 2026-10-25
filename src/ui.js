@@ -21,7 +21,7 @@ import { renderQuantum, renderSpanLayer } from "./ui-quantum.js";
 import { renderInfinity, renderFloatResets } from "./ui-infinity.js";
 import { paintAutoCrunchUI } from "./autocrunch-ui.js";
 import { renderTangram } from "./ui-tangram-panel.js";
-import { renderSpace } from "./space-ui.js";
+import { renderSpace } from "./space/page.js";
 // 主面板区块（render() 只做编排）
 import {
   renderPageUnlockSelfHeal, renderResourceBars, renderClickAndUpgrades, renderVoidPanel,
@@ -30,7 +30,7 @@ import {
 } from "./ui-panels.js";
 // 静态结构 / 交互绑定（仍然集中在这一层）
 import { arrangeDreamPage, getDreamCard, renderDreamPage } from "./dream-ui.js";
-import { bindTangramBoard } from "./tangram-board.js";
+import { bindTangramBoard } from "./tangram/board.js";
 import { setupTabLocks } from "./lock-ui.js";
 import { perfSection } from "./perf.js";
 import {

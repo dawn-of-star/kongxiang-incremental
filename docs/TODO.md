@@ -799,7 +799,7 @@ M2 剩 7 条过期断言（--strict）｜C 段 6 份文档同步｜E 段若干 l
 | 7 | 日志折叠搬日志卡（B 方案）＋ AD 式锁态 | `UI_FOLDS.log`（默认收起，带"记住"）＋ `markTabLocked(key, unlocked)`（标签常显、锁态变暗 + 角标、解锁永久） | 折叠三件套在日志卡上；6 处锁判据含 perma |
 | 8 | 小修 | `.btn { width:100% }` 的三处布局（控制条/抽兑/开关）；日志面板 60 条冻结 | 各自守卫 |
 
-**参考实现（本轮幸存的部分）**：七巧板那套（`src/tangram.js` / `tangram-game.js` / `tangram-pattern-library.js` / `ui.js` 末尾的 `renderTangramReal`）就是"独立模块 + 复用既有 id"的正确范式 ⇒ 重做上面各项时照这个来 ✓
+**参考实现（本轮幸存的部分）**：七巧板那套（`src/tangram/core.js` / `tangram-game.js` / `tangram-pattern-library.js` / `ui.js` 末尾的 `renderTangramReal`）就是"独立模块 + 复用既有 id"的正确范式 ⇒ 重做上面各项时照这个来 ✓
 
 ---
 

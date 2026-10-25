@@ -28,7 +28,7 @@
 | 最大函数 | 560 行（`render`） | **265 行**（`createNekoBridge`） |
 | 导出入口 | `config.js` / `engine.js` 各自是 god module | 9 个 **≤ 22 行的 barrel**（config / engine / formulas / state / neko / config-infinity / config-quantum / config-zpe / engine-purchases） |
 | `ui.js` | 2,784 行 | **761 行**（只做 build / init / render 编排） |
-| 模块数 | 23 个平铺 `.js` | **79 个模块**（含 barrel） |
+| 模块数 | 23 个平铺 `.js` | **87 个模块**（含 barrel） |
 | 死模块 | 1 个（235 行） | **0**（`structure-guard` 守可达性） |
 | 自检脚本 | 48 | **49**（新增结构守卫） |
 
@@ -170,6 +170,27 @@ main.js            装配 + rAF 主循环
 | `actions.js` | 动作白名单与派发器 |
 | `bridge.js` | 宿主探测 / 握手 / 能力契约 / 助手上下文 |
 
+### 2.7 `src/space/`（空间膨胀）
+
+| 文件 | 职责 |
+|---|---|
+| `core.js` | 挑战进入 / 退出、SE / ST 结算与 tick、`du` 效果辅助 |
+| `config.js` | 文案 / 升级元数据 / 解锁阈值（UI 先行的元数据源）|
+| `upgrades.js` | 膨胀升级（du）的购买 / 价格 / 等级 —— 单一价格源 |
+| `page.js` | 空间膨胀页面 |
+
+### 2.8 `src/tangram/`（七巧板）
+
+| 文件 | 职责 |
+|---|---|
+| `core.js` | 几何内核（块、放置、覆盖率、图案匹配）|
+| `board.js` | 棋盘渲染 / 拖拽 / 吸附 |
+| `game.js` | 抽取 / 兑换 / 拼装挑战 |
+| `bonus.js` | 三轴覆盖率加成（引擎侧）|
+| `passive.js` | 被动 IP 产出 |
+| `patterns.js` | 图案库 |
+| `reward.js` | 挑战奖励效果 |
+
 ---
 
 ## 3. 结构守卫（`tools/structure-guard.mjs`）
@@ -219,7 +240,7 @@ main.js            装配 + rAF 主循环
 
 | 维度 | 权重 | 前 | 后 | 依据（前 → 后） |
 |---|---:|---:|---:|---|
-| 模块边界 / 职责 | 25% | 70 | **20** | 3 个 god module → **79 个模块（含 9 个 barrel）**；config / ui / engine / formulas / state / neko 全部按领域拆开 |
+| 模块边界 / 职责 | 25% | 70 | **20** | 3 个 god module → **87 个模块（含 9 个 barrel）**；config / ui / engine / formulas / state / neko 全部按领域拆开 |
 | 文件 / 函数规模 | 20% | 85 | **30** | 最大文件 4,973 → 762；最大函数 560 → 265；`render` 560 → 26；`tickBody` 298 → 30 |
 | 耦合 / 依赖方向 | 15% | 55 | **30** | import 图单向分层；结构守卫拦反向依赖；少量函数级循环（config/infinity、formulas）已确认无顶层调用 |
 | 重复 / 死代码 | 15% | 50 | **30** | 删除 235 行死模块；`ui.js` 清掉 121 个未使用 import；死代码审计修复假绿；barrel 纯度有守卫 |
@@ -259,7 +280,7 @@ main.js            装配 + rAF 主循环
 | `0befb22` | `config/quantum.js` 740 行 → `quantum/` 2 个模块（gates / growth） |
 | `5c5b9d2` | `engine/purchases.js` 512 行 → `purchases/` 4 个模块（misc / infinity / zpe / darkmatter） |
 | `cbde401` | `config/zpe-engine.js` 624 行 → `zpe-engine/` 2 个模块（config / economy） |
-| 本轮末 | 冻结 N.E.K.O 协同代码（§0.5）；收紧结构预算；ARCHITECTURE 同步为 79 模块、加权 27.8% |
+| 本轮末 | 冻结 N.E.K.O 协同代码（§0.5）；收紧结构预算；ARCHITECTURE 同步为 87 模块、加权 27.8% |
 
 **验收基线**：`npm test` → **52/52 全绿**（默认批跑；`--strict` 仍有 6 个已知失败，
 见 [`TODO.md`](TODO.md) M 段，属过期断言/坏工具/数值漂移，非坏实现）；`node tools/dom-smoke.mjs` 全绿；

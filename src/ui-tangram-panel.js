@@ -9,12 +9,12 @@
 import { hasEternityMilestone } from "./config.js";
 import { D } from "./formulas.js";
 import { updateTabLocks } from "./lock-ui.js";
-import { paintTangramBoard } from "./tangram-board.js";
-import { TANGRAM_PIECES, autoPlaceTangram, cellsFromFingerprint, drawTangramPiece, exchangeTangramPiece, flipTangramPlacement, moveTangramPlacement, resetTangramBoard, rotateTangramPlacement, takeTangramBack, tangramAdvanceChallenge, tangramChallengeSolved, tangramChallengeTarget, tangramCoverage, tangramPieceAtStep, tangramPriceFactor, tangramPricesAt, tangramChallengeDiff } from "./tangram-game.js";
-import { TANGRAM_AXES_RANGE, tangramAxisParams } from "./tangram-bonus.js";   // ★ 2026：三轴端点 + 实时数值 ✓
+import { paintTangramBoard } from "./tangram/board.js";
+import { TANGRAM_PIECES, autoPlaceTangram, cellsFromFingerprint, drawTangramPiece, exchangeTangramPiece, flipTangramPlacement, moveTangramPlacement, resetTangramBoard, rotateTangramPlacement, takeTangramBack, tangramAdvanceChallenge, tangramChallengeSolved, tangramChallengeTarget, tangramCoverage, tangramPieceAtStep, tangramPriceFactor, tangramPricesAt, tangramChallengeDiff } from "./tangram/game.js";
+import { TANGRAM_AXES_RANGE, tangramAxisParams } from "./tangram/bonus.js";   // ★ 2026：三轴端点 + 实时数值 ✓
 import { fmtMult } from "./format.js";
 import { quantumPairMult } from "./config/quantum/gates.js";   // ★ 2026：每对量子实时倍率（与引擎同源 ✓）
-import { tangramRewardEffects } from "./tangram.js";
+import { tangramRewardEffects } from "./tangram/core.js";
 import { el, safePaint, sci, uiHandlers } from "./ui-core.js";
 
 export function renderTangram(state) {

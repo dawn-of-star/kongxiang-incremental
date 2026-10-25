@@ -11,7 +11,7 @@
  *
  * ⚠️ 基线（一题没清）时**每个系数都是 1 / 0** ⇒ 零回归 ✓
  */
-import { tangramRewardEffects } from "./tangram.js";
+import { tangramRewardEffects } from "./core.js";
 
 /** 只计算一次（按 tangramCleared 的签名缓存，避免每帧重算）✓ */
 let cache = { key: "", val: null };

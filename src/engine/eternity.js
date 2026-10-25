@@ -8,7 +8,7 @@ import { resetForCollapse } from "./collapse.js";
 import { INFINITY_ORDER, INFINITY_UPGRADES, PAGE_KEYS, canEternity, epMultFactor, eternityPointGain, eternityGain, hasEternityMilestone, infinityUpgradeCost, markPageUnlocked } from "../config.js";
 import { applyEternityKeeps } from "../dream-effects.js";
 import { sci } from "../format.js";
-import { enterSpaceChallenge, spaceOnEternity, spaceUnlocked } from "../space.js";
+import { enterSpaceChallenge, spaceOnEternity, spaceUnlocked } from "../space/core.js";
 import { D } from "../formulas.js";
 import { pushLog } from "../state.js";
 

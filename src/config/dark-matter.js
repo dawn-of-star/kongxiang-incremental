@@ -6,7 +6,7 @@
  *    依赖：eternity ｜ Decimal
  */
 import Decimal from "../../dist/break_eternity.esm.js";
-import { spaceDuMult } from "../space.js";
+import { spaceDuMult } from "../space/core.js";
 import { hasEternityMilestone } from "./eternity.js";
 
 export const DARK_MATTER = {

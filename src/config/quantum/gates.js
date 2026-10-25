@@ -1,4 +1,4 @@
-import { TANGRAM_CHALLENGE_REWARDS } from "../../tangram.js";
+import { TANGRAM_CHALLENGE_REWARDS } from "../../tangram/core.js";
 /**
  * config/quantum/gates.js —— 量子门槛 / 捕获 / 量子加成（熵、暗能量、ZPE、IP）
  *
@@ -8,7 +8,7 @@ import { TANGRAM_CHALLENGE_REWARDS } from "../../tangram.js";
 import { tierQuantumStepMult } from "../infinity.js";
 import { hasCollapse } from "../milestones.js";
 import Decimal from "../../../dist/break_eternity.esm.js";
-import { spaceDuMult } from "../../space.js";
+import { spaceDuMult } from "../../space/core.js";
 
 /**
  * config/quantum.js —— 量子 / 粒子增幅 b / 跨度幂 k / 暗能量自增长 / 量子共振

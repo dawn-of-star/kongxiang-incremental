@@ -20,8 +20,8 @@
  */
 import {
   TANGRAM_SIZE, TANGRAM_PIECES, placePieceVerts, placementOf, snapPoint, convexOverlap, cellsFromFingerprint,
-} from "./tangram.js";
-import { setTangramPlacement, tangramCoverage, tangramChallengeTarget, transformPieceInPlace, tangramChallengeDiff } from "./tangram-game.js";
+} from "./core.js";
+import { setTangramPlacement, tangramCoverage, tangramChallengeTarget, transformPieceInPlace, tangramChallengeDiff } from "./game.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 /** 板坐标 → SVG 坐标（**唯一换算点**）✓ */

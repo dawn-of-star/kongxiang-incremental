@@ -15,7 +15,7 @@
  *
  * 用法：node tools/tangram-patterns.mjs [--check] [--seconds N] [--nodes N]
  */
-import { TANGRAM_PIECES, placePieceVerts, pointInConvex, polygonArea } from "../src/tangram.js";
+import { TANGRAM_PIECES, placePieceVerts, pointInConvex, polygonArea } from "../src/tangram/core.js";
 
 const has = (f) => process.argv.includes(f);
 const argNum = (f, dflt) => {

@@ -4,10 +4,10 @@
  * ★ 2026 模块化：由 624 行的 config/zpe-engine.js 拆出（声明与注释逐字保留）。
  *    对外统一从 `src/config.js`（barrel）导入。
  */
-import { tangramEngineBonusLevels } from "../../tangram-bonus.js";
-import { tangramRewardEffects } from "../../tangram.js";
+import { tangramEngineBonusLevels } from "../../tangram/bonus.js";
+import { tangramRewardEffects } from "../../tangram/core.js";
 import Decimal from "../../../dist/break_eternity.esm.js";
-import { spaceDu4EngineLevels } from "../../space.js";
+import { spaceDu4EngineLevels } from "../../space/core.js";
 
 /**
  * config/zpe-engine.js —— ZPE 引擎（价格、等级、五条机制、唯一有效等级入口）

@@ -9,9 +9,9 @@
  *   · du7 / du9 / du11：ST 单次；
  *   · du8 / du10：价格侧，本阶段 deferred，不实现。
  */
-import Decimal from "../dist/break_eternity.esm.js";
-import { spaceLevel, spaceUnlocked } from "./space.js";
-import { SPACE_DU_AUTO, SPACE_UPGRADES } from "./space-config.js";
+import Decimal from "../../dist/break_eternity.esm.js";
+import { spaceLevel, spaceUnlocked } from "./core.js";
+import { SPACE_DU_AUTO, SPACE_UPGRADES } from "./config.js";
 
 const D = (x) => new Decimal(x ?? 0);
 

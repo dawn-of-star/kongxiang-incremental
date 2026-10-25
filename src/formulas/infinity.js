@@ -6,7 +6,7 @@
  */
 import { COLLAPSE, DE_MILESTONES, ZPE_MILESTONES, crunchThreshold, em5IpMult, engineBonusMult, infinityPointGain, ipDoubleMult, quantumToIPGain } from "../config.js";
 import { hasV9, hasZpe } from "../state.js";
-import { spaceChallengePower } from "../space.js";
+import { spaceChallengePower } from "../space/core.js";
 
 export function collapseUnlocked(state) {
   return state.peakMatter.gte(COLLAPSE.unlockMatter);

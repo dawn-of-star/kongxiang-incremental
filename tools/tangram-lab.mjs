@@ -23,13 +23,13 @@ import {
   tangramPiecesFromEP, tangramThresholdAt, tangramPricesAt, placementOf, svgToBoard, boardToSvg,
   TANGRAM_CHALLENGE, tangramPatternsPerDifficulty, tangramPatternsTotal, pickChallengePatterns,
   TANGRAM_CHALLENGE_REWARDS, tangramRewardEffects,
-} from "../src/tangram.js";
+} from "../src/tangram/core.js";
 // ★ 2026-10-23：摆位/重置停车位断言要用
-import { resetTangramBoard, setTangramPlacement, rotateTangramPlacement, flipTangramPlacement, tangramChallengeDiff, tangramCoverage } from "../src/tangram-game.js";
+import { resetTangramBoard, setTangramPlacement, rotateTangramPlacement, flipTangramPlacement, tangramChallengeDiff, tangramCoverage } from "../src/tangram/game.js";
 import { newState, serialize, deserialize } from "../src/state.js";
 // ★ 2026：抽取/兑换与覆盖率读数（引擎侧）
 // ★ 2026：图案库（由 `tools/tangram-patterns.mjs --write` 生成的 108 个真图案）
-import { TANGRAM_PATTERN_LIBRARY } from "../src/tangram-pattern-library.js";
+import { TANGRAM_PATTERN_LIBRARY } from "../src/tangram/patterns.js";
 import Decimal from "../dist/break_eternity.esm.js";
 import { sci } from "../src/format.js";
 const D = (x) => new Decimal(x);
@@ -328,7 +328,7 @@ ck("④f 定点手算：大三角 II ⇒ 右边缘 0%、上边缘 0%、斜轴 50
     // ★★★ 2026：**奖励系数落点**（接进公式的那一层）—— 基线必须是 1/0，全清必须等于表里的值 ✓
   {
     const { rewardConvSlopeMult, rewardCountFreqMult, rewardPityFloor,
-      rewardDeKneeMult, rewardIpDoubleKneeMult, rewardFreeEngineLevels } = await import("../src/tangram-reward.js");
+      rewardDeKneeMult, rewardIpDoubleKneeMult, rewardFreeEngineLevels } = await import("../src/tangram/reward.js");
     const base = { tangramCleared: [0, 0, 0, 0, 0, 0] };
     const full = { tangramCleared: [6, 6, 6, 6, 6, 6] };
     const okBase = rewardConvSlopeMult(base) === 1 && rewardCountFreqMult(base) === 1
@@ -339,7 +339,7 @@ ck("④f 定点手算：大三角 II ⇒ 右边缘 0%、上边缘 0%、斜轴 50
       && rewardIpDoubleKneeMult(full) === 3 && rewardFreeEngineLevels(full) === 185;
     // ★★★ 2026：**被动 IP 的门槛 = 第 4 层全清**（用户：「参考 AD TS181 在第 4 层完成时获得」）✓
   {
-    const { tangramPassiveIpGain } = await import("../src/tangram-passive.js");
+    const { tangramPassiveIpGain } = await import("../src/tangram/passive.js");
     const D0 = (await import("../dist/break_eternity.esm.js")).default;
     const g = () => new D0("1e6");
     const zero = tangramPassiveIpGain({ brokenInfinity: true, tangramCleared: [0, 0, 0, 0, 0, 0] }, 1000, g);
@@ -352,7 +352,7 @@ ck("④f 定点手算：大三角 II ⇒ 右边缘 0%、上边缘 0%、斜轴 50
   //   ③ 某档清满 6 个 ⇒ 自动进下一档
   {
     const { newState } = await import("../src/state.js");
-    const gm = await import("../src/tangram-game.js");
+    const gm = await import("../src/tangram/game.js");
     const s = newState();
     s.spaceCount = 3;
     const a1 = gm.tangramChallengeTarget(s);
@@ -443,7 +443,7 @@ ck("④f 定点手算：大三角 II ⇒ 右边缘 0%、上边缘 0%、斜轴 50
 // ══════════════════════════════════════════════════════════
 {
   const { ipDoubleLogCost } = await import("../src/config/infinity/ip.js");
-  const { rewardIpDoubleKneeMult } = await import("../src/tangram-reward.js");
+  const { rewardIpDoubleKneeMult } = await import("../src/tangram/reward.js");
   const base = ipDoubleLogCost(40, 1);
   const k2 = ipDoubleLogCost(40, 2);
   const k3 = ipDoubleLogCost(40, 3);
@@ -461,7 +461,7 @@ ck("④f 定点手算：大三角 II ⇒ 右边缘 0%、上边缘 0%、斜轴 50
 //    判定必须按**档位**（`606000` 这种 d1+d3 不算 ✓）
 // ══════════════════════════════════════════════════════════
 {
-  const { tangramRewardEffects } = await import("../src/tangram.js");
+  const { tangramRewardEffects } = await import("../src/tangram/core.js");
   const g = (a) => tangramRewardEffects(a).nekoExponentOnZpe;
   const ok =
     g([0, 0, 0, 0, 0, 0]) === false &&

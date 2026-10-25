@@ -9,7 +9,7 @@ import { D } from "./core.js";
 import { countFreqAddTerm, globalMultiplier } from "./global.js";
 import { deLevelOf, hasDe, hasV9, hasVoid, hasZpe } from "../state.js";
 import Decimal from "../../dist/break_eternity.esm.js";
-import { tangramRewardEffects } from "../tangram.js";   // ★ 2026-10-22：前两组清满 ⇒ neko 指数作用于 ZPE ✓
+import { tangramRewardEffects } from "../tangram/core.js";   // ★ 2026-10-22：前两组清满 ⇒ neko 指数作用于 ZPE ✓
 import { nekoGlobalExponent } from "../config/neko.js";
 
 export function zpeMultiplier(state) {

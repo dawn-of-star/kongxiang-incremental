@@ -8,7 +8,7 @@
 import Decimal from "../../dist/break_eternity.esm.js";
 import { hasCollapse } from "./milestones.js";
 import { zpeEngineMultBonus } from "./zpe-engine.js";
-import { spaceDu9Mult } from "../space.js";
+import { spaceDu9Mult } from "../space/core.js";
 
 export const TRANSMUTER_IP = { coeff: 0.5, cap: 100 };
 export function transmuterIpMult(state) {

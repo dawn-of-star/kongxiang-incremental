@@ -1,4 +1,4 @@
-import { rewardIpDoubleKneeMult } from "../../tangram-reward.js";
+import { rewardIpDoubleKneeMult } from "../../tangram/reward.js";
 /**
  * engine/purchases/infinity.js —— ∞ 层购买：无限升级 / 无限增幅 / 永恒增幅 / 效果文本 / 快照
  *

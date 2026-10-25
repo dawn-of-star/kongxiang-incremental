@@ -9,7 +9,7 @@ import { D } from "./core.js";
 import { darkEnergyGainPerConversion } from "./dark-energy.js";
 import { globalMultiplier } from "./global.js";
 import { hasDe } from "../state.js";
-import { tangramRewardEffects } from "../tangram.js";
+import { tangramRewardEffects } from "../tangram/core.js";
 import { zpeRate } from "./zpe.js";
 
 export function effectiveDarkEnergyGain(state) {

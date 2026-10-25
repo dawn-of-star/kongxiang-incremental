@@ -6,7 +6,7 @@
  *    依赖：eternity, tangram.js ｜ Decimal
  */
 import Decimal from "../../dist/break_eternity.esm.js";
-import { tangramRewardEffects } from "../tangram.js";
+import { tangramRewardEffects } from "../tangram/core.js";
 import { fmt } from "../format.js";
 import { hasEternityMilestone } from "./eternity.js";
 

@@ -12,7 +12,7 @@
  *
  * ⚠️ 所有“最终收益”必须走唯一包装 `spaceApplyFinalGain()`；不要在公式各处手写 sqrt。
  */
-import Decimal from "../dist/break_eternity.esm.js";
+import Decimal from "../../dist/break_eternity.esm.js";
 
 const D = (x) => new Decimal(x ?? 0);
 export const SPACE_UNLOCK_EP = new Decimal("1e1200");

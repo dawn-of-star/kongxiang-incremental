@@ -7,6 +7,29 @@
 
 ---
 
+## 0.8.0 — 空间膨胀落地；后端 JS 整理
+
+> **大版本**：空间膨胀从"设计草案"变成**可玩系统** —— EP ≥ 1e1200 解锁，
+> 挑战内 IP 峰值结算成 SE（膨胀点数），ST（膨胀时间）由全局加成主动生产，
+> du1~du11 把自动化 / 价格修正接进现有链路，页面、挑战、升级齐活。
+> 同时把后端 JS 按领域收拢：`src/space/`（core / config / upgrades / ui）与
+> `src/tangram/`（core / board / bonus / game / passive / patterns / reward），
+> 所有相对导入重算，结构守卫 **87/87 可达**。
+>
+> 统计：自 `0.7.11` 起 **0 个功能提交** —— 空间膨胀的代码在此前已随提交落地，
+> 本版是**大版本标记** + 目录整理（文档同步：ARCHITECTURE / TANGRAM / TODO）。
+>
+> 权威文档：[`docs/SPACE.md`](docs/SPACE.md)（若存在）、[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)。
+
+**这一版做了什么**
+
+1. **空间膨胀落地**：SE / ST 两种货币、挑战进入 / 退出、du1~du11 升级与自动化、
+   页面（空间膨胀页）、价格修正与 DE 链路接入。
+2. **后端目录整理**：`space*` 与 `tangram*` 共 11 个顶层文件收进领域目录；
+   导入路径全部重算（含 tools / tests），无重复导出，无死模块。
+3. **文档同步**：ARCHITECTURE 增加 `src/space/`、`src/tangram/` 两节并把模块数
+   更新为 87；TANGRAM / TODO / TANGRAM-CHALLENGE-REWARDS 的旧路径一并更新。
+
 ## 0.7.11 — 每 60 秒主动搭话 + 性价比规则
 
 > **公告**：聊天区新增"她会主动开口"—— 距上次消息 **55 秒**后、每 15 秒检查一次，

@@ -5,7 +5,7 @@
  *    对外统一从 `src/formulas.js`（barrel）导入。
  */
 import { darkMatterAdditiveTerm, deGainBaseEffectMult, dreamUpgradeEffects, effectiveDarkEnergyLog10Of, engineBonusMult, qOf, quantumDeGainBonus, quantumDeMultBonus, zpeEngineMultBonus } from "../config.js";
-import { spaceDeEffectiveLog10 } from "../space.js";
+import { spaceDeEffectiveLog10 } from "../space/core.js";
 import { D } from "./core.js";
 import { deLevelOf, hasDe } from "../state.js";
 import Decimal from "../../dist/break_eternity.esm.js";

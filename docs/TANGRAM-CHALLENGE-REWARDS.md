@@ -1,7 +1,7 @@
 # 拼装挑战：**全部奖励效果一览**（供重写用）
 
 > **状态：待同步**（清单，2026-10-20；用户准备重写部分效果 ⇒ 本页是当前实现的**完整快照**）
-> 来源：`src/tangram.js` 的 `TANGRAM_CHALLENGE_REWARDS` + `tangramRewardEffects()`（唯一聚合入口）
+> 来源：`src/tangram/core.js` 的 `TANGRAM_CHALLENGE_REWARDS` + `tangramRewardEffects()`（唯一聚合入口）
 > 结构：**6 个难度档 × 每档 18 个图案**（6 入场 + 12 储备），每档清满 6 个即"清满该档"✓
 
 ---

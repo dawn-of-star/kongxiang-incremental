@@ -7,13 +7,13 @@
  * ⚠️ 后续接引擎时，价格/等级/挑战状态都应从 state 的同一组字段读；
  *    这里已经预留 `state.space = { se, st, challenge, ipPeak, epPeak, upgrades }`。
  */
-import Decimal from "../dist/break_eternity.esm.js";
-import { markPageUnlocked } from "./config.js";
-import { startSpaceChallenge } from "./engine.js";
-import { buySpaceUpgrade, spaceCanBuy, spaceUpgradeCost, spaceUpgradeLevel } from "./space-upgrades.js";
-import { exitSpaceChallenge, spaceUnlocked } from "./space.js";
-import { fmt, sci } from "./ui-core.js";
-import { SPACE_DESIGN, SPACE_UPGRADES } from "./space-config.js";
+import Decimal from "../../dist/break_eternity.esm.js";
+import { markPageUnlocked } from "../config.js";
+import { startSpaceChallenge } from "../engine.js";
+import { buySpaceUpgrade, spaceCanBuy, spaceUpgradeCost, spaceUpgradeLevel } from "./upgrades.js";
+import { exitSpaceChallenge, spaceUnlocked } from "./core.js";
+import { fmt, sci } from "../ui-core.js";
+import { SPACE_DESIGN, SPACE_UPGRADES } from "./config.js";
 
 const D = (x) => new Decimal(x ?? 0);
 const cardRefs = new Map();

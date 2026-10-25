@@ -1,4 +1,4 @@
-import { rewardIpDoubleKneeMult } from "./tangram-reward.js";   // ★ 2026：knee 奖励（显示=实发 ✓）
+import { rewardIpDoubleKneeMult } from "./tangram/reward.js";   // ★ 2026：knee 奖励（显示=实发 ✓）
 /**
  * ui-infinity.js —— 无限面板：大坍缩 / ∞ 升级 / 悬浮重置窗
  *

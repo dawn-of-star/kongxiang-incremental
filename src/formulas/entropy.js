@@ -10,9 +10,9 @@ import { darkEnergyMultiplier } from "./dark-energy.js";
 import { globalMultiplier } from "./global.js";
 import { particleTimeBoost } from "./quantum.js";
 import { deLevelOf, hasDe, hasV9, hasVoid, hasZpe, levelOf } from "../state.js";
-import { tangramConvRateMult } from "../tangram-bonus.js";
-import { rewardConvSlopeMult } from "../tangram-reward.js";
-import { spaceDu5Mult } from "../space.js";
+import { tangramConvRateMult } from "../tangram/bonus.js";
+import { rewardConvSlopeMult } from "../tangram/reward.js";
+import { spaceDu5Mult } from "../space/core.js";
 import { effectiveTraps, zpeMultiplier } from "./zpe.js";
 
 export function entropyRate(state) {

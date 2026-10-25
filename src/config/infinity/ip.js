@@ -8,7 +8,7 @@ import { BREAK_INFINITY } from "./break.js";
 import { powExactInt } from "../dark-matter.js";
 import { INFINITY_UPGRADES } from "./upgrades.js";
 import Decimal from "../../../dist/break_eternity.esm.js";
-import { rewardIpDoubleKneeMult } from "../../tangram-reward.js";   // ★ 2026：d5/d6 清满 ⇒ knee 倍率 ✓
+import { rewardIpDoubleKneeMult } from "../../tangram/reward.js";   // ★ 2026：d5/d6 清满 ⇒ knee 倍率 ✓
 
 export function infinityPointGain(matter, broken, state = null) {
   const m = matter instanceof Decimal ? matter : new Decimal(matter ?? 0);

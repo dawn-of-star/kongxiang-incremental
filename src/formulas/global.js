@@ -8,9 +8,9 @@ import { REPEATABLE, hasCollapse, nekoGlobalExponent } from "../config.js";
 import { D, dreamCoefficient } from "./core.js";
 import { darkEnergyMultiplier } from "./dark-energy.js";
 import { levelOf } from "../state.js";
-import { tangramCountFreqMult } from "../tangram-bonus.js";
-import { rewardCountFreqMult } from "../tangram-reward.js";
-import { spaceDu6Mult } from "../space.js";
+import { tangramCountFreqMult } from "../tangram/bonus.js";
+import { rewardCountFreqMult } from "../tangram/reward.js";
+import { spaceDu6Mult } from "../space/core.js";
 import Decimal from "../../dist/break_eternity.esm.js";
 
 export function countFreqAddTerm(state) {

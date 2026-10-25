@@ -13,8 +13,8 @@
  *
  * ⚠️ 解锁条件 = 「拼装挑战的**中间难度全清**」（`tangramRewardEffects().passiveIpFrac > 0`）✓
  */
-import Decimal from "../dist/break_eternity.esm.js";
-import { tangramRewardEffects } from "./tangram.js";
+import Decimal from "../../dist/break_eternity.esm.js";
+import { tangramRewardEffects } from "./core.js";
 
 /**
  * @param {object} state

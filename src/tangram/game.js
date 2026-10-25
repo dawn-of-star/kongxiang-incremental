@@ -11,15 +11,15 @@
  *
  * 存档字段（`state.js` 里登记）：`tangramOwned` / `tangramPity` / `tangramPlaced` / `tangramCleared` / `tangramChallenge`
  */
-import Decimal from "../dist/break_eternity.esm.js";
+import Decimal from "../../dist/break_eternity.esm.js";
 import {
   TANGRAM_PIECES, TANGRAM_CHALLENGE, TANGRAM_ACQUIRE,
   tangramPricesAt, tangramPieceAtStep, tangramPatternsPerDifficulty, pickChallengePatterns,
   placePieceVerts, placementOf, isPlacementLegal, placedVertices, axisCoverageAll,
   polygonCells, cellsFingerprint, cellsFromFingerprint, placedCells,
-} from "./tangram.js";
-import { TANGRAM_PATTERN_LIBRARY } from "./tangram-pattern-library.js";
-import { rewardPityFloor } from "./tangram-reward.js";   // ★ 2026：挑战奖励降低保底 ✓
+} from "./core.js";
+import { TANGRAM_PATTERN_LIBRARY } from "./patterns.js";
+import { rewardPityFloor } from "./reward.js";   // ★ 2026：挑战奖励降低保底 ✓
 
 const D = (x) => new Decimal(x);
 
@@ -41,7 +41,7 @@ export function tangramPriceFactor(state) {
   return Math.max(0.1, 1 - Math.min(0.9, disc));
 }
 // 折扣表引用奖励表（唯一数据源）✓ —— 延迟绑定，避免循环 import
-import { TANGRAM_CHALLENGE_REWARDS } from "./tangram.js";
+import { TANGRAM_CHALLENGE_REWARDS } from "./core.js";
 tangramPriceFactor.DISCOUNT = TANGRAM_CHALLENGE_REWARDS.epDiscountByTier;
 
 /** 抽取：花「门槛 × 1% × 折扣」EP，单次 2%，连续失败到保底必中 ✓ */

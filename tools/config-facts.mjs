@@ -28,7 +28,7 @@ const OUT = join(ROOT, "docs", "CONFIG-FACTS.md");
 const WRITE = process.argv.includes("--write");
 
 const c = await import(new URL("../src/config.js", import.meta.url).href);
-const space = await import(new URL("../src/space-config.js", import.meta.url).href);
+const space = await import(new URL("../src/space/config.js", import.meta.url).href);
 
 /** 逐项事实（**只放能从代码直接读出来的**，不放解释性文字） */
 const facts = () => [

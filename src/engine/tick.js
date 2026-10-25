@@ -10,11 +10,11 @@ import { doBigCrunch } from "./collapse.js";
 import { BASE, COLLAPSE, INFINITY_UPGRADES, crunchThreshold, deEngineLevelBonus, deGrowthRate, hasEternityMilestone, ipDoubleMult, markPageUnlocked, quantumPerPair, quantumStepMult, quantumZpeRequirement, zpeEngineLevel, zpeEngineUnlocked } from "../config.js";
 import { sci } from "../format.js";
 import { D, bigCrunchGain, checkDeMilestones, checkQuantumMilestones, checkZpeMilestones, collapseUnlocked, darkEnergyRate, floorDiv, globalMultiplier, matterGainOver, zpeRate } from "../formulas.js";
-import { spaceApplyFinalGain, spaceTick } from "../space.js";
-import { autoBuySpaceDu } from "../space-upgrades.js";
+import { spaceApplyFinalGain, spaceTick } from "../space/core.js";
+import { autoBuySpaceDu } from "../space/upgrades.js";
 import { unlockZpeEngine } from "./purchases.js";
 import { awardDream, isQuantumLogLevel, pushLog } from "../state.js";
-import { applyTangramPassiveIp } from "../tangram-passive.js";
+import { applyTangramPassiveIp } from "../tangram/passive.js";
 import Decimal from "../../dist/break_eternity.esm.js";
 
 /**

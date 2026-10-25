@@ -14,9 +14,9 @@
  *
  * ⚠️ 独立模块（`formulas.js`/`config.js` 各只加一行调用）✓
  */
-import { axisCoverageAll } from "./tangram.js";
-import { placedVertices } from "./tangram.js";
-import { spaceDuMult } from "./space.js";
+import { axisCoverageAll } from "./core.js";
+import { placedVertices } from "./core.js";
+import { spaceDuMult } from "../space/core.js";
 
 /** 三条轴的端点（唯一数据源）✓ */
 export const TANGRAM_AXES_RANGE = {
