@@ -9,7 +9,7 @@
 import { hasEternityMilestone } from "./config.js";
 import { D } from "./formulas.js";
 import { updateTabLocks } from "./lock-ui.js";
-import { paintTangramBoard } from "./tangram/board.js";
+import { paintTangramBoard, getSelectedPiece, setSelectedPiece } from "./tangram/board.js";
 import { TANGRAM_PIECES, autoPlaceTangram, cellsFromFingerprint, drawTangramPiece, exchangeTangramPiece, flipTangramPlacement, moveTangramPlacement, resetTangramBoard, rotateTangramPlacement, takeTangramBack, tangramAdvanceChallenge, tangramChallengeSolved, tangramChallengeTarget, tangramCoverage, tangramPieceAtStep, tangramPriceFactor, tangramPricesAt, tangramChallengeDiff, transformPieceInPlace } from "./tangram/game.js";
 import { TANGRAM_AXES_RANGE, tangramAxisParams } from "./tangram/bonus.js";   // ★ 2026：三轴端点 + 实时数值 ✓
 import { fmtMult } from "./format.js";
@@ -80,7 +80,8 @@ export function renderTangram(state) {
  *   本卡片在**未接入**时也完整可用（好感度由游戏内原生机制驱动）——
  *   这正是 NEKO.md §7 明写的定位 ✓
  */
-let tgSel = null;
+// ★ 2026-10-25：不再自己存选中 ✗ —— 统一走 `tangram/board.js` 的 getSelectedPiece() ✓
+const tgSelNow = () => getSelectedPiece();
 let tgBarBuilt = false;
 let tgAcqBuilt = false;
 let tgChalBound = false;
@@ -229,13 +230,13 @@ function paintTangramSlots(st) {
       const pid = piece.id;
       node.addEventListener("click", () => {
         if (!st.tangramOwned?.[pid]) return;
-        tgSel = pid;
+        setSelectedPiece(pid, st);
         renderTangramReal(st);
       });
     }
     node.classList.toggle("owned", own);
     node.style.opacity = own ? "1" : "0.5";
-    node.style.outline = tgSel === piece.id ? "1px solid var(--eternity, #b388ff)" : "none";
+    node.style.outline = tgSelNow() === piece.id ? "1px solid var(--eternity, #b388ff)" : "none";
   }
 }
 
@@ -343,17 +344,17 @@ function buildTangramControlBar(st) {
         b.addEventListener("click", () => { fn(); uiHandlers?.onTangramCommit?.(); });
         bar.appendChild(b);
       };
-      mk("左移", () => { if (tgSel) moveTangramPlacement(st, tgSel, -1, 0); });
-      mk("右移", () => { if (tgSel) moveTangramPlacement(st, tgSel, 1, 0); });
-      mk("上移", () => { if (tgSel) moveTangramPlacement(st, tgSel, 0, 1); });
-      mk("下移", () => { if (tgSel) moveTangramPlacement(st, tgSel, 0, -1); });
+      mk("左移", () => { const sel = tgSelNow(); if (sel) moveTangramPlacement(st, sel, -1, 0); });
+      mk("右移", () => { const sel = tgSelNow(); if (sel) moveTangramPlacement(st, sel, 1, 0); });
+      mk("上移", () => { const sel = tgSelNow(); if (sel) moveTangramPlacement(st, sel, 0, 1); });
+      mk("下移", () => { const sel = tgSelNow(); if (sel) moveTangramPlacement(st, sel, 0, -1); });
       // ★★★ 2026-10-25（用户：「控制面板得和**现有的操作逻辑**统一」）——
   //   旋转/翻转必须和棋盘上的 R/F **同一条路径**（`transformPieceInPlace` 绕自身中心 ✓）
   //   原来这里走 `rotateTangramPlacement` ✗ —— 那是**绕原点**的旧实现 ✗ ⇒ 一转就飞 ✗
-  mk("旋转", () => { if (tgSel) transformPieceInPlace(st, tgSel, { dRot: 1 }); });
-      mk("翻转", () => { if (tgSel) transformPieceInPlace(st, tgSel, { dFlip: true }); });
-      mk("放下", () => { if (tgSel) autoPlaceTangram(st, tgSel); });
-      mk("收回", () => { if (tgSel) takeTangramBack(st, tgSel); });
+  mk("旋转", () => { const sel = tgSelNow(); if (sel) transformPieceInPlace(st, sel, { dRot: 1 }); });
+      mk("翻转", () => { const sel = tgSelNow(); if (sel) transformPieceInPlace(st, sel, { dFlip: true }); });
+      mk("放下", () => { const sel = tgSelNow(); if (sel) autoPlaceTangram(st, sel); });
+      mk("收回", () => { const sel = tgSelNow(); if (sel) takeTangramBack(st, sel); });
       mk("下一题", () => tangramAdvanceChallenge(st));
       mk("重置棋盘", () => resetTangramBoard(st));
       host.appendChild(bar);

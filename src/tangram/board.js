@@ -37,7 +37,23 @@ let layerTarget = null;
 let layerPieces = null;
 let targetKeyCache = null;
 let drag = null;                       // { id, grabDx, grabDy, moved }
-let selectedId = null;                 // ★ 2026-10-22：点击选中的板块（再点取消 ✓）
+let selectedId = null;
+
+/**
+ * ★★★ 2026-10-25（用户：「控制面板得和现有的操作逻辑统一」）——
+ *   **选中状态的唯一来源**：棋盘（点击/拖拽）与控制栏/托盘（点格子）都读写这一对接口 ✓
+ *   原来有两份：本文件的 `selectedId` 和 `ui-tangram-panel.js` 的 `tgSel` ✗
+ *   ⇒ 从棋盘选中的块，控制栏按钮读不到 ⇒ "按了没反应" ✗
+ */
+export function getSelectedPiece() {
+  return selectedId;
+}
+/** 设置选中（`null` = 取消 ✓）；返回设置后的值 ✓ */
+export function setSelectedPiece(id, state) {
+  selectedId = id ?? null;
+  try { if (state) paintTangramBoard(state); } catch { /* 重画失败不影响选中 ✓ */ }
+  return selectedId;
+}                 // ★ 2026-10-22：点击选中的板块（再点取消 ✓）
 let stRef = null;                      // 由 paintTangramBoard 每帧更新（绑定发生在构建期，那时没有 state ✓）
 
 function svgRoot() {
