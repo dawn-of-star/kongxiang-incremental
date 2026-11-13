@@ -9,6 +9,37 @@
 
 ---
 
+## 0.8.4 — 五项修复：离线/后台计时、存档回退与导出、坏档自愈
+
+> **公告**：这一版修的是“计时与存档”的五个真实 bug，外加两处体验：
+>
+> ① **离线时长扩展升级真正生效**：原来 `advance()` 内部又按基础 4h 裁了一次，
+>   升级买再多也只结算 4 小时；
+> ② **切后台/休眠回来按实际时长补**（受离线上限约束），不再只补 1 秒；
+>   隐藏期间不再计帧，避免和补时双计；
+> ③ **保存失败不再闪「已保存 ✓」**：改为右上角提示；每次成功存档留一份备份，
+>   主档损坏/校验失败时自动回退并提示「已加载上一轮安全存档」；
+> ④ **导出改为当前内存状态**：不再“先 save 再读 localStorage”（写失败会导出旧档）；
+> ⑤ **坏档里的 Infinity/NaN 资源修成 1e308**：原来先被 `dec()` 归零，且自愈路径写成
+>   `s.matter`/`s.entropy`（实际在 `resources.*`），永远修不到；
+>
+> 附：旧档的自动坍缩开关不再“关掉后读档复活”（迁移只在没有 `autoToggles` 键的老档做一次）。
+>
+> 附：本版还包含并发的 **N.E.K.O 自动化授权**（`setAuto` / `__game.nekoGrant` /
+>   猫页授权勾选框，用户授权），提交见 `b8f52cd`、`8ab0de5`。
+
+**这一版做了什么**
+
+1. `src/engine/tick.js`：`advance(..., cap)`；新增 `hiddenCatchUpSeconds()`。
+2. `src/main.js`：离线/后台补时走升级后的 cap；隐藏期间不计帧；保存失败提示；
+   导出当前内存档；回退/损坏提示。
+3. `src/save.js`：`lastSavedAt` 只在写成功后提交；成功写备份 `<saveKey>.bak`；
+   `load()` 主档坏了先回退备份（`fallback:true`）；`clear()` 连同备份清理。
+4. `src/state/serialize.js` + `src/autocrunch.js`：坏资源先判后转 → 1e308；
+   自愈路径改真实 `resources.*`；旧 `autoCrunch.isActive` 迁移收窄并恒写 false。
+5. `src/ui.js` + `css/amoled.css`：右上角 `showToast()`。
+6. 测试：新增 `tools/offline-timing-lab.mjs`（24 条）；`save-integrity-lab` 扩到 **65 条**。
+
 ## 0.8.3 — 空间膨胀标为测试状态；文档对账与归档
 
 > **公告**：空间膨胀页面**暂标为「测试中」**（等你亲手跑一轮再定正式上线），
