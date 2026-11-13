@@ -67,18 +67,26 @@ let offlineReport = null;
 const loaded = load();
 if (loaded) {
   state = loaded.state;
-  if (loaded.offlineSeconds > 5) {
-    // ★★★ 2025：上限走**唯一入口** `offlineCapSeconds(state)` ✓
-    //   它 = 基础 4 小时 + 已买的「离线时长扩展」等级 × 1 小时
-    //   ⚠️ 原来这里**两处各自**读 `BASE.offlineCapSeconds` ⇒ 加了升级后
-    //      "结算用的上限"与"提示是否被截断用的上限"会不一致 ✗
-    //      （正是本项目反复出现的"同一件事两条路"）
-    const cap = offlineCapSeconds(state);
-    const capped = Math.min(loaded.offlineSeconds, cap);
-    advance(state, capped);
-    offlineReport = { seconds: capped, capped: loaded.offlineSeconds > cap, cap };
+  if (loaded.corrupted) {
+    // ★ 2026 存档完整性：校验失败时 save.js 已暂停写入 ⇒ 原档还在 localStorage 里。
+    //   这里只提示，**不自动覆盖**；玩家确认要重开时点「重置」即可。
+    pushLog(state, `⚠️ 存档完整性校验失败（${loaded.reason ?? "unknown"}）：原档已保留，自动存档暂停；如需重开请点重置`);
+  } else {
+    if (loaded.offlineSeconds > 5) {
+      // ★★★ 2025：上限走**唯一入口** `offlineCapSeconds(state)` ✓
+      //   它 = 基础 4 小时 + 已买的「离线时长扩展」等级 × 1 小时
+      //   ⚠️ 原来这里**两处各自**读 `BASE.offlineCapSeconds` ⇒ 加了升级后
+      //      "结算用的上限"与"提示是否被截断用的上限"会不一致 ✗
+      //      （正是本项目反复出现的"同一件事两条路"）
+      const cap = offlineCapSeconds(state);
+      const capped = Math.min(loaded.offlineSeconds, cap);
+      advance(state, capped);
+      offlineReport = { seconds: capped, capped: loaded.offlineSeconds > cap, cap };
+    }
+    pushLog(state, loaded.legacy
+      ? "检测到旧版存档，已按兼容路径读取（下次保存会写成新格式）"
+      : "检测到历史存档，数据已恢复");
   }
-  pushLog(state, "检测到历史存档，数据已恢复");
 }
 
 // ══════════════════════════════════════════════════════════

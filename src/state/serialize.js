@@ -42,7 +42,6 @@ export function deserialize(raw) {
     }
   };
   const bool = (v) => v === true;
-
   const s = fresh;
 
   // ★★★ 2026（用户：「每次永恒后为什么要重置自动化的开关状态」）——
@@ -85,6 +84,8 @@ export function deserialize(raw) {
 
   const vu = raw.voidUpgrades ?? {};
   for (const k of Object.keys(fresh.voidUpgrades)) s.voidUpgrades[k] = bool(vu[k]);
+  // ⚠️ 历史遗留的顶层镜像（真正生效的是 `voidUpgrades.v9`）：保留读取，别让存档字段静默丢
+  s.v9 = bool(raw.v9);
 
   const qm = raw.quantumMilestones ?? {};
   for (const k of Object.keys(fresh.quantumMilestones)) s.quantumMilestones[k] = bool(qm[k] === true);
@@ -101,6 +102,8 @@ export function deserialize(raw) {
   s.darkEnergy = dec(raw.darkEnergy);
   s.darkEnergyTotal = dec(raw.darkEnergyTotal);
   s.zpeAccumulator = dec(raw.zpeAccumulator);
+  s.deAccum = dec(raw.deAccum);          // ★ 暗能量累积（UI 的相变环读它）
+  s.spanDeBase = dec(raw.spanDeBase);    // ★ 跨度层基准（「门槛压平」购买时的 DE 水位）
   s.phaseTransmuterUnlocked = bool(raw.phaseTransmuterUnlocked);
 
   const dl = raw.deUpgradeLevels ?? {};
@@ -176,6 +179,7 @@ export function deserialize(raw) {
     ? Object.fromEntries(Object.entries(raw.speedBought).filter(([, v]) => v === true))
     : {};
   s.infinityElapsed = num(raw.infinityElapsed, 0);
+  s.runElapsed = Math.max(0, num(raw.runElapsed, 0));   // ★ 本轮时长（收手判据，此前漏读）
   // ⚠️ 2026：`fastestInfinitySec` / `icAutoTimer` **不再读取**（随 IC 删除）——
   //   老存档里仍有这两个字段 ⇒ **明文忽略**（不迁移、不报错）✓
   s.ipTimeAccrued = dec(raw.ipTimeAccrued);           // ★ Decimal 存储 ✓
@@ -197,8 +201,7 @@ export function deserialize(raw) {
   //   ⚠️ 必须夹住（存档可被手改）：`Number(x) || 0` 把 NaN / 非数字打成 0，
   //      再 `Math.max(0, floor(...))` 夹掉负数与小数 ⇒ 脏数据不可能把 log10 弄坏 ✓
   s.eternityDarkMatter = Math.max(0, Math.floor(Number(num(raw.eternityDarkMatter, 0)) || 0));
-  // ★★★ 2026：第一台速率的 log10 快照（**纯运行期派生量**，每帧都会被重写）
-  //   ⇒ 旧档 / 脏数据一律回落 0；`num()` 已把 NaN / 非数字打成默认值 ✓
+  // ★★★ 2026：第一台速率的 log10 快照（纯运行期派生量，每帧重写）⇒ 旧档 / 脏数据回落 0
   s.v1Log10 = num(raw.v1Log10, 0);
   // ★★★ 2025（`docs/NEKO.md` §7）：好感度（跨轮次长期进度；旧档默认 0 ✓）
   //   ⚠️ 必须夹到 [NEKO.min, NEKO.max]（存档可被手改 ⇒ 不夹的话指数会失控 ✗）
@@ -214,6 +217,7 @@ export function deserialize(raw) {
   // ── 量子 ──
   s.quantum = dec(raw.quantum);
   s.quantumPairs = dec(raw.quantumPairs);
+  s.totalQuantumPairs = dec(raw.totalQuantumPairs);   // ⚠️ 历史遗留字段（代码读 quantumPairsTotal）
   s.quantumPairsTotal = dec(raw.quantumPairsTotal);
   s.dreamUpgrades = raw.dreamUpgrades && typeof raw.dreamUpgrades === "object"
     ? Object.fromEntries(Object.entries(raw.dreamUpgrades).filter(([, v]) => v === true))
@@ -240,9 +244,7 @@ export function deserialize(raw) {
     ? raw.log.slice(-LOG_MAX).map((e) => ({ t: num(e?.t, Date.now()), text: String(e?.text ?? "") }))
     : [];
 
-  // ★★★ 2026（用户：∞ 又回来咬人了，守卫点名 `darkEnergy` 与 `zpe`）——
-  //   **读档自愈**：资源若不是有限值（旧档被炸坏 / Infinity 落盘），直接夹回 1e308 ✓
-  //   （break_eternity 能表示 1e308 以上的有限值；夹到 1e308 是"接近上限但不越界"的恢复值 ✓）
+  // ★★★ 2026 读档自愈：资源若不是有限值（旧档被炸坏 / Infinity 落盘）⇒ 夹回 1e308 ✓
   {
     const LIMIT = new Decimal("1e308");
     const clampField = (obj, key) => {
@@ -268,10 +270,9 @@ export function deserialize(raw) {
     }
   }
 
-  // ★★★ 2026-10-22 修（用户：「**刷新网页后七巧板系统进度丢失**」）——
-  //   根因：`deserialize` 是**逐字段显式还原**（55 个 ✓），而七巧板那 6 个字段**一个都没写** ✗
-  //   ⇒ 刷新后它们回落到 `newState()` 的空默认值 ⇒ 进度全丢 ✗
-  //   （这是"模块化拆分时漏字段"的典型事故：serialize 是全量 ✓，deserialize 是白名单 ✗）
+  // ★★★ 2026-10-22 修（用户：「刷新网页后七巧板系统进度丢失」）——
+  //   根因：serialize 是全量、deserialize 是白名单，七巧板 6 个字段一个都没写 ⇒ 刷新即丢 ✗
+  //   （典型事故；`tools/save-integrity-lab.mjs` 的 key 集合守卫专门防它再发生 ✓）
   s.tangramOwned = raw.tangramOwned && typeof raw.tangramOwned === "object"
     ? Object.fromEntries(Object.entries(raw.tangramOwned).filter(([, v]) => v === true))
     : {};

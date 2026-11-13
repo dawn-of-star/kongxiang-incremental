@@ -45,7 +45,7 @@ export function playTimeBonus(state) {
  *   engine.js 的 start/abandon/icCompleteOnCrunch/icAutoAdvance ·
  *   formulas.conversion 里那行阈值放大 · index.html 的 IC 宿主 ·
  *   neko.js 的 IC 日志分类 · tools/ic-lab.mjs 与 ic-ladder-lab.mjs ·
- *   **em7 退回 pending**（它的内容就是自动完成 IC）
+ *   **em7 已改为「N.E.K.O 加成翻倍 + 每次永恒保留 1 次无限」**（不再依赖 IC）
  *
  * ⚠️ 不要从 git 历史复活它 —— 除非用户明确要重建 ✓
  */

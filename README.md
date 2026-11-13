@@ -2,10 +2,10 @@
 
 网页增量游戏。原生 ES 模块 + `break_eternity.js`，**零构建、零 npm install**。
 
-当前版本：**0.8.1**
+当前版本：**0.8.2**
 
 > **改完东西只想确认没搞坏？** 跑 `npm test`（或 `node tools/run-all.mjs`）——
-> 一次跑完 52 个自检脚本，只把失败细节打出来。约 4 分钟。
+> 一次跑完 54 个自检脚本，只把失败细节打出来。约 4 分钟。
 > 不知道该改哪个文件？看下面[「想改一个数值」](#想改一个数值)那张表。
 
 ### 维护约定（改机制时必须同步的三处）
@@ -56,7 +56,7 @@
 | 你想干嘛 | 用什么 | 需要装什么 |
 |---|---|---|
 | **点开就玩（最省事）** | **https://dawn-of-star.github.io/kongxiang-incremental/** | 只需要浏览器 |
-| **下载到本地玩** | Release 里的 `KongxiangIncremental-0.8.1-win-x64.exe` | **什么都不用装**，双击即玩 |
+| **下载到本地玩** | Release 里的 `KongxiangIncremental-0.8.2-win-x64.exe` | **什么都不用装**，双击即玩 |
 | 在本机改着玩 | `node serve.mjs` → http://127.0.0.1:8321/ | Node.js |
 | 改代码 / 自己打包 | 见下面「打包成 exe」 | Node.js + 首次 `npm install` |
 
@@ -112,11 +112,12 @@ test-034/
 │   ├── QUANTUM-MILESTONES.md     ★ 量子里程碑草案（7 条；承担阶梯加速）
 │   ├── ZONES.md                 ★ 乘区归属（改乘区前看；计数见 CONFIG-FACTS）
 │   ├── BONUS-POSITIONS.md       ★ 全增益落点（a区 / b区 / c区 / 斜率）与中期指数缺口
-│   ├── SPACE-EXPANSION-FINAL.md ★ 空间膨胀合并终稿（设计，未实装）：du1~du11 / SE / ST
+│   ├── SPACE-EXPANSION-FINAL.md ★ 空间膨胀终稿（**已实装 · 0.8.0**）：du1~du11 / SE / ST
 │   ├── SPACE-EXPANSION.md       ☆ 空间膨胀原始逐字稿（历史输入，已合并）
 │   ├── TIMESPACE.md             ☆ 空间膨胀 / 时空层旧稿（只保留时空外层）
 │   ├── PROGRESSION.md           ★ 主流程设计（层间门槛/重置关系 + 实测时长 + 已知缺口 G1~G7）
-│   └── NEKO.md                  ★ neko 接入说明（待办：等对方回问题后做最小可接集）
+│   ├── BALANCE-AUDIT.md         ★ 平衡审计（只读 · 2026）：坍缩频率 / 轮次倍率 / 引擎落点 / 升级曲线
+│   └── NEKO.md                  ★ neko 接入说明（**已接入**：游戏内聊天 / 动作 / 主动搭话 / 猫猫漫游）
 ├── electron/
 │   ├── main.cjs                 Electron 主进程：开窗口 + 菜单 + 单实例
 │   └── static-protocol.cjs      ★ 注册 app:// 协议，把静态文件当 HTTP 伺服
@@ -136,13 +137,15 @@ test-034/
 │   ├── engine.js                引擎门面（17 行 barrel）
 │   ├── engine/                  ★ tick / actions / collapse / eternity + purchases/ 4 个子模块
 │   ├── neko.js                  N.E.K.O 门面（17 行 barrel，公开 API 不变）
-│   ├── neko/                    ★ log / snapshot / actions / bridge
+│   ├── neko/                    ★ bridge / chat / chat-ui / assist / control / actions / snapshot / log / cat-pet
+│   ├── space/                   ★ core / config / upgrades / page（空间膨胀）
+│   ├── tangram/                 ★ core / board / bonus / game / passive / patterns / reward（七巧板）
 │   ├── save.js                  localStorage 存档
 │   ├── ui.js                    装配层：静态结构构建 + `render()` 编排（不再堆面板逻辑）
 │   ├── ui-core.js               乘区上色 / 效果文案 / 格式化 / 共享回调
 │   ├── ui-cache.js              DOM 缓存 / 写入去重 / 真实写入计数
 │   ├── ui-panels.js             主面板 11 个区块的 render
-│   ├── ui-quantum.js 等 6 个    各面板的 render（量子 / 无限 / 永恒 / 暗物质 / 猫猫 / 七巧板）
+│   ├── ui-quantum.js 等 7 个    各面板的 render（量子 / 无限 / 永恒 / 暗物质 / 猫猫 / 七巧板）
 │   └── main.js                  装配 + requestAnimationFrame 主循环
 ├── tools/                       开发期脚本（★ 不参与打包）
 │   ├── run-all.mjs              ★ `npm test`：一次跑完下面全部自检
@@ -193,8 +196,8 @@ npm run dist         # 产出 release/ 下的便携版 exe + zip
 
 | 文件 | 说明 |
 |---|---|
-| `release/KongxiangIncremental-0.8.1-win-x64.exe` | **给玩家的推荐版本**。单个自解压 exe，双击即玩，卸载就是删文件 |
-| `release/KongxiangIncremental-0.8.1-win-x64.zip` | 解压即用的绿色目录。部分杀软会误报自解压包，备一个这个 |
+| `release/KongxiangIncremental-0.8.2-win-x64.exe` | **给玩家的推荐版本**。单个自解压 exe，双击即玩，卸载就是删文件 |
+| `release/KongxiangIncremental-0.8.2-win-x64.zip` | 解压即用的绿色目录。部分杀软会误报自解压包，备一个这个 |
 
 想快速验证打包有没有问题，用 `npm run dist:dir`（只出 `release/win-unpacked/`，几十秒）。
 
@@ -290,7 +293,7 @@ git push origin v0.6.17
 ### 为什么不能直接把整个仓库发布出去
 
 发布前要先挑文件。游戏真正需要的只有 4 个：`index.html`、`css/`、`src/`、`dist/`。
-`legacy/`（0.3.4 原稿）、`tools/`（52 个默认批跑的开发脚本）、`electron/`、`build/` 都不该公开可访问。
+`legacy/`（0.3.4 原稿）、`tools/`（54 个默认批跑的开发脚本）、`electron/`、`build/` 都不该公开可访问。
 
 `tools/check-web-bundle.cjs` 负责这件事，它做两步：
 
@@ -411,7 +414,7 @@ JS 的 `Number` 上限是 1.8e308，`Math.pow(4, 512)` 就会溢出成 `Infinity
 | 界面文字（卡片描述） | `src/config/` 各条目的 `desc`（要**从公式算**） | `tools/dom-smoke.mjs`、`consistency.mjs` |
 | **过载**（打破无限后的软上限） | `OVERLOAD`（`halvingOrders` / `stepOrders` / `tierShift` / `crunchBelow`） | `tools/overload-lab.mjs`（零回归 + **收手阈值可达**）、`tools/infinity-ladder-lab.mjs` |
 | **量子捕获门槛**（累进档位） | `QUANTUM.captureTierFactor` | `tools/quantum-tier-lab.mjs` |
-| **永恒里程碑**（8 条，按永恒次数解锁） | `ETERNITY_MILESTONES`（`pending` 标记未实装项） | `tools/eternity-lab.mjs --check`（18 条：EP 公式 6 + 里程碑 12） |
+| **永恒里程碑**（8 条，按永恒次数解锁） | `ETERNITY_MILESTONES`（em1~em8 全部实装，无 `pending`） | `tools/eternity-lab.mjs --check`（18 条：EP 公式 6 + 里程碑 12） |
 | **IP 阶梯的通道分工**（① / IC / 深度 / em5 各扛多少阶） | `INFINITY_CHALLENGES`、`IP_DOUBLE_SOFT_CAP` | `tools/ic-ladder-lab.mjs`（三张表） |
 | **ZPE 引擎的饱和拐点**（`k` 能不能长起来） | `MATTER_B_KNEE`、`ZPE_ENGINE.baseCostIp` | `tools/engine-knee-lab.mjs` |
 | **引擎价格形状**（多项式 vs 指数） | `ZPE_ENGINE.baseCostIp` | `tools/engine-cost-form.mjs`、`tools/engine-tier-cost-lab.mjs` |

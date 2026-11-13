@@ -89,8 +89,11 @@ export function simulate(opts = {}) {
     if (wantTier > tier) {
       tier = wantTier;
       const lg = P.gt(0) ? P.log10().toNumber() : 0;
-      staircase.push({ tier, t, logIP: lg, N, A, E });
-      if (staircase.length > 80) break;
+      // ⚠️ 这里原来写的是 `push` 之后 `if (staircase.length > 80) break;` ——
+      //   本意只是"别把阶梯表撑爆"，实际却**把整个仿真截断在 81 小时** ✗
+      //   ⇒ c0=1e6 那几行因此永远到不了 1e308.25（hits[TARGET] = undefined ⇒ "NaN 分钟"）
+      //   现在只限制**记录条数**，不 break（仿真该跑多久跑多久）✓
+      if (staircase.length < 400) staircase.push({ tier, t, logIP: lg, N, A, E });
     }
 
     // 贪心购买：买得起就买"最便宜"的；铸币受上限约束
@@ -133,6 +136,13 @@ if (check) {
     if (!ok) fails++;
     console.log(`  ${ok ? "✅" : "❌"} ${pad(label, 40)} ${detail}`);
   };
+  // ★★★ 2026 重标 c0（本轮 6 条红灯之一）：
+  //   ① `simulate()` 里的 `staircase.length > 80 ⇒ break` 曾把**仿真本身**截断在 81 小时
+  //      （见该处注释）⇒ 需要 >81h 的方案一律变成 `—` / "NaN 分钟" ✗
+  //   ② 旧断言/旧表用的 c0 = 1e6 在当前模型下 **400h 都摸不到 1e308.25** ⇒ 同样是 `—`
+  //   ⇒ 按当前模型重解（m=2.5、r=2）：c0 = 1e3.41 ⇒ 25.0h｜12h ⇒ 1e3.02｜48h ⇒ 1e3.90
+  //      （旧值 1e4.8 / 1e4.3 / 1e5.3 全部过期 ✗ —— 那是截断前的模型口径）
+  const C0 = Math.pow(10, 3.41);           // 24h 目标对应的起步价（重标值）
   // 现状：没有新机制（m=1 → 铸币无效；engineG=0）
   const now = simulate({ m: 1, engineG: 0, ceilingFromEngine: null, uncapped: true, hours: 400 });
   ck("现状 400 小时内到不了 1e308.25", now.hits[TARGET] === undefined,
@@ -141,21 +151,22 @@ if (check) {
     `m=2.5, r=2 → p = ${(Math.log10(2.5) / Math.log10(2)).toFixed(3)}（>1 才有终局手感）`);
   // ★ 节流阀：**单纯的"N ≤ 引擎等级"不是节流阀** —— 超临界状态下引擎等级和铸币
   //   会一起飞，两者时间几乎相同（这条断言把"此路不通"记下来，省得以后重试）。
-  const uncapped = simulate({ m: 2.5, r: 2, c0: 1e6, engineG: 0, ceilingFromEngine: null, uncapped: true });
-  const capped = simulate({ m: 2.5, r: 2, c0: 1e6, engineG: 0, ceilingFromEngine: 0 });
+  const uncapped = simulate({ m: 2.5, r: 2, c0: C0, engineG: 0, ceilingFromEngine: null, uncapped: true });
+  const capped = simulate({ m: 2.5, r: 2, c0: C0, engineG: 0, ceilingFromEngine: 0 });
   ck("单纯 N≤引擎等级 不是节流阀（记录此路不通）",
     Math.abs((capped.hits[TARGET] ?? 0) - (uncapped.hits[TARGET] ?? 0)) < 0.5,
     `无上限 ${fH(uncapped.hits[TARGET])} ≈ 有上限 ${fH(capped.hits[TARGET])}`);
-  // ★ 超临界的形状：最后 100 阶几乎是一瞬间（1e200 → 1e308.25 占总时长极小）
+  // ★ 超临界的形状：最后 108 阶几乎是一瞬间（1e200 → 1e308.25 占总时长极小）
+  //   ⚠️ 基准必须用**能到顶**的 c0（旧版用 1e6 ⇒ 永远到不了 ⇒ NaN 分钟 ✗）
   const shape = uncapped;
   ck("超临界 = 先慢后冲（最后 108 阶占比 < 5%）",
     (shape.hits[TARGET] - shape.hits[200]) < shape.hits[TARGET] * 0.05,
     `1e200 → 1e308.25 用了 ${((shape.hits[TARGET] - shape.hits[200]) * 60).toFixed(1)} 分钟` +
     `（总时长 ${fH(shape.hits[TARGET])}）`);
-  // ★ 起步价 c0 是"对顶时间"的主旋钮
-  const cheap = simulate({ m: 2.5, r: 2, c0: 1e3, engineG: 0, ceilingFromEngine: null, uncapped: true });
-  ck("c0 是主旋钮（1e6 → 1e3 会大幅提前）", cheap.hits[TARGET] < uncapped.hits[TARGET] / 10,
-    `c0=1e6 → ${fH(uncapped.hits[TARGET])}；c0=1e3 → ${fH(cheap.hits[TARGET])}`);
+  // ★ 起步价 c0 是"对顶时间"的主旋钮（÷1e3 ⇒ 半小时级）
+  const cheap = simulate({ m: 2.5, r: 2, c0: C0 / 1e3, engineG: 0, ceilingFromEngine: null, uncapped: true });
+  ck("c0 是主旋钮（÷1e3 会大幅提前）", cheap.hits[TARGET] < uncapped.hits[TARGET] / 10,
+    `c0=${C0.toExponential(1)} → ${fH(uncapped.hits[TARGET])}；c0=${(C0 / 1e3).toExponential(1)} → ${fH(cheap.hits[TARGET])}`);
   console.log();
   console.log(`  ${fails === 0 ? "全部通过 ✅" : `${fails} 项失败 ❌`}`);
   process.exit(fails ? 1 : 0);
@@ -167,15 +178,17 @@ console.log("IP 经济：从 60 点/小时 到 1e308.25 需要什么");
 console.log("=".repeat(94));
 console.log(`  ${pad("方案", 44)} ${pad("到 1e10", 10)} ${pad("到 1e50", 10)} ${pad("到 1e100", 10)} ` +
   `${pad("到 1e200", 10)} ${pad("到 1e308.25", 11)} 收尾等级`);
+//  ⚠️ c0 一列**已按当前模型重标**（2026）：下面的 "1e3.41 → 25h / 1e3.02 → 12h / 1e3.90 → 48h"
+//     是重新反解出来的；旧的 1e4.8 / 1e4.3 / 1e5.3 是"仿真被截断在 81h"那个版本的口径 ✗
 const rows = [
   ["现状（不新增机制）", { m: 1, engineG: 0, ceilingFromEngine: null, uncapped: true }],
-  ["不加节流阀（上限=∞，p=1.32）", { m: 2.5, r: 2, c0: 1e6, engineG: 0, ceilingFromEngine: null, uncapped: true }],
-  ["铸币 ×2/级（p=1，临界）", { m: 2, r: 2, c0: 1e6, engineG: 0, ceilingFromEngine: null, uncapped: true }],
-  ["★ 24h 目标（m=2.5, c0=1e4.8）", { m: 2.5, r: 2, c0: Math.pow(10, 4.8), engineG: 0, ceilingFromEngine: null, uncapped: true }],
-  ["★ 24h 目标（m=1.8, p=0.85）", { m: 1.8, r: 2, c0: Math.pow(10, 4.3), engineG: 0, ceilingFromEngine: null, uncapped: true }],
-  ["★ 24h 目标（m=3, p=1.58）", { m: 3, r: 2, c0: Math.pow(10, 4.8), engineG: 0, ceilingFromEngine: null, uncapped: true }],
-  ["12h 目标（m=2.5, c0=1e4.3）", { m: 2.5, r: 2, c0: Math.pow(10, 4.3), engineG: 0, ceilingFromEngine: null, uncapped: true }],
-  ["48h 目标（m=2.5, c0=1e5.3）", { m: 2.5, r: 2, c0: Math.pow(10, 5.3), engineG: 0, ceilingFromEngine: null, uncapped: true }],
+  ["不加节流阀（上限=∞，p=1.32，c0=1e2）", { m: 2.5, r: 2, c0: 1e2, engineG: 0, ceilingFromEngine: null, uncapped: true }],
+  ["铸币 ×2/级（p=1，临界；c0=1e3.41）", { m: 2, r: 2, c0: Math.pow(10, 3.41), engineG: 0, ceilingFromEngine: null, uncapped: true }],
+  ["★ 24h 目标（m=2.5, c0=1e3.41）", { m: 2.5, r: 2, c0: Math.pow(10, 3.41), engineG: 0, ceilingFromEngine: null, uncapped: true }],
+  ["★ 24h 目标（m=1.8, p=0.85, c0=1e2.8）", { m: 1.8, r: 2, c0: Math.pow(10, 2.8), engineG: 0, ceilingFromEngine: null, uncapped: true }],
+  ["★ 24h 目标（m=3, p=1.58, c0=1e3.61）", { m: 3, r: 2, c0: Math.pow(10, 3.61), engineG: 0, ceilingFromEngine: null, uncapped: true }],
+  ["12h 目标（m=2.5, c0=1e3.02）", { m: 2.5, r: 2, c0: Math.pow(10, 3.02), engineG: 0, ceilingFromEngine: null, uncapped: true }],
+  ["48h 目标（m=2.5, c0=1e3.90）", { m: 2.5, r: 2, c0: Math.pow(10, 3.90), engineG: 0, ceilingFromEngine: null, uncapped: true }],
   // ★ 「每级耗时恒定」的候选：p = 1（效果与涨价同倍率）⇒ 等级随时间线性长
   ["p=1 小步（×2/级，价 ×2，c0=4）", { m: 2, r: 2, c0: 4, engineG: 0, ceilingFromEngine: null, uncapped: true }],
   ["p=1 中步（×4/级，价 ×4，c0=4）", { m: 4, r: 4, c0: 4, engineG: 0, ceilingFromEngine: null, uncapped: true }],

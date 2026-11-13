@@ -19,6 +19,8 @@
  * 用法：
  *   node tools/check-web-bundle.cjs            # 组装到 _site/ 并校验
  *   node tools/check-web-bundle.cjs out-dir    # 指定输出目录
+ *   node tools/check-web-bundle.cjs --check    # **只校验**（走源码树，不组装、不写盘）✓
+ *   node tools/check-web-bundle.cjs --verify   # 同上（`--check` 的别名，批跑两个都认）
  *
  * 退出码：0 = 通过，1 = 缺文件，2 = 用法错误
  *
@@ -38,34 +40,56 @@ const path = require("node:path");
 const FILES = ["index.html", "css", "src", "dist", "package.json"];
 
 const PROJECT_ROOT = path.join(__dirname, "..");
-const outDirName = process.argv[2] ?? "_site";
-// ★★★ 2025 堵洞：**参数名不能是 `-` 开头的旗标**。
+// ★★★ 2026 修（`--strict` 的 6 条红灯之一）：`--check` 原来是**位置参数** ⇒ 被当输出目录。
 //
 //   踩过（真实事故）：某次把 `--check` 当成"输出目录名"传了进来 ⇒ 本工具老老实实
 //   在项目根建了一个叫 `--check/` 的目录（18 个文件）⇒ 看起来像个神秘垃圾目录，
 //   而且 `_site/` 在 .gitignore 里、`--check/` 不在 ⇒ **会被误提交** ✗
 //   （本工具会把输出目录 `rmSync` 后重建 ⇒ 传错参数会**删掉同名真实目录**，风险更高）
-//   ⇒ 直接拒绝：旗标一律不是合法目录名 ✓
-if (outDirName.startsWith("-")) {
+//   ⇒ 2025 的第一版修法是"见到 `-` 开头就拒绝"（防住了事故，但批跑的 `--check` 也一并被拒 ✗）；
+//     现在改成**先把旗标与位置参数分开**：`--check`/`--verify` = 校验模式，
+//     其余 `-` 开头 = 未知旗标（仍然拒绝），位置参数最多一个 = 输出目录 ✓
+const argv = process.argv.slice(2);
+const KNOWN_FLAGS = new Set(["--check", "--verify", "--help", "-h"]);
+if (argv.some((a) => a.startsWith("-") && !KNOWN_FLAGS.has(a))) {
+  const bad = argv.filter((a) => a.startsWith("-") && !KNOWN_FLAGS.has(a));
   console.error(
-    `[web] ❌ 拒绝：输出目录名不能是旗标形式（收到 \`${outDirName}\`）。\n` +
-    "      用法：node tools/check-web-bundle.cjs [输出目录名]   默认 `_site`\n" +
-    "      （本工具会先 rm -rf 输出目录 ⇒ 旗标当路径是危险用法，见源码注释）",
+    `[web] ❌ 未知旗标：${bad.join(" ")}\n` +
+    "      用法：node tools/check-web-bundle.cjs [输出目录名] [--check|--verify]\n" +
+    "      （本工具会先 rm -rf 输出目录 ⇒ 旗标绝不能落到「目录名」这一位，见源码注释）",
   );
   process.exit(2);
 }
+const verifyOnly = argv.some((a) => a === "--check" || a === "--verify");
+const positional = argv.filter((a) => !a.startsWith("-"));
+if (positional.length > 1) {
+  console.error(`[web] ❌ 只能给一个输出目录名（收到 ${positional.length} 个：${positional.join(" ")}）`);
+  process.exit(2);
+}
+if (argv.includes("--help") || argv.includes("-h")) {
+  console.log("用法：node tools/check-web-bundle.cjs [输出目录名] [--check|--verify]");
+  console.log("  --check / --verify  只走 import 图校验源码树，不组装、不写盘");
+  process.exit(0);
+}
+const outDirName = positional[0] ?? "_site";
 const OUT = path.isAbsolute(outDirName) ? outDirName : path.join(PROJECT_ROOT, outDirName);
+// 校验模式的遍历根 = **源码树**（不组装 ⇒ 也就不需要 `_site/`）
+const ROOT = verifyOnly ? PROJECT_ROOT : OUT;
 
 /** 把逻辑路径（永远用 / 分隔）转成当前平台的文件系统路径 */
 function toFs(rel) {
-  return path.join(OUT, ...rel.split("/"));
+  return path.join(ROOT, ...rel.split("/"));
 }
 
 // ═══════════════════════════════════════════════════════════
-// 第一步：组装
+// 第一步：组装（校验模式跳过 —— 不写盘、不碰任何目录）
 // ═══════════════════════════════════════════════════════════
-fs.rmSync(OUT, { recursive: true, force: true });
-fs.mkdirSync(OUT, { recursive: true });
+if (verifyOnly) {
+  console.log("[web] 校验模式（--check / --verify）：只走 import 图，**不组装、不写盘**");
+} else {
+  fs.rmSync(OUT, { recursive: true, force: true });
+  fs.mkdirSync(OUT, { recursive: true });
+}
 
 let copied = 0;
 function copyRecursive(srcAbs, relPath) {
@@ -90,14 +114,16 @@ for (const entry of FILES) {
     console.error(`[web] ❌ 白名单里的 ${entry} 不存在`);
     process.exit(1);
   }
-  copyRecursive(srcAbs, entry);
+  if (!verifyOnly) copyRecursive(srcAbs, entry);
 }
 
-// Actions 部署方式本来就不跑 Jekyll，这行纯属保险
-fs.writeFileSync(path.join(OUT, ".nojekyll"), "");
+if (!verifyOnly) {
+  // Actions 部署方式本来就不跑 Jekyll，这行纯属保险
+  fs.writeFileSync(path.join(OUT, ".nojekyll"), "");
 
-console.log(`[web] 已组装 ${copied} 个文件 → ${path.relative(PROJECT_ROOT, OUT) || "."}/`);
-console.log(`[web] 白名单：${FILES.join("  ")}`);
+  console.log(`[web] 已组装 ${copied} 个文件 → ${path.relative(PROJECT_ROOT, OUT) || "."}/`);
+  console.log(`[web] 白名单：${FILES.join("  ")}`);
+}
 
 // ═══════════════════════════════════════════════════════════
 // 第二步：从 index.html 出发遍历 import 图
@@ -211,4 +237,4 @@ if (missing.length) {
   process.exit(1);
 }
 
-console.log(`\n[web] ✅ 模块依赖图完整，可以部署`);
+console.log(`\n[web] ✅ 模块依赖图完整，可以部署${verifyOnly ? "（校验模式：未组装产物）" : ""}`);

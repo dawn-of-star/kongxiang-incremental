@@ -154,17 +154,20 @@ if (check) {
       slope < 0.1, `∂ln(DE倍率)/∂ln(DE) = ${slope.toExponential(2)}（对数 ⇒ 极小 ✓）`);
   }
 
-  // 价格软上限（阈值 2025 ×10：100 / 1000 / 10000）
-  // 2025: 价格改成**三次方闭式** 5 x (等级+1)^3（旧的 costSegments 分段软上限已废弃）
+  // 价格：**指数闭式** `c0 · costGrowth^L`（2025 终稿；旧的三次方 `5·(L+1)^3` 已废弃 ✗）
+  //   ⇒ 旧断言「lv10 = 6655」是过期期望（那是三次方下的数），必须改成指数反算 ✓
+  //   ⚠️ 2000 级之后还有 `zpeEngineCostMult` 的逐级 ×1e9 惩罚 —— 本断言只落在 2000 以下（ζ ≡ 1）
   {
     const s0 = newState(); s0.zpeEngineUnlocked = true; s0.zpeEngineLevel = new Decimal(0);
     const B = ZPE_ENGINE.baseCostIp;
-    const c0 = zpeEngineCost(s0).toNumber();                       // 第一级 = B x 1^3
+    const R = ZPE_ENGINE.costGrowth;
+    const c0 = zpeEngineCost(s0).toNumber();                       // 第 1 级 = B · R^0 = B
     s0.zpeEngineLevel = new Decimal(10);
-    const c10 = zpeEngineCost(s0).toNumber();                      // 第 11 级 = B x 11^3
-    ck(`价格 = ${B} x (等级+1)^3（三次方闭式，多项式安全）`,
-      Math.abs(c0 - B) < 1e-12 && Math.abs(c10 - B * Math.pow(11, 3)) < 1e-9,
-      `lv0 => ${c0}，lv10 => ${c10}（应 ${B * Math.pow(11, 3)}）`);
+    const c10 = zpeEngineCost(s0).toNumber();                      // 第 11 级 = B · R^10
+    const exp10 = B * Math.pow(R, 10);
+    ck(`价格 = ${B} x ${R}^等级（指数闭式，首价恒 = B）`,
+      Math.abs(c0 - B) < 1e-12 && Math.abs(c10 - exp10) / exp10 < 1e-9,
+      `lv0 => ${c0}，lv10 => ${c10.toFixed(4)}（应 ${exp10.toFixed(4)}）`);
     // 总价闭式必须等于逐级累加（这是"买满"正确性的地基）
     let sum = new Decimal(0);
     for (let i = 0; i < 12; i++) sum = sum.add(zpeEngineCost({ ...s0, zpeEngineLevel: new Decimal(i) }));
@@ -179,9 +182,16 @@ if (check) {
     ck("5) 引擎未解锁 ⇒ boost ≡ 1（零回归）", Math.abs(voidBoostMult(locked) - 1) < 1e-12, `boost = ${voidBoostMult(locked)}`);
     const lo = mk(1), hi = mk(100);
     ck("5) boost 随等级单调上升", voidBoostMult(hi) > voidBoostMult(lo), `lv1 ${voidBoostMult(lo).toFixed(3)} → lv100 ${voidBoostMult(hi).toFixed(3)}`);
-    const huge = { ...mk(0), zpeEngineLevel: D("9.46e76") };     // 三次方价格下的等级上限
+    // 指数价格 `B·R^L` 下，即使池子 = 永恒门槛 1e308.25 也只买到 ~1130 级
+    //   `L = log(池/首价)/log(R)`（旧三次方时代的 9.46e76 已不存在 ⇒ 那是过期推导 ✗）
+    //   ⚠️ `1e308.25` **不是**合法 JS 字面量（指数不能带小数点）⇒ 用 `10 ** 308.25`
+    const CAP = Math.floor(Math.log(10 ** 308.25 / ZPE_ENGINE.baseCostIp) / Math.log(ZPE_ENGINE.costGrowth));
+    const atCap = voidBoostMult({ ...mk(0), zpeEngineLevel: D(CAP) });
+    ck(`5) 等级到可买上限（${CAP}）时 boost 仍**有界**（对数 ⇒ 安全）`,
+      atCap > 1 && atCap < 20, `boost = ${atCap.toFixed(3)}`);
+    const huge = { ...mk(0), zpeEngineLevel: D("9.46e76") };     // 远超上限的极端等级（压力测试）
     const b = voidBoostMult(huge);
-    ck("5) 等级到上限（9.46e76）时 boost 仍**有界**（对数 ⇒ 安全）", b > 1 && b < 20, `boost = ${b.toFixed(3)}（引擎倍率 ≈ 4.7e75）`);
+    ck("5) 极端等级（9.46e76，远超上限）时 boost 仍**有界**（对数 ⇒ 安全）", b > 1 && b < 20, `boost = ${b.toFixed(3)}（引擎倍率 ≈ 4.7e75）`);
   }
 
   ck("★ 守卫：5 条机制全部**有界**（内部机制各有终点）",

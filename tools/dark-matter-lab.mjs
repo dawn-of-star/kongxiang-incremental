@@ -78,18 +78,22 @@ const mk = ({ eternities = 0, n = 0, deLog = 0, v1Log = 100, ep = 0 } = {}) => {
 // 一、定点断言（--check）
 // ══════════════════════════════════════════════════════════
 if (check) {
+  // ⚠️ 2026：`darkMatterAdditiveTerm()` 现在返回 **Decimal**（`du1` 会把它推过 `Number.MAX_VALUE`，
+  //   见 commit 974fd74 的 "darkMatterAdditiveTerm returns Decimal"）⇒ 本节的「恰好 0 / 有限」
+  //   必须走 Decimal 的方法（`.eq(0)` / `.isFinite()`），**不能**再用 `=== 0` / `Number.isFinite()`
+  //   —— 那两个对 Decimal 恒为 false ⇒ 会误报成红灯 ✗（这就是本轮 4 条红灯的根因）
   console.log("=".repeat(92));
   console.log("暗物质 / 第二台相变仪 —— 定点断言");
   console.log("=".repeat(92));
 
   console.log("\n── ① 解锁判据 = em4（第 4 次永恒）──");
   ck("em4 已实装（非占位）", !ETERNITY_MILESTONES.find((m) => m.id === "em4")?.pending);
-  ck("0 / 3 次永恒 ⇒ 未解锁且项恰好 0", darkMatterAdditiveTerm(mk({ eternities: 3, n: 5 })) === 0);
+  ck("0 / 3 次永恒 ⇒ 未解锁且项恰好 0", darkMatterAdditiveTerm(mk({ eternities: 3, n: 5 })).eq(0));
   ck("4 次永恒 + n>0 ⇒ 解锁", darkMatterUnlocked(mk({ eternities: 4, n: 1 })));
 
   console.log("\n── ② 零回归（未解锁 / n=0 ⇒ 加法项**恰好** 0）──");
-  ck("未解锁（手改 n=999 也没用）", darkMatterAdditiveTerm(mk({ eternities: 0, n: 999, deLog: 167 })) === 0);
-  ck("已解锁但 n=0", darkMatterAdditiveTerm(mk({ eternities: 4, n: 0, deLog: 167 })) === 0);
+  ck("未解锁（手改 n=999 也没用）", darkMatterAdditiveTerm(mk({ eternities: 0, n: 999, deLog: 167 })).eq(0));
+  ck("已解锁但 n=0", darkMatterAdditiveTerm(mk({ eternities: 4, n: 0, deLog: 167 })).eq(0));
 
   console.log("\n── ③ ④ 的目标 T（含硬封顶）──");
   {
@@ -144,7 +148,8 @@ if (check) {
     const on = mk({ eternities: 4, n: 2, deLog: 167, v1Log: 300 });
     const mOff = darkEnergyMultiplier(off).toNumber();
     const mOn = darkEnergyMultiplier(on).toNumber();
-    const term = darkMatterAdditiveTerm(on);
+    // ★ 加法项是 Decimal（见本节头注）⇒ 这里要的是**数值**，显式转 Number 再算差额
+    const term = Number(darkMatterAdditiveTerm(on));
     ck("★ 未解锁时倍率 == 基线 A（证明状态干净）", Math.abs(mOff - (1 + 167 * Math.log2(10) * 0.25)) < 1e-6, `A = ${f(mOff, 3)}`);
     ck("★ 差额 == 加法项（**不是乘性**）", Math.abs((mOn - mOff) - term) < 1e-6, `差额 ${num(mOn - mOff)} vs 项 ${num(term)}`);
     ck("项 ≥ 0（永不减益）", term >= 0, `项 = ${num(term)}`);
@@ -199,7 +204,9 @@ if (check) {
     const m = darkEnergyMultiplier(s).toNumber();
     ck("倍率是有限正数", Number.isFinite(m) && m > 0, `×${f(m, 3)}`);
     ck("v1Log10 快照被写入（有限）", Number.isFinite(s.v1Log10), `v1Log10 = ${f(s.v1Log10, 3)}`);
-    ck("快照写入后加法项仍有限", Number.isFinite(darkMatterAdditiveTerm(s)), `项 = ${f(darkMatterAdditiveTerm(s), 4)}`);
+    // ★ 加法项是 Decimal ⇒ 用 Decimal 的 `.isFinite()`（`Number.isFinite(Decimal)` 恒 false ✗）
+    const term = darkMatterAdditiveTerm(s);
+    ck("快照写入后加法项仍有限", term.isFinite() && term.gte(0), `项 = ${f(term.toNumber(), 4)}`);
   }
 
   console.log("\n" + "=".repeat(92));
@@ -244,7 +251,8 @@ function runToGate(s, { hours, dt, samples, onSample }) {
       const dl = de.log10().toNumber();
       if (Number.isFinite(dl) && dl > maxDeLog) maxDeLog = dl;
     }
-    const tm = darkMatterAdditiveTerm(s);
+    // ★ 加法项是 Decimal ⇒ 显式转 Number（超大时 Number() = Infinity ⇒ 下面的 isFinite 会跳过，与旧行为一致）
+    const tm = Number(darkMatterAdditiveTerm(s));
     if (Number.isFinite(tm) && tm > maxTerm) maxTerm = tm;
     const bc = Number(s.bigCrunchCount ?? 0);
     if (Number.isFinite(bc) && bc > maxCrunch) maxCrunch = bc;
@@ -371,7 +379,8 @@ function calibrateMain() {
         ok: r.ok, hours: r.t / 3600,
         breakH: r.atBreak === null ? null : r.atBreak / 3600,
         maxTerm: r.maxTerm, maxV1Log: r.maxV1Log, maxDeLog: r.maxDeLog, maxCrunch: r.maxCrunch,
-        term: darkMatterAdditiveTerm(st), v2: secondTransmuterSpeed(st),
+        // ★ 加法项是 Decimal（见 --check 头注）⇒ 本报告只做数值比较 ⇒ 显式转 Number
+        term: Number(darkMatterAdditiveTerm(st)), v2: secondTransmuterSpeed(st),
         eff: Math.min(1, secondTransmuterSpeed(st) / DARK_MATTER.v2Ref),
         target: darkMatterTargetMult(st),
       };
@@ -504,7 +513,8 @@ function timelineMain() {
       onSample: (ss, t) => {
         const de = ss.darkEnergy;
         const dlg = de && de.gt && de.gt(1) ? de.log10().toNumber() : 0;
-        cols.push({ t, dlg, term: darkMatterAdditiveTerm(ss) });
+        // ★ 加法项是 Decimal（见 --check 头注）⇒ 采样只做数值比较 ⇒ 显式转 Number
+        cols.push({ t, dlg, term: Number(darkMatterAdditiveTerm(ss)) });
       },
     });
     const T = (lv) => { const hit = cols.find((c) => c.term >= lv); return hit ? hit.t : null; };

@@ -140,7 +140,12 @@ if (check) {
     const mkE = (lv) => ({ ...newState(), zpeEngineLevel: new Decimal(lv) });
     const k = (lv) => matterTotalExponent(mkE(lv));
     ck("⑧ 引擎 0 级 ⇒ k = 1（零回归 ✓）", Math.abs(k(0) - 1) < 1e-12, `k(0) = ${k(0)}`);
-    const lvs = [0, 1, 10, 100, 1000, MATTER_B_KNEE, 1e4, 1e5, 1e6, 1e9];
+    // ⚠️ 网格必须**单调递增**（去重后排序）——
+    //   旧版把 `MATTER_B_KNEE`(=100) 追加在 1000 之后 ⇒ 序列成 `…1000, 100, 1e4…`
+    //   ⇒ k(1000)=5.55 后面接 k(100)=3.50，看着像"下降"，其实是**网格乱序** ✗
+    //   （k 的公式是饱和式 `1 + KMAX·x/(1+x)`，对等级本身严格单调 ✓ —— 工具的问题，不是实现）
+    const lvs = [...new Set([0, 1, 10, 100, 1000, 1e4, 1e5, 1e6, 1e9, MATTER_B_KNEE])]
+      .sort((a, b) => a - b);
     const ks = lvs.map(k);
     ck("⑧ k 单调不减", ks.every((v, i) => i === 0 || v >= ks[i - 1] - 1e-12), ks.map((v) => v.toFixed(2)).join(" ≤ "));
     ck("⑧ k 有界：≤ 1 + kMax（不许 runaway ✗）", ks.every((v) => v <= 1 + MATTER_B_KMAX + 1e-9),
