@@ -1,11 +1,11 @@
 /**
- * space-config.js —— 空间膨胀的**UI 文案 / 升级元数据**（先 UI 后逻辑）
+ * space-config.js —— 空间膨胀的**UI 文案 / 升级元数据**
  *
- * ⚠️ 这里放“页面要显示什么”与**唯一价格源**（baseCost / costMult）；
- *   购买/扣款在 `space-upgrades.js`，效果在 `space.js` 的 du 辅助函数 + 各落点。
+ * 这里放“页面要显示什么”与**唯一价格源**（baseCost / costMult）；
+ * 购买/扣款在 `space/upgrades.js`，效果在 `space/core.js` 的 du 辅助函数 + 各落点。
  *
- * 设计依据：docs/SPACE-EXPANSION-FINAL.md（合并终稿）
- *   · du7 效果口径待接（pending）；du8 / du10 是价格侧，本阶段暂缓
+ * 设计依据：docs/SPACE-EXPANSION-FINAL.md（已实装 0.8.0）
+ *   · du7 = 解锁 du1~du6 自动化；du8 / du10 是价格侧，本阶段暂缓
  *   · du1~du6 用 SE 复购；du7~du11 用 ST 单次
  */
 export const SPACE_DESIGN = {
@@ -20,8 +20,8 @@ export const SPACE_DESIGN = {
   targetEp: "1e3600",
   /** 2026-10-25 用户裁定：空间膨胀改为 EP ≥ 1e1200 解锁（不是第一次永恒）。 */
   unlockEp: "1e1200",
-  /** UI 阶段：所有按钮先禁用，避免“点了没反应” */
-  wired: false,
+  /** 已接线；du8/du10 仍按设计暂缓 */
+  wired: true,
 };
 
 /**

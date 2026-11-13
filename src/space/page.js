@@ -1,11 +1,8 @@
 /**
- * space-ui.js —— 空间膨胀页面（**UI 先行**）
+ * space/page.js —— 空间膨胀页面（**已接线**）
  *
- * 目标：先把 `docs/SPACE-EXPANSION-FINAL.md` 的页面骨架、信息层级、升级卡片和
- *       “未接线”状态做出来；本文件**不购买、不结算、不改收益**。
- *
- * ⚠️ 后续接引擎时，价格/等级/挑战状态都应从 state 的同一组字段读；
- *    这里已经预留 `state.space = { se, st, challenge, ipPeak, epPeak, upgrades }`。
+ * SE / ST、挑战进出、du1~du11 购买与效果都走引擎；本文件只负责渲染与按钮。
+ * du8 / du10 按设计暂缓（价格侧），du7 的自动化开关在梦想页。
  */
 import Decimal from "../../dist/break_eternity.esm.js";
 import { markPageUnlocked } from "../config.js";
@@ -86,7 +83,7 @@ function build() {
   const title = h("p", "rule");
   title.appendChild(h("b", null, "空间膨胀"));
   title.appendChild(h("span", "space-title-sep", "  ——  "));
-  const badge = h("span", "badge space-badge", "UI 先行 · 未接线");
+  const badge = h("span", "badge space-badge", "已上线");
   badge.id = "space-page-badge";
   title.appendChild(badge);
   intro.appendChild(title);
@@ -222,6 +219,7 @@ export function renderSpace(state) {
   setText("space-ep-now", fmt(ep, 0));
   setText("space-ip-peak", fmt(ipPeak, 0));
   setText("space-challenge-badge", !unlocked ? "未解锁" : (challenge ? "挑战中" : "未进入"));
+  setText("space-target-badge", !unlocked ? "未解锁" : (ep.gte(targetEp) ? "已达成" : "进行中"));
   setText("space-challenge-line", !unlocked
     ? `需要永恒点达到 ${sci(unlockEp)} 后解锁（当前只展示 UI）`
     : (challenge ? "当前：挑战中 · 最终收益 ^0.5" : "进入时自动执行一次永恒重置（保留七巧板 / 暗物质）"));
@@ -266,6 +264,6 @@ export function renderSpace(state) {
   if (pageBadge) {
     pageBadge.textContent = !unlocked
       ? "未解锁"
-      : (SPACE_DESIGN.wired ? "已接线" : "du 已接 · du7 自动化");
+      : (SPACE_DESIGN.wired ? "已上线 · du8/10暂缓" : "du 已接 · du7 自动化");
   }
 }
