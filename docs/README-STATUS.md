@@ -27,7 +27,7 @@
 | 项 | 实测值 | 权威来源 |
 |---|---|---|
 | 默认批跑脚本数 | **52** | `node tools/run-all.mjs --list` |
-| `npm test` 结果 | **✅ 默认全绿（54 脚本）**；`--strict` 历史 8 条红灯已于 2026-11-13 修完 | `tools/run-all.mjs` |
+| `npm test` 结果 | **✅ 默认全绿（55 脚本）**；`--strict` 历史 8 条红灯已于 2026-11-13 修完 | `tools/run-all.mjs` |
 | `--strict` 的历史红灯 | ✅ **全部修完（2026-11-13）**：M2 六条 + `dark-matter-lab` / `de-span-lab`（均为工具模型过期，非坏实现） | `docs/TODO.md` M2 |
 | 版本 | **0.8.3**（`package.json` 是唯一出处） | `package.json` |
 | 文档篇数 / 脚本总数 / 各类计数 | ⇒ **见 [`CONFIG-FACTS.md`](CONFIG-FACTS.md)**（机器生成） | `tools/config-facts.mjs` |

@@ -10,6 +10,9 @@ import { LOG_MAX } from "./log.js";
 import { newState } from "./schema.js";
 import Decimal from "../../dist/break_eternity.esm.js";
 
+/** ★ 2026：读档自愈的夹取值（非有限资源 ⇒ 1e308，不是 0）✓ */
+const HEAL_LIMIT = D("1e308");
+
 export function serialize(state) {
   const enc = (v) => {
     if (v instanceof Decimal) return v.toString();
@@ -41,6 +44,11 @@ export function deserialize(raw) {
       return D(0);
     }
   };
+  /** raw 侧非有限判定：Number / Decimal / 字符串都覆盖（缺省/对象不算损坏）✓ */
+  const badRaw = (v) => v != null && (v instanceof Decimal ? !v.isFinite()
+    : typeof v === "number" ? !Number.isFinite(v)
+      : typeof v === "string" ? !D(v.trim() || 0).isFinite() : false);
+  const decRes = (v) => (badRaw(v) ? HEAL_LIMIT : dec(v));
   const bool = (v) => v === true;
   const s = fresh;
 
@@ -48,17 +56,17 @@ export function deserialize(raw) {
   //   根因：这两项只写在 newState()，**deserialize 里没有** ⇒ 存档/读档就丢 ✗
   s.autoToggles = raw.autoToggles && typeof raw.autoToggles === "object"
     ? Object.fromEntries(Object.entries(raw.autoToggles).filter(([, v]) => v === true)) : {};
-  // ★★★ 2026 迁移（修「梦想页开关是摆设」时统一开关）：
-  //   `autoInfinities` 原来有**两个**开关（梦想页 `autoToggles` + 面板 `autoCrunch.isActive`），
-  //   引擎只认后者 ⇒ 梦想页的开关点了没用 ✗
-  //   现在**唯一开关** = `autoToggles.autoInfinities`；这里把老档的 `isActive:true` 迁移过来，
-  //   保证"原来开着自动坍缩的玩家升级后仍然是开的" ✓
-  //   ⚠️ 只在老档**没有** `autoToggles.autoInfinities` 时才迁移（不覆盖玩家新设置）✓
-  if (raw.autoCrunch?.isActive === true && s.autoToggles.autoInfinities !== true) {
+  // 2026-11-13 (setAuto): two neko-automation fields (grant + actual), both boolean maps
+  s.nekoAutoGrants = raw.nekoAutoGrants && typeof raw.nekoAutoGrants === "object" ? Object.fromEntries(Object.entries(raw.nekoAutoGrants).filter(([, v]) => v === true)) : {};
+  s.nekoAuto = raw.nekoAuto && typeof raw.nekoAuto === "object" ? Object.fromEntries(Object.entries(raw.nekoAuto).filter(([, v]) => v === true)) : {};
+  // ★★★ 2026 迁移（唯一开关 = `autoToggles.autoInfinities`）：
+  //   只在老档**完全没有 `autoToggles` 这个键**时迁移一次；否则以 autoToggles 为准 ✓
+  const legacyAutoActive = raw.autoCrunch?.isActive === true;   // 老档证据（始终读取，key 守卫依赖它）
+  if (!Object.prototype.hasOwnProperty.call(raw, "autoToggles") && legacyAutoActive) {
     s.autoToggles.autoInfinities = true;
   }
   s.autoCrunch = {
-    isActive: raw.autoCrunch?.isActive === true,          // 已弃用（保留读写兼容），引擎不再看它
+    isActive: false,                                     // 已弃用（只留结构兼容；引擎不看）
     mode: ["amount", "time", "xHighest"].includes(raw.autoCrunch?.mode) ? raw.autoCrunch.mode : "xHighest",
     amount: String(raw.autoCrunch?.amount ?? "1"),
     time: Math.max(0.1, num(raw.autoCrunch?.time, 0.1)),   // 时间模式默认 0.1 秒
@@ -73,10 +81,10 @@ export function deserialize(raw) {
   s.playTimeMs = num(raw.playTimeMs, 0);
 
   const r = raw.resources ?? {};
-  s.resources.entropy = dec(r.entropy);
-  s.resources.particle = dec(r.particle);
-  s.resources.matter = dec(r.matter);
-  s.resources.traps = dec(r.traps);
+  s.resources.entropy = decRes(r.entropy);
+  s.resources.particle = decRes(r.particle);
+  s.resources.matter = decRes(r.matter);
+  s.resources.traps = decRes(r.traps);
   s.dreamPoints = dec(raw.dreamPoints);
 
   const lv = raw.levels ?? {};
@@ -95,11 +103,11 @@ export function deserialize(raw) {
   const dm = raw.deMilestones ?? {};
   for (const k of Object.keys(fresh.deMilestones)) s.deMilestones[k] = bool(dm[k]);
 
-  s.zpe = dec(raw.zpe);
+  s.zpe = decRes(raw.zpe);
   s.zpeTotal = dec(raw.zpeTotal);
   s.zpeFixedMultiplier = raw.zpeFixedMultiplier == null ? null : dec(raw.zpeFixedMultiplier);
 
-  s.darkEnergy = dec(raw.darkEnergy);
+  s.darkEnergy = decRes(raw.darkEnergy);
   s.darkEnergyTotal = dec(raw.darkEnergyTotal);
   s.zpeAccumulator = dec(raw.zpeAccumulator);
   s.deAccum = dec(raw.deAccum);          // ★ 暗能量累积（UI 的相变环读它）
@@ -122,7 +130,7 @@ export function deserialize(raw) {
   // ── 第四层：大坍缩 ──
   // ★ 旧存档里的 darkMatter / collapseCount / collapseThreshold 直接**忽略** ——
   //   那三样已经不存在了，读进来也没有字段可放。读旧档不会报错。
-  s.infinityPoints = dec(raw.infinityPoints);
+  s.infinityPoints = decRes(raw.infinityPoints);
   s.bigCrunchCount = dec(raw.bigCrunchCount);
   s.brokenInfinity = raw.brokenInfinity === true;
   s.peakMatter = dec(raw.peakMatter);
@@ -185,7 +193,7 @@ export function deserialize(raw) {
   s.ipTimeAccrued = dec(raw.ipTimeAccrued);           // ★ Decimal 存储 ✓
   s.zpeEngineUnlocked = bool(raw.zpeEngineUnlocked);
   s.zpeEngineLevel = dec(raw.zpeEngineLevel);
-  s.eternityPoints = dec(raw.eternityPoints);
+  s.eternityPoints = decRes(raw.eternityPoints);
   s.eternityCount = dec(raw.eternityCount);
   // ★ 2025：累计 EP（em5 的读数源）。**旧存档没有这个字段** ⇒ 用当前持有量兜底
   //   （旧档的持有量 ≥ 0，兜底后行为正常；新档从此只增不减 ✓）
@@ -215,7 +223,7 @@ export function deserialize(raw) {
     : [];
 
   // ── 量子 ──
-  s.quantum = dec(raw.quantum);
+  s.quantum = decRes(raw.quantum);
   s.quantumPairs = dec(raw.quantumPairs);
   s.totalQuantumPairs = dec(raw.totalQuantumPairs);   // ⚠️ 历史遗留字段（代码读 quantumPairsTotal）
   s.quantumPairsTotal = dec(raw.quantumPairsTotal);
@@ -244,31 +252,8 @@ export function deserialize(raw) {
     ? raw.log.slice(-LOG_MAX).map((e) => ({ t: num(e?.t, Date.now()), text: String(e?.text ?? "") }))
     : [];
 
-  // ★★★ 2026 读档自愈：资源若不是有限值（旧档被炸坏 / Infinity 落盘）⇒ 夹回 1e308 ✓
-  {
-    const LIMIT = new Decimal("1e308");
-    const clampField = (obj, key) => {
-      const v = obj?.[key];
-      if (v == null) return false;
-      let d;
-      try { d = v instanceof Decimal ? v : new Decimal(v); } catch { return false; }
-      if (d.isFinite() && !d.isNaN?.()) return false;
-      obj[key] = LIMIT;
-      return true;
-    };
-    const repaired = [];
-    if (clampField(s, "darkEnergy")) repaired.push("darkEnergy");
-    if (clampField(s, "zpe")) repaired.push("zpe");
-    if (clampField(s, "infinityPoints")) repaired.push("infinityPoints");
-    if (clampField(s, "eternityPoints")) repaired.push("eternityPoints");
-    if (clampField(s, "quantum")) repaired.push("quantum");
-    if (clampField(s, "matter")) repaired.push("matter");
-    if (clampField(s, "entropy")) repaired.push("entropy");
-    if (clampField(s, "particles")) repaired.push("particles");
-    if (repaired.length) {
-      console.warn("[读档自愈] 以下字段原本是非有限值，已夹回 1e308：", repaired.join(", "));
-    }
-  }
+  // ★★★ 2026 读档自愈：非有限值夹回 1e308（路径见 healNonFinite；原档不动，只改内存）✓
+  healNonFinite(s);
 
   // ★★★ 2026-10-22 修（用户：「刷新网页后七巧板系统进度丢失」）——
   //   根因：serialize 是全量、deserialize 是白名单，七巧板 6 个字段一个都没写 ⇒ 刷新即丢 ✗
@@ -347,3 +332,17 @@ function restoreSpace(raw, dec, num) {
   };
 }
 
+/** ★ 2026 读档自愈：把非有限值夹回 1e308（⚠️ 路径是真实 state 路径：资源在 resources.*）✓ */
+function healNonFinite(s) {
+  const fields = [
+    [s, "darkEnergy"], [s, "zpe"], [s, "infinityPoints"], [s, "eternityPoints"], [s, "quantum"],
+    [s.resources, "matter"], [s.resources, "entropy"], [s.resources, "particle"], [s.resources, "traps"],
+  ];
+  const out = [];
+  for (const [obj, key] of fields) {
+    if (!(obj?.[key] instanceof Decimal) || obj[key].isFinite()) continue;
+    obj[key] = HEAL_LIMIT;
+    out.push(obj === s ? key : `resources.${key}`);
+  }
+  if (out.length) console.warn("[读档自愈] 以下字段原本是非有限值，已夹回 1e308：", out.join(", "));
+}

@@ -218,14 +218,14 @@ static/game/games/soccer/soccer-demo.js（6878 行）：0 处 SDK 引用
 | `buyInfinityUpgrade(id)` | 买无限升级（含 ① 无限增幅） | `id` 必须在 `INFINITY_UPGRADES` 里 |
 | `doBigCrunch()` | 大坍缩 | **必须已打破无限**（打破前是硬顶自动触发，不该由猫娘代按）|
 | `doEternity()` | 永恒 | 必须已打破无限（门槛由 `canEternity` 自己判）|
-| `setAuto(...)` | 开关自动化 | ⏳ **故意返回 `rejected`**，见 §6.3 |
+| `setAuto(id, on)` | 开关自动化 | **需要玩家授权** `nekoAutoGrants[id]`（或 `__all`）✓ 见 §6.3 |
 
 ### 6.2 限流
 
 `NEKO_MAX_ACTIONS_PER_TICK = 8`。超出的动作**丢掉并计数**（`throttled`），**不整批失败**
 （对面是 LLM，多发了不该让整批作废）。
 
-### 6.3 ⚠️ `setAuto` 为什么**还没做**（而不是"忘了"）
+### 6.3 `setAuto`（2026-11-13 **已实装** ✓）
 
 §10 原文要求：「猫娘驱动的自动化**不花游戏内的梦想点**，也不占用玩家已买的自动化升级槽位」。
 
@@ -366,3 +366,18 @@ static/game/games/soccer/soccer-demo.js（6878 行）：0 处 SDK 引用
 | 原文自标的套利风险（"重置前买等于免费；ZPE 会自己长回来"）| **本轮不处理**（用户裁定"先按目前要求做，不管平衡性"）| 由 §7 的 8 点窗口天然兜住一部分；真要处理应改窗口上限，而不是道具 ✗ |
 | 「左侧的主控台多一个标签页」 | 实现为**主控台的悬浮子页**（与"梦想（自动化）"并列）| 用户后续裁定：「neko 页面与梦想页面应归属主控台的子页面（类似虚空科技下的子页面表现形式）」✓ |
 | 「接入 sdk 的**基本聊天**和对方反馈」 | **UI 位置已留**（右列对话卡 + 接入状态卡），逻辑待接 | 聊天要走 `client.dialogue`，需要先完成握手（§8 问题 1）⏳ |
+
+
+### 6.6 `setAuto` 的实装口径（2026-11-13）
+
+```
+玩家授权：state.nekoAutoGrants[id] === true   （或 "__all" = 全部）
+猫娘开启：state.nekoAuto[id] === true
+生效判据：dream-effects.js::autoEnabled()  =  (买了 && autoToggles)  ||  (授权 && nekoAuto)
+```
+
+- **两条通道、一个判据** ✓（不在引擎里另开"猫娘分支" ✗ —— §6 约束② 要的就是这个）
+- 猫娘通道**不需要** `dreamUpgrades[id]` ✓、**不花梦想点** ✓、**不占玩家槽位** ✓（§10 原文 ✓）
+- 没授权 ⇒ `rejected` + 原因 ✓（不假装成功 ✓）
+- 玩家入口（控制台）：`__game.nekoGrant(null, true)` 全部授权 ｜ `__game.nekoGrant("autoIpDouble", true)` 单条 ｜ `__game.nekoGrant(null, false)` 全部收回并关掉
+- ⏳ 仍未做：Neko 页面上的**勾选式授权 UI**（现在只有控制台入口 ✓）

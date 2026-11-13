@@ -129,21 +129,33 @@ const NEKO_ACTION_SPECS = {
     fn: (s, p, api) => api.doEternity(s) != null,
   },
   /**
-   * ★ **猫娘的自动化通道**（§6 末尾：不消耗梦想点、不占玩家已买槽位）。
+   * ★★★ 2026-11-13（用户：「把预期要做的 neko 功能做进去」—— 实装 `setAuto`）
    *
-   * ⚠️ 本层**只登记契约、不做实现**，原因有二：
-   *   ① 自动化在游戏内的实现是 `isAutoAcquire`（由 `v9` / `m2` / `m5` 推导）
-   *      与梦想升级 `autoBuyDe` —— **都有各自的解锁前提**，
-   *      猫娘"绕过前提"是**越界**（§6 约束①）⇒ 需要一个**玩家可授予**的开关，
-   *      而那是 Neko 页面上还没做的 UI（等 SDK 接入后一起定）
-   *   ② 现在硬做，就得在引擎里加一条"猫娘专用自动化"分支 ——
-   *      正好是 §6 约束② 想避免的"自己写一套"✗
-   * ⇒ 先返回 `rejected` 并**写清原因**（而不是假装成功）✓
+   * §10 原文：猫娘驱动的自动化 **不花梦想点** ✓ **不占玩家已买的槽位** ✓
+   * ⇒ 独立通道 `state.nekoAuto[id]`（猫娘开的）
+   * ⇒ 但**必须玩家授权** `state.nekoAutoGrants[id]`（只有玩家能写 ⇒ 猫娘不能自己开门 ✗）
+   * ⇒ 两条通道在 `dream-effects.js::autoEnabled()` 里**合并成同一个判据** ✓
+   *    （不是"引擎里另加一条猫娘分支" ✗ —— 那正是 §6 约束② 要避免的 ✓）
+   *
+   * 没授权 ⇒ `rejected` + 原因（**不假装成功** ✓）
    */
   setAuto: {
-    guard: () => false,
-    guardWhy: "尚未实装（需要玩家可授予的授权开关；见 TODO P9）",
-    fn: () => false,
+    guard: (state, payload) => {
+      const id = String(payload?.id ?? "");
+      if (!id) return false;
+      // ★ 2026-11-13：玩家也可以用"全部授权"（`__all`）✓
+      return state?.nekoAutoGrants?.[id] === true || state?.nekoAutoGrants?.__all === true;
+    },
+    guardWhy: "玩家没有授予该自动化的代管权限（nekoAutoGrants[id] !== true）",
+    fn: (state, payload) => {
+      const id = String(payload?.id ?? "");
+      if (!id) return false;
+      const on = payload?.on !== false;          // 缺省 = 开启 ✓
+      state.nekoAuto ??= {};
+      if (on) state.nekoAuto[id] = true;
+      else delete state.nekoAuto[id];
+      return true;
+    },
   },
 };
 

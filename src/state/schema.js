@@ -196,6 +196,8 @@ export function newState() {
     // ★★★ 2026：自动无限（默认**开**；买下即生效）✓
     /** ★ 2026：自动化总开关（**只存 true** ⇒ 缺省 = 关 = 手动开）✓ */
     autoToggles: {},
+  nekoAutoGrants: {},   // 2026-11-13 (setAuto): grants the player gives the cat, per id, only the player writes
+  nekoAuto: {},         // what the cat has switched on -- independent channel, no dream points, no player slot
     autoCrunch: { isActive: false, mode: "xHighest", amount: "1", time: 0.1, xHighest: "2", dynamic: false, lastAtMs: 0 },
     /** 本永恒**单次**收益最高纪录（× 最高模式的判据）✓ */
     maxIpThisEternity: D(0),   // ★ 本永恒 IP 峰值（AD 的 records.thisEternity.maxIP）⇒ Decimal ✓

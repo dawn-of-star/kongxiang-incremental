@@ -20,6 +20,8 @@ import { deserialize, newState, serialize } from "./state.js";
  *   2 = `{ formatVersion, checksum, payload }` 当前格式
  */
 export const SAVE_FORMAT_VERSION = 2;
+/** 上一轮成功存档的备份键（主档损坏 / 校验失败时回退用）。 */
+export const SAVE_BACKUP_KEY = `${BASE.saveKey}.bak`;
 const CHECKSUM_PREFIX = "fnv1a:";
 
 /**
@@ -140,7 +142,6 @@ function isEnvelope(parsed) {
 function finishLoad(payload, formatVersion, extra = {}) {
   const { state, ok } = deserialize(payload);
   if (!ok) {
-    blockWrites("deserialize-failed");
     return { ...corruptResult("deserialize-failed"), formatVersion };
   }
   unblockWrites();
@@ -169,8 +170,7 @@ function loadEnvelope(parsed) {
 
   const check = verifySaveEnvelope(parsed);
   if (!check.ok) {
-    console.warn(`[存档] 完整性校验失败（${check.reason}），已保留原档并暂停写入`);
-    blockWrites(check.reason);
+    console.warn(`[存档] 完整性校验失败（${check.reason}），尝试回退到上一轮安全存档`);
     return { ...corruptResult(check.reason), formatVersion: check.formatVersion };
   }
   return finishLoad(check.payload, check.formatVersion, {
@@ -180,27 +180,46 @@ function loadEnvelope(parsed) {
 
 /**
  * 写存档。成功返回 JSON 字节数（沿用旧接口），失败 / 暂停写入返回 0。
+ *
+ * ★★★ 2026 修 bug（用户：「保存失败仍闪已保存 ✓」）——
+ *   原来 **在 `localStorage.setItem` 之前**就把 `state.lastSavedAt` 改成 now，
+ *   于是 setItem 抛异常（隐私模式 / 配额满 / 被禁用）时：
+ *     ① 返回值虽然是 0，但内存里的"最后保存时间"已经前进 ⇒ 看起来像存过了 ✗
+ *     ② 调用方不看返回值 ⇒ 照样闪「已保存 ✓」✗
+ *   ⇒ 现在 **只有 setItem 成功后才提交** `state.lastSavedAt`，失败返回 0；
+ *     调用方（main.js）据此决定闪不闪成功提示。
+ *
+ * ⚠️ 写进 payload 的 `lastSavedAt` 必须是**本次写入时间**（它是下次算离线时长的
+ *   唯一依据）⇒ 先改 `serialize` 出来的**副本**，成功后再同步回内存的 state ✓
+ *
  * @param {object} state
+ * @returns {number} JSON 字节数；0 = 没写成功（暂停写入 / 序列化 / setItem 失败）
  */
 export function save(state) {
   if (blockedReason) {
     console.warn(`[存档] 已暂停写入（${blockedReason}）：原档保留，未覆盖`);
     return 0;
   }
+  const savedAt = Date.now();
+  let json;
   try {
-    state.lastSavedAt = Date.now();
-    const json = JSON.stringify(createSaveEnvelope(serialize(state)));
+    const payload = serialize(state);
+    payload.lastSavedAt = savedAt;          // 只改**待写入的副本**，不动内存里的 state
+    json = JSON.stringify(createSaveEnvelope(payload));
     localStorage.setItem(BASE.saveKey, json);
-    return json.length;
   } catch (err) {
     console.warn("存档失败：", err);
-    return 0;
+    return 0;                               // ★ 失败 ⇒ lastSavedAt 不前进
   }
+  state.lastSavedAt = savedAt;              // ★ 只有写成功才提交
+  // ★ 2026：主档写成功后留一份“上一轮安全存档”，供主档损坏时回退。
+  //   备份写失败不算存档失败（主档已经是好的）。
+  try { localStorage.setItem(SAVE_BACKUP_KEY, json); } catch { /* 备份失败不影响主档 */ }
+  return json.length;
 }
 
-/** @returns {{state: object, offlineSeconds: number, ok: boolean, corrupted?: boolean,
- *             legacy?: boolean, formatVersion?: number, reason?: string}|null} */
-export function load() {
+/** 读主档（失败返回 corrupted 结果，但不在这里暂停写入——由 load() 决定是否还有备份）。 */
+function readPrimary() {
   let raw;
   try {
     raw = localStorage.getItem(BASE.saveKey);
@@ -213,8 +232,7 @@ export function load() {
   try {
     parsed = JSON.parse(raw);
   } catch (err) {
-    console.warn("存档 JSON 损坏，已保留原档并暂停写入：", err);
-    blockWrites("json-parse-error");
+    console.warn("存档 JSON 损坏：", err);
     return corruptResult("json-parse-error");
   }
 
@@ -222,15 +240,62 @@ export function load() {
 
   // 最老的存档：整个 JSON 就是 state 本身（formatVersion 视为 0）
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    blockWrites("legacy-not-object");
     return corruptResult("legacy-not-object");
   }
   return finishLoad(parsed, 0, { legacy: true });
 }
 
+/** 读“上一轮安全存档”；没有或同样损坏 ⇒ null。 */
+function readBackup() {
+  let raw;
+  try {
+    raw = localStorage.getItem(SAVE_BACKUP_KEY);
+  } catch {
+    return null;
+  }
+  if (!raw) return null;
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  try {
+    if (isEnvelope(parsed)) {
+      const result = loadEnvelope(parsed);
+      return result.ok ? result : null;
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    const result = finishLoad(parsed, 0, { legacy: true });
+    return result.ok ? result : null;
+  } catch {
+    return null;
+  }
+}
+
+/** @returns {{state: object, offlineSeconds: number, ok: boolean, corrupted?: boolean,
+ *             legacy?: boolean, fallback?: boolean, formatVersion?: number, reason?: string}|null} */
+export function load() {
+  const primary = readPrimary();
+  if (!primary || !primary.corrupted) return primary;
+
+  // 主档坏了：优先回退到上一轮安全存档（不让玩家直接回到新档）
+  const backup = readBackup();
+  if (backup) {
+    unblockWrites();
+    return { ...backup, fallback: true, corrupted: false };
+  }
+
+  blockWrites(primary.reason || "load-failed");
+  return primary;
+}
+
 export function clear() {
   try {
     localStorage.removeItem(BASE.saveKey);
+  } catch { /* ignore */ }
+  try {
+    localStorage.removeItem(SAVE_BACKUP_KEY);
   } catch { /* ignore */ }
   unblockWrites();
 }

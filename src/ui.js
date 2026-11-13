@@ -758,4 +758,32 @@ export function flashSave() {
   setTimeout(() => { b.textContent = old; b.classList.remove("on"); }, 1100);
 }
 
+/**
+ * 右上角小提示（2026：存档失败 / 回退到上一轮安全存档时用）。
+ * 纯 DOM，不依赖任何面板；会自动消失，不阻塞操作。
+ */
+let toastHost = null;
+export function showToast(message, type = "info", ttlMs = 4500) {
+  if (typeof document === "undefined") return;
+  const text = String(message ?? "").trim();
+  if (!text) return;
+  if (!toastHost || !toastHost.isConnected) {
+    toastHost = document.createElement("div");
+    toastHost.id = "neko-toast-host";
+    document.body.appendChild(toastHost);
+  }
+  const node = document.createElement("div");
+  node.className = `neko-toast neko-toast--${type}`;
+  node.textContent = text;
+  node.setAttribute("role", "status");
+  toastHost.appendChild(node);
+  setTimeout(() => {
+    node.remove();
+    if (toastHost && !toastHost.childElementCount) {
+      toastHost.remove();
+      toastHost = null;
+    }
+  }, ttlMs);
+}
+
 

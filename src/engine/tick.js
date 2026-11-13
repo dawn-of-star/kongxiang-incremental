@@ -503,11 +503,24 @@ export function phaseQuantumCapture(state) {
 }
 
 /**
- * 打破无限（花无限点）。
- * 之后物质上限解除，大坍缩改为手动，收益随深度增长。
+ * 推进 `seconds` 秒（离线结算 / 后台补时都走这里）。
+ *
+ * ★★★ 2026 修 bug（用户：「离线上限升级无效」）——
+ *   原来这里**硬读** `BASE.offlineCapSeconds`（基础 4h）二次裁剪：
+ *   `main.js` 已经算出「4h + 离线时长扩展等级 × 1h」传给 `advance`，
+ *   却在这里又被裁回 4h ⇒ 升级买了等于没买 ✗
+ *   ⇒ `cap` 改由调用方传入（离线结算 = `offlineCapSeconds(state)`）；
+ *     其它调用方走默认值 = 基础 4h，行为与以前完全一致 ✓
+ *
+ * @param {object} state
+ * @param {number} seconds 请求推进的秒数（会被 `cap` 裁剪）
+ * @param {number} [chunkSeconds=5] 分块大小
+ * @param {number} [cap=BASE.offlineCapSeconds] 本次允许推进的上限（秒）
  */
-export function advance(state, seconds, chunkSeconds = 5) {
-  let remaining = Math.min(seconds, BASE.offlineCapSeconds);
+export function advance(state, seconds, chunkSeconds = 5, cap = BASE.offlineCapSeconds) {
+  // ⚠️ cap 是调用方给的（可能来自存档/测试）⇒ 非法值回落到基础上限，别让 NaN 进 chunk 计算
+  const limit = Number.isFinite(cap) && cap >= 0 ? cap : BASE.offlineCapSeconds;
+  let remaining = Math.min(seconds, limit);
   const chunks = Math.max(1, Math.ceil(remaining / chunkSeconds));
   const dt = remaining / chunks;
   // ★★ 2025「步首快照」（用户要求，修"显示 ≠ 实发"）：
@@ -524,6 +537,26 @@ export function advance(state, seconds, chunkSeconds = 5) {
     if (freeze) delete state.quantumFrozen;
   }
   return state;
+}
+
+/**
+ * ★★★ 2026 修 bug（用户：「切后台 10 分钟回来只算了 1 秒」）——
+ * 标签页在后台时浏览器会停掉 rAF，主循环的 `dt` 又硬顶 1 秒（防卡顿）
+ * ⇒ hidden 的那段时间**完全没有推进** ✗
+ *
+ * 这个纯函数回答「回到前台时该补多少秒」，抽出来是为了能在 Node 里直接断言：
+ *   · gap < 1 秒 ⇒ 0（下一帧 rAF 的 1 秒上限已经覆盖，不需要补）
+ *   · 否则按 gap 折算，**上限走离线 cap**（与离线结算同一条入口）
+ *
+ * @param {number} gapMs hidden 持续了多久（毫秒）
+ * @param {number} [cap=BASE.offlineCapSeconds] 补时上限（秒）
+ * @returns {number} 应补的秒数（0 = 不补）
+ */
+export function hiddenCatchUpSeconds(gapMs, cap = BASE.offlineCapSeconds) {
+  const ms = Number(gapMs);
+  if (!Number.isFinite(ms) || ms < 1000) return 0;
+  const limit = Number.isFinite(cap) && cap >= 0 ? cap : BASE.offlineCapSeconds;
+  return Math.min(ms / 1000, limit);
 }
 
 // ══════════════════════════════════════════════════════════

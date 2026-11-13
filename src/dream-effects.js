@@ -26,7 +26,11 @@ const D = (x) => new Decimal(x);
 export function autoEnabled(state, id) {
   const owned = state?.dreamUpgrades?.[id];
   const isOwned = owned === true || (typeof owned === "number" && owned > 0);
-  return isOwned && state?.autoToggles?.[id] === true;
+  // 2026-11-13 (setAuto): two channels, one predicate.
+  //   (1) the player's: upgrade owned + toggled on
+  //   (2) the cat's: player granted + cat switched on (no dream points, no player slot)
+  if (isOwned && state?.autoToggles?.[id] === true) return true;
+  return state?.nekoAutoGrants?.[id] === true && state?.nekoAuto?.[id] === true;
 }
 
 /**

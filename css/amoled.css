@@ -1251,3 +1251,34 @@ button { font: inherit; cursor: pointer; }
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.25));
 }
 .neko-cat-pet:active { cursor: grabbing; }
+
+/* ── 右上角小提示（存档失败 / 回退安全存档）── */
+#neko-toast-host {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 360px;
+  pointer-events: none;
+}
+.neko-toast {
+  background: #16161a;
+  border: 1px solid var(--line, #333);
+  border-left: 3px solid #6cf;
+  color: #eee;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+  animation: neko-toast-in 0.18s ease-out;
+}
+.neko-toast--warn { border-left-color: #f5b942; }
+.neko-toast--error { border-left-color: #ff5c5c; }
+@keyframes neko-toast-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
+}

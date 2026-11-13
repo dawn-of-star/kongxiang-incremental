@@ -19,8 +19,9 @@
 import Decimal from "../dist/break_eternity.esm.js";
 import { BASE, PAGE_KEYS } from "../src/config.js";
 import { deserialize, newState, serialize } from "../src/state.js";
+import { setAutoCrunchActive } from "../src/autocrunch.js";
 import {
-  SAVE_FORMAT_VERSION, checksumOf, clear, createSaveEnvelope, fnv1a,
+  SAVE_BACKUP_KEY, SAVE_FORMAT_VERSION, checksumOf, clear, createSaveEnvelope, fnv1a,
   isSaveWriteBlocked, load, save, saveBlockedReason, stableStringify, verifySaveEnvelope,
 } from "../src/save.js";
 
@@ -109,7 +110,8 @@ function makeFullState() {
 
   s.autoToggles = { autoInfinities: true, autoSpaceDu: true };
   s.autoCrunch = {
-    isActive: true, mode: "amount", amount: "3", time: 0.5,
+    // ★ 2026：`isActive` 已弃用 —— 读档/开关一律写 false（bug ② 的回归夹具）
+    isActive: false, mode: "amount", amount: "3", time: 0.5,
     xHighest: "4", dynamic: true, lastAtMs: 999,
   };
   s.startBought = { pageA: true };
@@ -370,6 +372,68 @@ const legacyPayload = {
 }
 
 // ══════════════════════════════════════════════════════════
+// ③b 自动坍缩开关迁移（bug ②：老档关闭后读档不能复活）
+// ══════════════════════════════════════════════════════════
+console.log("\n── ③b 自动坍缩开关迁移（关掉后读档不复活）──");
+{
+  // 老档特征：`autoCrunch.isActive:true` 且**完全没有** `autoToggles` 键
+  const oldRaw = { version: 1, autoCrunch: { isActive: true } };
+  const st = deserialize(oldRaw).state;
+  check("老档首次读档 ⇒ 迁移为开", st.autoToggles.autoInfinities === true);
+  check("读档后已弃用 isActive 一律 false", st.autoCrunch.isActive === false);
+  const saved = serialize(st);
+  check("迁移后写出的存档：autoToggles=开、isActive=false",
+    saved.autoToggles?.autoInfinities === true && saved.autoCrunch?.isActive === false);
+  const st2 = deserialize(saved).state;
+  check("迁移是幂等的（再读一次仍开，不重复迁移）",
+    st2.autoToggles.autoInfinities === true && st2.autoCrunch.isActive === false);
+
+  setAutoCrunchActive(st2, false);
+  check("关闭只删 autoToggles，isActive 也清成 false",
+    st2.autoToggles.autoInfinities !== true && st2.autoCrunch.isActive === false);
+  const st3 = deserialize(serialize(st2)).state;
+  check("关闭 → 保存 → 再读仍关闭（不再被迁移回开）",
+    st3.autoToggles.autoInfinities !== true && st3.autoCrunch.isActive === false);
+}
+{
+  // 真实 save()/load() 路径：老档关闭后存档，再读不能复活
+  clear();
+  setRawSave(JSON.stringify({ formatVersion: 1, payload: { version: 1, autoCrunch: { isActive: true } } }));
+  const first = load();
+  const st = first?.state;
+  check("真实读档：老档迁移为开", !!st && st.autoToggles.autoInfinities === true);
+  setAutoCrunchActive(st, false);
+  save(st);
+  const again = load();
+  check("真实存档：关闭后保存再读仍关闭",
+    !!again?.state && again.state.autoToggles.autoInfinities !== true
+      && again.state.autoCrunch.isActive === false,
+    again ? `autoInfinities=${again.state.autoToggles.autoInfinities}` : "null");
+  clear();
+}
+{
+  // 新档：`autoToggles` 键存在 ⇒ 以它为准，`isActive` 不再参与迁移
+  const crafted = deserialize({ autoToggles: {}, autoCrunch: { isActive: true } }).state;
+  check("有 autoToggles 键时以它为准（isActive=true 也不迁移）",
+    crafted.autoToggles.autoInfinities !== true && crafted.autoCrunch.isActive === false);
+
+  // 新档开关来回切：开→关→开→关，每次存档再读都不复活
+  clear();
+  const seq = [];
+  let cur = newState();
+  for (const want of [true, false, true, false]) {
+    setAutoCrunchActive(cur, want);
+    save(cur);
+    cur = load()?.state;
+    seq.push({ want, actual: cur?.autoToggles.autoInfinities === true, isActive: cur?.autoCrunch.isActive });
+  }
+  check("新档开关往返 4 次不复活（开→关→开→关）",
+    seq.every((x) => x.actual === x.want), JSON.stringify(seq));
+  check("新档 isActive 全程 false", seq.every((x) => x.isActive === false));
+  clear();
+}
+
+// ══════════════════════════════════════════════════════════
 // ④ 校验失败不覆盖原档
 // ══════════════════════════════════════════════════════════
 console.log("\n── ④ 校验失败不覆盖原档 ──");
@@ -416,6 +480,108 @@ console.log("\n── ④ 校验失败不覆盖原档 ──");
     && save(newState()) === 0 && rawSave() === future,
   res ? `reason=${res.reason}` : "null");
   clear();
+}
+
+// ══════════════════════════════════════════════════════════
+// ④b 非有限资源读档自愈（bug ④：不再先归零成 0）
+// ══════════════════════════════════════════════════════════
+console.log("\n── ④b 非有限资源读档自愈（Infinity / NaN / 字符串）──");
+{
+  const HEAL = D("1e308");
+  const raw = {
+    version: 1,
+    resources: { matter: Infinity, entropy: -Infinity, particle: new Decimal(Infinity), traps: NaN },
+    darkEnergy: Infinity,
+    zpe: "Infinity",
+    infinityPoints: "-Infinity",
+    eternityPoints: NaN,
+    quantum: new Decimal("Infinity"),
+  };
+  const st = deserialize(raw).state;
+  check("Number Infinity ⇒ resources.matter = 1e308", st.resources.matter.eq(HEAL), `${st.resources.matter}`);
+  check("Number -Infinity ⇒ resources.entropy = 1e308", st.resources.entropy.eq(HEAL), `${st.resources.entropy}`);
+  check("Decimal Infinity ⇒ resources.particle = 1e308", st.resources.particle.eq(HEAL), `${st.resources.particle}`);
+  check("NaN ⇒ resources.traps = 1e308", st.resources.traps.eq(HEAL), `${st.resources.traps}`);
+  check("顶层 darkEnergy/zpe/infinityPoints/eternityPoints/quantum 也 = 1e308",
+    st.darkEnergy.eq(HEAL) && st.zpe.eq(HEAL) && st.infinityPoints.eq(HEAL)
+      && st.eternityPoints.eq(HEAL) && st.quantum.eq(HEAL),
+    `de=${st.darkEnergy} zpe=${st.zpe} ip=${st.infinityPoints} ep=${st.eternityPoints} q=${st.quantum}`);
+  check("自愈路径是真实 state 路径（resources.*；根上无 matter/entropy/particles 假字段）",
+    st.matter === undefined && st.entropy === undefined && st.particles === undefined
+      && st.resources.particle instanceof Decimal);
+}
+{
+  // 字符串 "Infinity" 能穿过 JSON（Number Infinity 会被 JSON.stringify 变成 null）
+  const jsonRaw = JSON.parse('{"version":1,"resources":{"matter":"Infinity","entropy":"NaN"},"darkEnergy":"Infinity"}');
+  const st = deserialize(jsonRaw).state;
+  check("字符串 \"Infinity\"/\"NaN\" ⇒ 1e308（JSON 可落盘的损坏形态）",
+    st.resources.matter.eq(D("1e308")) && st.resources.entropy.eq(D("1e308"))
+      && st.darkEnergy.eq(D("1e308")),
+    `matter=${st.resources.matter} entropy=${st.resources.entropy} de=${st.darkEnergy}`);
+}
+{
+  // 真实 save()/load()：字符串 Infinity 落盘后读档必须自愈成 1e308（不是 0）
+  clear();
+  const payload = { version: 1, resources: { matter: "Infinity", particle: "-Infinity" }, darkEnergy: "Infinity" };
+  setRawSave(JSON.stringify({ formatVersion: 1, payload }));
+  const res = load();
+  check("真实读档：字符串 Infinity ⇒ 1e308（不是 0）", !!res?.state
+    && res.state.resources.matter.eq(D("1e308"))
+    && res.state.resources.particle.eq(D("1e308"))
+    && res.state.darkEnergy.eq(D("1e308")),
+    res ? `matter=${res.state.resources.matter} particle=${res.state.resources.particle} de=${res.state.darkEnergy}` : "null");
+  clear();
+}
+{
+  // 正常数值（含 1e400 / 9e999 这类有限大数）绝对不能被误伤
+  const raw = {
+    version: 1,
+    resources: { matter: "1e400", entropy: 123.5, particle: new Decimal("9e999"), traps: "42" },
+    darkEnergy: "1e308", zpe: 0, infinityPoints: "5", eternityPoints: 7, quantum: "3.25",
+  };
+  const st = deserialize(raw).state;
+  check("正常数值往返不变（含 1e400 / 9e999 有限大数）",
+    st.resources.matter.eq(D("1e400")) && st.resources.entropy.eq(D(123.5))
+      && st.resources.particle.eq(D("9e999")) && st.resources.traps.eq(D(42))
+      && st.darkEnergy.eq(D("1e308")) && st.zpe.eq(D(0)) && st.infinityPoints.eq(D(5))
+      && st.eternityPoints.eq(D(7)) && st.quantum.eq(D("3.25")));
+  const fullRt = deserialize(serialize(makeFullState())).state;
+  check("全量正常档往返后资源原样保留",
+    fullRt.resources.matter.eq(D("3.5e12")) && fullRt.resources.entropy.eq(D("1.5e10"))
+      && fullRt.resources.particle.eq(D("2.5e11")) && fullRt.resources.traps.eq(D("4.5e13"))
+      && fullRt.darkEnergy.eq(D(4)) && fullRt.zpe.eq(D(2)) && fullRt.quantum.eq(D(15)));
+}
+
+// ══════════════════════════════════════════════════════════
+// ④c 主档损坏 → 回退“上一轮安全存档”
+// ══════════════════════════════════════════════════════════
+console.log("\n── ④c 主档损坏 → 回退上一轮安全存档 ──");
+{
+  clear();
+  const s = newState();
+  s.resources.matter = D("3.5e12");
+  const bytes = save(s);
+  check("保存成功后写入备份", bytes > 0 && !!storage.getItem(SAVE_BACKUP_KEY));
+
+  // 主档写坏、备份保持好的 ⇒ load() 回退，且不再暂停写入
+  setRawSave("{ broken json");
+  const res = load();
+  check("主档损坏 ⇒ 回退到备份", !!res && res.fallback === true && res.ok === true && !res.corrupted);
+  check("回退后的状态来自备份", !!res?.state && res.state.resources.matter.eq(D("3.5e12")));
+  check("回退后不暂停写入", !isSaveWriteBlocked());
+
+  // 主档和备份都坏 ⇒ 只能按损坏处理，并且暂停写入保住原档
+  clear();
+  setRawSave("{ broken json");
+  storage.setItem(SAVE_BACKUP_KEY, "{ also broken");
+  const bad = load();
+  check("主档 + 备份都坏 ⇒ corrupted", !!bad && bad.corrupted === true);
+  check("双坏时暂停写入", isSaveWriteBlocked() === true);
+
+  // 重置要把备份一起清掉
+  clear();
+  check("clear() 同时清掉主档与备份",
+    !storage.getItem(KEY) && !storage.getItem(SAVE_BACKUP_KEY) && !isSaveWriteBlocked());
 }
 
 // ══════════════════════════════════════════════════════════

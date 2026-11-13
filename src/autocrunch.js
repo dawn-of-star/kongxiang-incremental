@@ -142,9 +142,13 @@ export function maybeAutoCrunch(state, doBigCrunch, gainFn) {
 /**
  * 开/关 —— ★ 2026：**只写梦想页那个开关** `autoToggles.autoInfinities`
  *   （唯一开关；引擎只认它。`autoCrunch.isActive` 已弃用，仅老档迁移时读一次）✓
+ *   ⚠️ 2026 修 bug：`isActive` 必须**一并写 false** —— 关闭时只删 autoToggles 而留着
+ *      `isActive:true`，老档下次读档又会被迁移回"开" ✗（已核实）
  */
 export function setAutoCrunchActive(state, on) {
   state.autoToggles ??= {};
+  state.autoCrunch ??= defaultAutoCrunch();
+  state.autoCrunch.isActive = false;          // 已弃用字段：只留结构兼容，绝不保留 true ✓
   if (on === true) state.autoToggles.autoInfinities = true;
   else delete state.autoToggles.autoInfinities;
   return state.autoToggles.autoInfinities === true;

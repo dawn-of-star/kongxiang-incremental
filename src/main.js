@@ -27,6 +27,8 @@ import { BASE, DE_MILESTONES, qOf, quantumZpeMultBonus, ETERNITY, eternityPointG
   offlineCapSeconds } from "./config.js";
 import {
   advance, breakInfinity, buyDeUpgrade, buyDeUpgradeMax, buyDreamUpgrade, buyInfinityUpgrade, buyIpDoubleMax, buyRepeatable, affordableCount, zpeEngineAffordable, tick,
+  // ★★★ 2026：后台/休眠回来要补多少秒（纯函数，见 engine/tick.js）
+  hiddenCatchUpSeconds,
   // ★★★ 2025：永恒升级「永恒增幅」（第三层设计稿 33~35 行）
   buyEpMult,
   // ★★ 2025 修复：这四个**被 handlers 调用却从未 import** ⇒ 每次点击都抛
@@ -42,8 +44,8 @@ import {
 // ★★★ 2025（`docs/NEKO.md` §5）：状态快照要**现算**速率与乘区 ——
 //   必须走引擎/公式的**既有函数**（快照里绝不重算公式 ⇒ 不会与实发脱节 ✓）
 import { entropyRate, matterRate, particleRate, globalMultiplierParts } from "./formulas.js";
-import { clear as clearSave, load, save } from "./save.js";
-import { newState, pushLog, setLogSink } from "./state.js";
+import { clear as clearSave, createSaveEnvelope, load, save } from "./save.js";
+import { newState, pushLog, serialize, setLogSink } from "./state.js";
 // ★★★ 2025（`docs/NEKO.md`）：N.E.K.O 接入层（**无宿主时全部 no-op** ✓）
 //   `dispatchNekoActions` = §6 动作白名单的派发器（三条约束都实现在 `neko.js` 里）
 import { createNekoBridge, dispatchNekoActions, nekoHostPresent } from "./neko.js";
@@ -53,7 +55,7 @@ import { mountCatPet, setCatPetEnabled, catPetEnabled } from "./neko/cat-pet.js"
 import { perfFrame, perfOn, perfSummary, perfToggle, perfFrames, perfSections } from "./perf.js";
 // ★★★ 2025：**真实 DOM 写入计数** + **构建标记**（区分"代码 bug"与"浏览器旧缓存"）
 import { domWriteStats, domResetStats, UI_BUILD } from "./ui.js";
-import { flashSave, initUI, render, showOfflineBanner } from "./ui.js";
+import { flashSave, initUI, render, showOfflineBanner, showToast } from "./ui.js";
 
 const AUTOSAVE_SECONDS = 15;
 
@@ -67,10 +69,15 @@ let offlineReport = null;
 const loaded = load();
 if (loaded) {
   state = loaded.state;
+  if (loaded.fallback) {
+    // ★ 2026：主档损坏/校验失败时回退到上一轮安全存档，右上角告知玩家
+    showToast("已加载上一轮安全存档", "warn");
+  }
   if (loaded.corrupted) {
     // ★ 2026 存档完整性：校验失败时 save.js 已暂停写入 ⇒ 原档还在 localStorage 里。
     //   这里只提示，**不自动覆盖**；玩家确认要重开时点「重置」即可。
     pushLog(state, `⚠️ 存档完整性校验失败（${loaded.reason ?? "unknown"}）：原档已保留，自动存档暂停；如需重开请点重置`);
+    showToast("存档损坏且没有可用备份：已新开，自动存档暂停（原档保留）", "error");
   } else {
     if (loaded.offlineSeconds > 5) {
       // ★★★ 2025：上限走**唯一入口** `offlineCapSeconds(state)` ✓
@@ -80,7 +87,10 @@ if (loaded) {
       //      （正是本项目反复出现的"同一件事两条路"）
       const cap = offlineCapSeconds(state);
       const capped = Math.min(loaded.offlineSeconds, cap);
-      advance(state, capped);
+      // ★★★ 2026 修 bug（「离线上限升级无效」）——
+      //   `cap` 必须**显式传进去**：`advance` 的默认值是基础 4h，
+      //   不传的话「离线时长扩展」升级会在这里被内层二次裁掉 ✗
+      advance(state, capped, 5, cap);
       offlineReport = { seconds: capped, capped: loaded.offlineSeconds > cap, cap };
     }
     pushLog(state, loaded.legacy
@@ -184,6 +194,28 @@ const NEKO_SNAPSHOT_SECONDS = 5;
 
 function afterAction() {
   render(state);
+}
+
+/** 上一次"存档失败"写进日志的时间（自动路径限流用） */
+let lastSaveFailLogAt = 0;
+
+/**
+ * ★★★ 2026 修 bug（「保存失败仍闪已保存 ✓」）——
+ * 存档失败时**用既有的 `pushLog` 日志面板**提示（不新造 toast 系统）。
+ *
+ * `save()` 内部已经 `console.warn` 了技术细节（隐私模式 / 配额 / setItem 抛异常），
+ * 这里负责让**玩家**也看得见 —— 否则表现就是"点了保存、闪了绿字、刷新却回到旧档"✗
+ *
+ * @param {string} via 触发路径（手动 / 自动 / 切到后台），写进日志方便排查
+ * @param {boolean} [throttled=false] 自动路径限流：同一条失败最多每分钟一条，
+ *   免得 localStorage 长期不可用时每 15 秒刷屏、把真正的事件冲出日志面板
+ */
+function warnSaveFailed(via, throttled = false) {
+  const now = Date.now();
+  if (throttled && now - lastSaveFailLogAt < 60_000) return;
+  lastSaveFailLogAt = now;
+  pushLog(state, `⚠️ 存档失败（${via}）：浏览器拒绝写入本地存储，进度还只在内存里；请检查隐私模式 / 存储配额`);
+  showToast("存档失败：已保留上一轮安全存档（本次进度仅在内存里）", "error");
 }
 
 const handlers = {
@@ -341,16 +373,26 @@ const handlers = {
     }
   },
   onSave() {
-    save(state);
-    flashSave();
+    // ★★★ 2026 修 bug：`save()` 返回 0 = 没写成功（暂停写入 / setItem 抛异常）。
+    //   原来无条件 `flashSave()` ⇒ 失败也闪「已保存 ✓」，玩家以为存上了 ✗
+    const bytes = save(state);
+    if (bytes > 0) {
+      flashSave();
+      return;
+    }
+    warnSaveFailed("手动存档");
+    afterAction();          // 让失败日志立刻出现在日志面板里
   },
   onExport() {
-    // ★ 先把当前状态写进 localStorage 再取 —— 否则导出的是「上一次自动存档」
-    //   的内容（最多差 15 秒），而且刚开局还没存过档时会导出一个空的 "{}"。
-    save(state);
-    const json = localStorage.getItem(BASE.saveKey) ?? "";
-    if (!json) {
-      pushLog(state, "⚠️ 没有可导出的存档");
+    // ★ 2026（用户裁定）：导出**当前内存里的状态**，不再“先 save 再读 localStorage”。
+    //   原来写失败会导出上一次成功存档（可能是旧档），且刚开局还没存过档时会导出空对象 ✗
+    let json = "";
+    try {
+      const payload = serialize(state);
+      payload.lastSavedAt = Date.now();
+      json = JSON.stringify(createSaveEnvelope(payload));
+    } catch (err) {
+      pushLog(state, `⚠️ 导出失败：${err?.message ?? err}`);
       afterAction();
       return;
     }
@@ -376,6 +418,16 @@ let lastFrame = performance.now();
 let lastRender = 0;
 /** ★ 2025：上一帧的**真实**时间戳（与节流的 lastRender 不同 —— 它每帧都更新） */
 let lastFrameReal = 0;
+/**
+ * ★★★ 2026：页面进入 hidden 的时间戳（0 = 当前不在后台）。
+ * 记的是 `Date.now()`（墙钟）而不是 `performance.now()` ——
+ * 电脑休眠/跨天时墙钟一定往前走，性能计时器在部分平台上会漏掉休眠时间。
+ * ⚠️ 初始值也判一次：**在后台标签页里打开游戏**时不会收到 hidden 事件，
+ *   不预置时间戳的话，切到前台那一刻的这段时长会被整个吞掉 ✗
+ */
+let hiddenAtMs = typeof document !== "undefined" && document.visibilityState === "hidden"
+  ? Date.now()
+  : 0;
 let autosaveAccum = 0;
 let errorCount = 0;
 let lastErrorKey = "";
@@ -424,6 +476,15 @@ function reportRuntimeError(err, phase) {
 const RENDER_INTERVAL_MS = 50;
 
 function frame(nowMs) {
+  // ★ 2026：隐藏期间**不计帧** —— 后台 rAF 若仍以 1fps 跑，这里每帧记 1 秒，
+  //   回前台再按整段 gap 补一次 ⇒ 同一段时间被计两遍（双计）✗
+  //   隐藏时间统一交给 visibilitychange 的 catch-up，只补一次。
+  if (document.visibilityState === "hidden") {
+    lastFrame = nowMs;
+    lastFrameReal = nowMs;
+    requestAnimationFrame(frame);
+    return;
+  }
   // 帧间隔上限 1 秒：标签页切后台回来时不要一次性补太多
   const dt = Math.min((nowMs - lastFrame) / 1000, 1);
   const frameGap = nowMs - lastFrameReal;      // ★ 真实帧间隔（性能监视器用）
@@ -445,7 +506,10 @@ function frame(nowMs) {
     autosaveAccum += dt;
     if (autosaveAccum >= AUTOSAVE_SECONDS) {
       autosaveAccum = 0;
-      try { save(state); } catch { /* 存档失败不该影响游戏 */ }
+      try {
+        // ★ 自动存档失败也要留痕（限流），绝不静默当成功
+        if (save(state) === 0) warnSaveFailed("自动存档", true);
+      } catch { /* 存档失败不该影响游戏 */ }
     }
 
     // ★ ③ 状态快照：节流推给宿主（**无宿主时是 no-op** ✓）
@@ -550,9 +614,44 @@ requestAnimationFrame(frame);
 
 if (offlineReport) showOfflineBanner(offlineReport.seconds, offlineReport.capped, offlineReport.cap);
 
-window.addEventListener("beforeunload", () => save(state));
+window.addEventListener("beforeunload", () => { save(state); });
+
+/**
+ * ★★★ 2026 修 bug（用户：「切后台 / 休眠回来只算了 1 秒」）——
+ *
+ * 病根：标签页进后台后浏览器**停掉 rAF**，而主循环的 `dt` 硬顶 1 秒
+ * （那是防卡顿的，**不能**在 rAF 里取消 ✗）⇒ hidden 的整段时间没推进。
+ * 原来 visible 时也什么都不做，只 save，于是 10 分钟只算到 1 秒级别 ✗
+ *
+ * 修法：hidden 时**立刻**记时间戳；可见时按这段 gap 补一次 `advance`，
+ * 上限走离线 cap（与读档离线结算同一条入口），补完**重置帧锚点**，
+ * 避免下一帧 rAF 再把同一段 gap 算一次（否则会双计 1 秒）✗
+ */
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "hidden") save(state);
+  if (document.visibilityState === "hidden") {
+    // ① 先记时间戳 —— 不能等 visible 再取，那时 gap 已经量不到了
+    hiddenAtMs = Date.now();
+    if (save(state) === 0) warnSaveFailed("切到后台", true);
+    return;
+  }
+  // ② 回到前台：按 hidden 时长补一次
+  const gapMs = hiddenAtMs > 0 ? Date.now() - hiddenAtMs : 0;
+  hiddenAtMs = 0;
+  if (gapMs <= 0) return;
+  const cap = offlineCapSeconds(state);
+  const catchUp = hiddenCatchUpSeconds(gapMs, cap);
+  // gap < 1 秒 ⇒ 不补（下一帧 rAF 的 1 秒上限已经覆盖这一小段，不必也不该双计）
+  if (catchUp <= 0) return;
+  try {
+    advance(state, catchUp, 5, cap);
+  } catch (err) {
+    // 补时抛异常不该让页面停摆（主循环仍在跑）；照常报错但继续
+    reportRuntimeError(err, "后台补时");
+  } finally {
+    // ③ 补完重置帧锚点：否则下一帧 rAF 会按 (nowMs - lastFrame) 再算一次 ✗
+    lastFrame = performance.now();
+    lastFrameReal = lastFrame;
+  }
 });
 
 /**
@@ -592,6 +691,32 @@ window.__game = {
     const r = dispatchNekoActions(state, batch, nekoActionApi);
     render(state);
     return r;
+  },
+  /**
+   * ★★★ 2026-11-13（`setAuto` 实装后配套的**玩家授权**入口）——
+   *
+   * 猫娘不能自己开门 ✓：`setAuto` 要求 `state.nekoAutoGrants[id] === true`，
+   * 而**只有这个函数会写那个字段** ✓（玩家的动作 ✓）
+   *
+   * 用法：
+   *   `__game.nekoGrant("autoIpDouble", true)`   只授权一条
+   *   `__game.nekoGrant(null, true)`             授权**全部**已知自动化
+   *   `__game.nekoGrant(null, false)`            全部收回（并关掉猫娘已开的 ✓）
+   */
+  nekoGrant: (id, on = true) => {
+    state.nekoAutoGrants ??= {};
+    state.nekoAuto ??= {};
+    if (id) {
+      if (on) state.nekoAutoGrants[String(id)] = true;
+      else { delete state.nekoAutoGrants[String(id)]; delete state.nekoAuto[String(id)]; }
+      render(state);
+      return { granted: 1, on: !!on };
+    }
+    // 全部：用一个通配授权（不依赖 id 清单 ⇒ 猫娘后续新增的自动化也能覆盖 ✓）
+    if (on) state.nekoAutoGrants.__all = true;
+    else { state.nekoAutoGrants = {}; state.nekoAuto = {}; }
+    render(state);
+    return { granted: on ? "all" : 0, on: !!on };
   },
   /** 白名单清单（给控制台/文档看） */
   nekoActionList: () => Object.keys(NEKO_ACTIONS),
