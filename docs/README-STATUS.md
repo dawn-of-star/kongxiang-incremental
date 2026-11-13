@@ -1,4 +1,4 @@
-# 技术文档状态索引 —— **文档的权威入口**（最后核对：0.8.2 / 2025）
+# 技术文档状态索引 —— **文档的权威入口**（最后核对：0.8.3 / 2025）
 
 > **这份文件是"哪些文档还有效、以哪份为准"的唯一入口。**
 > 加/删/改任何 `docs/*.md` 时**必须回来同步这张表** ✓
@@ -29,7 +29,7 @@
 | 默认批跑脚本数 | **52** | `node tools/run-all.mjs --list` |
 | `npm test` 结果 | **✅ 默认全绿（54 脚本）**；`--strict` 历史 8 条红灯已于 2026-11-13 修完 | `tools/run-all.mjs` |
 | `--strict` 的历史红灯 | ✅ **全部修完（2026-11-13）**：M2 六条 + `dark-matter-lab` / `de-span-lab`（均为工具模型过期，非坏实现） | `docs/TODO.md` M2 |
-| 版本 | **0.8.2**（`package.json` 是唯一出处） | `package.json` |
+| 版本 | **0.8.3**（`package.json` 是唯一出处） | `package.json` |
 | 文档篇数 / 脚本总数 / 各类计数 | ⇒ **见 [`CONFIG-FACTS.md`](CONFIG-FACTS.md)**（机器生成） | `tools/config-facts.mjs` |
 
 > ⚠️ **历史教训（本文件被改写的直接原因）**：
@@ -48,7 +48,7 @@
 | **[CONFIG-FACTS.md](CONFIG-FACTS.md)** | ✅ 权威（**机器生成**） | ★ **所有计数/常量的唯一出处** —— 由 `tools/config-facts.mjs` 生成并校验，与代码不同步会**测试失败** ✓ |
 | **ZONES.md** | ✅ 权威 | 乘区归属（**改乘区必看**）。计数见 `CONFIG-FACTS.md` |
 | **[BONUS-POSITIONS.md](BONUS-POSITIONS.md)** | ✅ 权威 | ★ **全增益落点总表（a区 / b区 / c区 / 斜率）** + 中期为什么进不了指数区；加中期增益前必看 |
-| **[SPACE-EXPANSION-FINAL.md](SPACE-EXPANSION-FINAL.md)** | ✅ **已实装（0.8.0）**：SE/ST/挑战/du1~du11/页面（du7=du 自动化） | ★ **空间膨胀**：du1~du11 / SE / ST / `^0.5` 挑战；解锁 EP 1e1200，目标 1e3600；IP 倍率合规见 §2.8 |
+| **[SPACE-EXPANSION-FINAL.md](SPACE-EXPANSION-FINAL.md)** | ⚠️ **测试中（0.8.x，待用户验收）**：SE/ST/挑战/du1~du11/页面（du7=du 自动化） | ★ **空间膨胀**：du1~du11 / SE / ST / `^0.5` 挑战；解锁 EP 1e1200，目标 1e3600；IP 倍率合规见 §2.8 |
 | **ZPE-ENGINE.md** | ✅ 权威 | ZPE 引擎（含第 5 条机制：基于自身倍数提升前 8 个虚空升级） |
 | **QUANTUM-MILESTONES.md** | ✅ 权威 | 量子里程碑（qm1~qm7）的定义与阈值 |
 | **COLLAPSE-MILESTONES-8.md** | ✅ 已落地 | `cm1`~`cm8` **全部实装并接线**；本文保留**设计依据与理由** |
@@ -63,8 +63,6 @@
 | 文档 | 需要同步的点 |
 |---|---|
 | **BONUS-INVENTORY.md** | 逐行读公式的产物 ⇒ 公式改过之后条目会漂移（见文首状态头） |
-| **SPACE-EXPANSION.md** | ⚠️ **设计输入（原始逐字稿）**：已被 `SPACE-EXPANSION-FINAL.md` 合并；保留用户原文与推导历史 |
-| **TIMESPACE.md** | ⚠️ **设计输入（时空外层保留）**：空间膨胀三升级已被合并稿取代；时空层（TP/重置）仍有效 |
 | **IP-ECONOMY.md** | IP 公式与量子转 IP 的现役形态；含已删体系（`铸币`/`CRUNCH_ACCEL`）的历史表述 |
 | **INFINITY-UPGRADES.md** | **`ipTime` 不是"待删"、而是活的**（见文首纠正）｜`unspentBoost` 才是真删了 |
 | **TODO.md** | **工作台账**（保留"当时怎么想的"）⇒ **不要**当"当前还剩什么"的清单 ✗ |
@@ -76,8 +74,11 @@
 | **COINAGE-TIER-ROLES.md** | 铸币体系已删除 ⇒ **作废**（历史价值：记录过"铸币/档位"的取舍） |
 | **WIRING-NETWORK.md** / **WIRING-STEP1-PLAN.md** | 接线子系统已整体删除 ⇒ **作废** |
 | **RESONANCE-AND-EXCHANGE.md** | 共振 / 兑换方案（**从未实现**）⇒ **作废** |
-| **R-REPLACEMENT.md** | R（指数成长速率）已退休 ⇒ 记录**替换过程**（历史价值高） |
-| **DEPRECATED-INVENTORY.md** | 废弃清单（按"非设计稿内容一律视为废弃"的规则整理） |
+| 🗄️ [R-REPLACEMENT.md](archive/R-REPLACEMENT.md) | R（指数成长速率）已退休 ⇒ 记录**替换过程**（历史价值高） |
+| 🗄️ [DEPRECATED-INVENTORY.md](archive/DEPRECATED-INVENTORY.md) | 废弃清单（按"非设计稿内容一律视为废弃"的规则整理） |
+| 🗄️ [SPACE-EXPANSION.md](archive/SPACE-EXPANSION.md) | 空间膨胀原始逐字稿（已合并进 FINAL） |
+| 🗄️ [TIMESPACE.md](archive/TIMESPACE.md) | 空间膨胀 / 时空层旧稿（只保留时空外层） |
+| 🗄️ [CHANGELOG-legacy.md](archive/CHANGELOG-legacy.md) | 0.6.18~0.5.1 版本历史 |
 | **docs/archive/** | **已删代码的快照**（8 个 `.txt`）：`wiring.js` / `ui-wiring.js` / 两个 wiring lab / runaway lab / infinity-sim / pace-model / post-break-engine-lab |
 
 > ⚠️ **"已作废"的文档会故意引用已删除的路径与常量**（那正是"已作废"的含义）

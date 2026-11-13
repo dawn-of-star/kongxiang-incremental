@@ -1,6 +1,6 @@
 # 空间膨胀（Space Expansion）—— 设计稿（终稿候选）
 
-> **状态：⚠️ 设计输入（原始逐字稿，已合并到 [`SPACE-EXPANSION-FINAL.md`](SPACE-EXPANSION-FINAL.md)）**
+> **状态：⚠️ 设计输入（原始逐字稿，已合并到 [`SPACE-EXPANSION-FINAL.md`](../SPACE-EXPANSION-FINAL.md)）**
 > 本文保留用户原文与推导历史；**实装以合并终稿为准**，不要再按本文的分散数值改代码。
 > 本页 = 用户 2026 的设计 + 我按现有公式做的**可达性核算**。
 > 用户原话：「光空谈不实践约等于不干事」⇒ 先由用户游玩验证手感，再标定数值 ✓

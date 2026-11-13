@@ -311,7 +311,7 @@ log10(IP) ≈ L / 308.2547 − 0.75      （L = log10(物质)）
 
 ### 4.5 设计既定解：空间膨胀（未实装）
 
-`docs/SPACE-EXPANSION.md` / `docs/TIMESPACE.md` 已合并为
+`docs/archive/SPACE-EXPANSION.md` / `docs/archive/TIMESPACE.md` 已合并为
 **[`SPACE-EXPANSION-FINAL.md`](SPACE-EXPANSION-FINAL.md)**：
 
 - 挑战模式：所有**最终收益 ^0.5**（可退出；只在挑战内结算 SE）；

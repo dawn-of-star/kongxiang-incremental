@@ -2,7 +2,7 @@
 
 网页增量游戏。原生 ES 模块 + `break_eternity.js`，**零构建、零 npm install**。
 
-当前版本：**0.8.2**
+当前版本：**0.8.3**
 
 > **改完东西只想确认没搞坏？** 跑 `npm test`（或 `node tools/run-all.mjs`）——
 > 一次跑完 54 个自检脚本，只把失败细节打出来。约 4 分钟。
@@ -56,7 +56,7 @@
 | 你想干嘛 | 用什么 | 需要装什么 |
 |---|---|---|
 | **点开就玩（最省事）** | **https://dawn-of-star.github.io/kongxiang-incremental/** | 只需要浏览器 |
-| **下载到本地玩** | Release 里的 `KongxiangIncremental-0.8.2-win-x64.exe` | **什么都不用装**，双击即玩 |
+| **下载到本地玩** | Release 里的 `KongxiangIncremental-0.8.3-win-x64.exe` | **什么都不用装**，双击即玩 |
 | 在本机改着玩 | `node serve.mjs` → http://127.0.0.1:8321/ | Node.js |
 | 改代码 / 自己打包 | 见下面「打包成 exe」 | Node.js + 首次 `npm install` |
 
@@ -108,15 +108,13 @@ test-034/
 │   ├── INFINITY-UPGRADES.md     ∞ 层升级清单（含 AD 原版逐条对照）
 │   ├── ZPE-ENGINE.md            ZPE 引擎（已实现 · 虚空科技第二个子页 · 含极强软上限）
 │   ├── IP-ECONOMY.md            无限点 → 永恒（24 小时档 · 各机制提速表）
-│   ├── R-REPLACEMENT.md         ★ R 退役方案底图（暗能量跨度层 + 量子提供幂 k）
 │   ├── QUANTUM-MILESTONES.md     ★ 量子里程碑草案（7 条；承担阶梯加速）
 │   ├── ZONES.md                 ★ 乘区归属（改乘区前看；计数见 CONFIG-FACTS）
 │   ├── BONUS-POSITIONS.md       ★ 全增益落点（a区 / b区 / c区 / 斜率）与中期指数缺口
-│   ├── SPACE-EXPANSION-FINAL.md ★ 空间膨胀终稿（**已实装 · 0.8.0**）：du1~du11 / SE / ST
-│   ├── SPACE-EXPANSION.md       ☆ 空间膨胀原始逐字稿（历史输入，已合并）
-│   ├── TIMESPACE.md             ☆ 空间膨胀 / 时空层旧稿（只保留时空外层）
+│   ├── SPACE-EXPANSION-FINAL.md ★ 空间膨胀终稿（**测试中 · 待验收**）：du1~du11 / SE / ST
 │   ├── PROGRESSION.md           ★ 主流程设计（层间门槛/重置关系 + 实测时长 + 已知缺口 G1~G7）
 │   ├── BALANCE-AUDIT.md         ★ 平衡审计（只读 · 2026）：坍缩频率 / 轮次倍率 / 引擎落点 / 升级曲线
+│   ├── archive/                 🗄️ 已归档：CHANGELOG-legacy / R-REPLACEMENT / SPACE-EXPANSION / TIMESPACE / DEPRECATED-INVENTORY
 │   └── NEKO.md                  ★ neko 接入说明（**已接入**：游戏内聊天 / 动作 / 主动搭话 / 猫猫漫游）
 ├── electron/
 │   ├── main.cjs                 Electron 主进程：开窗口 + 菜单 + 单实例
@@ -196,8 +194,8 @@ npm run dist         # 产出 release/ 下的便携版 exe + zip
 
 | 文件 | 说明 |
 |---|---|
-| `release/KongxiangIncremental-0.8.2-win-x64.exe` | **给玩家的推荐版本**。单个自解压 exe，双击即玩，卸载就是删文件 |
-| `release/KongxiangIncremental-0.8.2-win-x64.zip` | 解压即用的绿色目录。部分杀软会误报自解压包，备一个这个 |
+| `release/KongxiangIncremental-0.8.3-win-x64.exe` | **给玩家的推荐版本**。单个自解压 exe，双击即玩，卸载就是删文件 |
+| `release/KongxiangIncremental-0.8.3-win-x64.zip` | 解压即用的绿色目录。部分杀软会误报自解压包，备一个这个 |
 
 想快速验证打包有没有问题，用 `npm run dist:dir`（只出 `release/win-unpacked/`，几十秒）。
 

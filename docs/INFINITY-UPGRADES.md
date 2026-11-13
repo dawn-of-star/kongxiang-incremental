@@ -37,7 +37,7 @@
 >
 > ⚠️ **本节（§0）是按 R 机制写的，R 已在 0.6.13 退休** —— 下面的 `R` / `growthRateMax` 数字
 > **只作历史备查**，现行机制是「粒子时变增幅 `b`（`DE_SPAN.b0` / `bMax`）+ 跨度幂 `k`」，
-> 见 `docs/R-REPLACEMENT.md` 与 `tools/quantum-particle-lab.mjs` / `tools/de-span-lab.mjs`。
+> 见 `docs/archive/R-REPLACEMENT.md` 与 `tools/quantum-particle-lab.mjs` / `tools/de-span-lab.mjs`。
 
 | 事实 | 数据 | 来源 |
 |---|---|---|

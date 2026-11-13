@@ -9,6 +9,26 @@
 
 ---
 
+## 0.8.3 — 空间膨胀标为测试状态；文档对账与归档
+
+> **公告**：空间膨胀页面**暂标为「测试中」**（等你亲手跑一轮再定正式上线），
+> 不是正式上线；数值与实现未动（du8/du10 仍按设计暂缓）。
+> 另外把两处文档漂移按当前代码改正，并把已结束的稿子移入 `docs/archive/`。
+>
+> · **空间膨胀状态**：UI 徽章 / 页面注释 / 文档状态统一为「测试中 · 待验收」。
+> · **文档对账**：`BONUS-INVENTORY §6` 去掉已删的 `a(DE)` 衰减；
+>   `PROGRESSION §2.2` 按现价重写（b0 0.0335 / a0 0.003112 / tierAccel 1.10，实测窗口 3.48h）；
+>   `src/config/quantum/growth.js` 的 a0 注释同步。
+> · **归档**：SPACE-EXPANSION / TIMESPACE / R-REPLACEMENT / DEPRECATED-INVENTORY
+>   移入 `docs/archive/`；README 树与 README-STATUS 索引同步。
+
+**这一版做了什么**
+
+1. 空间膨胀：`src/space/page.js` 徽章「已上线」→「测试中」；页面注释与三份文档状态同步。
+2. 文档对账：BONUS-INVENTORY §6（a(DE) 衰减已删）、PROGRESSION §2.2（当前常量与 3.48h 窗口）。
+3. 归档：4 篇已结束稿进入 `docs/archive/`，相关链接全部改写。
+4. 版本 0.8.2 → 0.8.3。
+
 ## 0.8.2 — strict 清零 + 存档校验 + 平衡审计 + 文档瘦身
 
 > **公告**：这批不是新玩法，是把锐评里的债务还掉。

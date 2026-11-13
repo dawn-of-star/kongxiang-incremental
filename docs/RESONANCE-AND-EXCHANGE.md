@@ -25,7 +25,7 @@
 ### 1.1 现状（它现在只是代码里的护栏 ✗）
 
 ```
-S = Σ log(mᵢ) / log(rᵢ)        （环增益，见 computeS ✓ 与 docs/R-REPLACEMENT.md ✓）
+S = Σ log(mᵢ) / log(rᵢ)        （环增益，见 computeS ✓ 与 docs/archive/R-REPLACEMENT.md ✓）
    · 判据：S < 1 ⇒ 环收敛 ✓；S ≥ 1 ⇒ 环发散（历史上"物质一次跳无限"的旧 bug ✗）
    · 当前值：S ≈ 0.7263（基础）✓；人际关系加成叠乘 ^1.002×^1.005×^1.015 = ^1.0221
      ⇒ S_eff ≈ 0.7423 ✓（离红线还有 ~0.26 的余量 ✓）

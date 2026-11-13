@@ -108,8 +108,9 @@ ZPE = 熵阱
 相变仪：DE/秒 = zpeRate ÷ BASE.darkEnergyThreshold × 相变仪增益
                 ×【∞升级 ipToTransmuter：×(1 + perIp × 无限点)】
 自增长：d(DE)/dt = DE × a × ln10
-        a = a0(0.003112) × 衰减(2^(−(log10DE−30)/8)，下限 aFloor 0.15)
-            × qm4(×1.25) × **引擎 deEngineLevelBonus（1 + 0.10×等级 ✓ 线性）**   ← 破∞后段的主引擎
+        a = a0(0.003112) × qm4(×1.25，若达成) × 引擎倍率（1 + A·x/(1+x)，x=等级/knee，上限 ×21）
+        ★ 2026-10-25：与 DE 量级**无关**（a(DE) 的衰减/下限已删）；
+          旧式 `2^(−(log10DE−30)/8)`、`aFloor 0.15` 已不存在
 暗能量倍率(darkEnergyMultiplier)：
   倍率 = [ 1 + log2(DE累计)·coeff + q² + (暗物质转化值 − 1) ] × accel × 引擎倍率
          └───────────────── a 区（加法区）─────────────────┘

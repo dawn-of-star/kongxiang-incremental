@@ -83,7 +83,7 @@ function build() {
   const title = h("p", "rule");
   title.appendChild(h("b", null, "空间膨胀"));
   title.appendChild(h("span", "space-title-sep", "  ——  "));
-  const badge = h("span", "badge space-badge", "已上线");
+  const badge = h("span", "badge space-badge", "测试中");
   badge.id = "space-page-badge";
   title.appendChild(badge);
   intro.appendChild(title);
@@ -264,6 +264,6 @@ export function renderSpace(state) {
   if (pageBadge) {
     pageBadge.textContent = !unlocked
       ? "未解锁"
-      : (SPACE_DESIGN.wired ? "已上线 · du8/10暂缓" : "du 已接 · du7 自动化");
+      : (SPACE_DESIGN.wired ? "测试中 · 待验收" : "du 已接 · du7 自动化");
   }
 }

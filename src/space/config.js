@@ -4,7 +4,7 @@
  * 这里放“页面要显示什么”与**唯一价格源**（baseCost / costMult）；
  * 购买/扣款在 `space/upgrades.js`，效果在 `space/core.js` 的 du 辅助函数 + 各落点。
  *
- * 设计依据：docs/SPACE-EXPANSION-FINAL.md（已实装 0.8.0）
+ * 设计依据：docs/SPACE-EXPANSION-FINAL.md（**测试中 · 待用户验收**，0.8.x）
  *   · du7 = 解锁 du1~du6 自动化；du8 / du10 是价格侧，本阶段暂缓
  *   · du1~du6 用 SE 复购；du7~du11 用 ST 单次
  */
