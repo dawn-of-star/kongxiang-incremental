@@ -1231,3 +1231,23 @@ button { font: inherit; cursor: pointer; }
 .neko-chat { max-height: 420px; overflow-y: auto; padding-right: 4px; }
 .neko-chat::-webkit-scrollbar { width: 8px; }
 .neko-chat::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+
+/* ── 猫猫漫游（复用 N.E.K.O 猫资源，页内物理）── */
+.neko-cat-pet-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  pointer-events: none;
+  overflow: hidden;
+}
+.neko-cat-pet {
+  position: absolute;
+  pointer-events: auto;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-drag: none;
+  touch-action: none;
+  will-change: left, top, transform;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.25));
+}
+.neko-cat-pet:active { cursor: grabbing; }

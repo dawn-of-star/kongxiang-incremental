@@ -48,6 +48,7 @@ import { newState, pushLog, setLogSink } from "./state.js";
 //   `dispatchNekoActions` = §6 动作白名单的派发器（三条约束都实现在 `neko.js` 里）
 import { createNekoBridge, dispatchNekoActions, nekoHostPresent } from "./neko.js";
 import { createChatUi } from "./neko/chat-ui.js";
+import { mountCatPet, setCatPetEnabled, catPetEnabled } from "./neko/cat-pet.js";
 // ★★★ 2025：**性能监视器**（用户报「数字跳动速率及其低下」⇒ 装仪表而不是猜）
 import { perfFrame, perfOn, perfSummary, perfToggle, perfFrames, perfSections } from "./perf.js";
 // ★★★ 2025：**真实 DOM 写入计数** + **构建标记**（区分"代码 bug"与"浏览器旧缓存"）
@@ -142,6 +143,20 @@ const nekoBridge = createNekoBridge({
 const nekoChatUi = nekoHostPresent()
   ? createChatUi({ bridge: nekoBridge, getState: () => state })
   : null;
+
+/**
+ * ★ 猫猫漫游：复用 N.E.K.O 的猫资源（GIF）在游戏页里自己走。
+ *   只在宿主页里挂（资源由宿主 /static 提供）；失败不影响游戏。
+ */
+let nekoCatPet = null;
+function startCatPet() {
+  void mountCatPet().then((pet) => {
+    nekoCatPet = pet.ok ? pet : null;
+    if (pet.ok) pushLog(state, "🐾 猫猫漫游已开启（拖一下 / 点一下试试）");
+    else if (pet.reason && pet.reason !== "disabled") pushLog(state, `🐾 猫猫不可用：${pet.reason}`);
+  }).catch(() => { /* 猫挂了也不影响游戏 */ });
+}
+if (nekoChatUi) startCatPet();
 // ★ 页面关闭：显式结束宿主路由（否则只能等 10 秒心跳超时，模型会悬在游戏态）
 const endHostRoute = () => { try { void nekoBridge.end(); } catch { /* ignore */ } };
 window.addEventListener('pagehide', endHostRoute);
@@ -583,6 +598,20 @@ window.__game = {
   nekoChat: (text) => (nekoChatUi ? nekoChatUi.send(text) : Promise.resolve(false)),
   /** 触发一次主动搭话（测试用；正常由 60 秒定时器触发） */
   nekoProactive: (force = true) => (nekoChatUi ? nekoChatUi.proactive(force) : Promise.resolve(false)),
+  /** 猫猫漫游：只读状态（给控制台 / e2e 看） */
+  nekoCatPet: () => (nekoCatPet ? nekoCatPet.state?.() : null),
+  /** 猫猫漫游开关：`__game.nekoCatPetToggle(false)` 关掉，`true` 打开 */
+  nekoCatPetToggle: (on) => {
+    const enabled = on !== false;
+    setCatPetEnabled(enabled);
+    if (!enabled) {
+      nekoCatPet?.dispose?.();
+      nekoCatPet = null;
+    } else if (!nekoCatPet) {
+      startCatPet();
+    }
+    return enabled;
+  },
   /** ★ 2025：**性能监视器**（`__game.perf(true)` 打开 / `__game.perf()` 切换 / `F8`） */
   perf: (force) => {
     const on = perfToggle(force);
