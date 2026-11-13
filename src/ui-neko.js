@@ -9,6 +9,19 @@
 import { NEKO, NEKO_ITEMS, nekoDriftRoom, nekoGlobalExponent, nekoNextTier } from "./config.js";
 import { nekoHostPresent } from "./neko.js";
 import { $, el } from "./ui-core.js";
+import { AUTOMATION_IDS } from "./dream-ui.js";   // ★ 2026-11-13：授权列表的唯一来源 ✓
+import { save } from "./save.js";                 // ★ 授权改动要立即存档 ✓
+
+/** ★ 2026-11-13：授权行的中文名（id → 显示名 ✓；缺省显示 id ✓）*/
+const GRANT_LABEL = {
+  autoPhase: "相变自动化",
+  autoVacuum: "加速自动化",
+  autoDeGainBase: "暗能量增幅自动化",
+  autoConvOutput: "凝聚斜率自动化",
+  autoInfinities: "无限自动化（自动大坍缩）",
+  autoIpDouble: "IP 倍增自动化",
+  autoZpeEngine: "ZPE 引擎自动化",
+};
 
 export function renderNeko(state) {
   const a = Number(state?.nekoAffinity ?? 0) || 0;
@@ -93,6 +106,53 @@ export function renderNeko(state) {
       const on = a > t.need;
       d.className = on ? "on" : "";
       d.innerHTML = `<span>好感度 &gt; ${t.need}</span><b>全局 ^${t.pow}${on ? "　✅ 已生效" : ""}</b>`;
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // ★★★ 2026-11-13（`setAuto` 的最后一块 UI）—— **猫娘自动化授权**
+  //   · 勾选 = 写 `state.nekoAutoGrants[id] = true`（**只有玩家能写** ✓）
+  //   · 猫娘通过 `setAuto` 只能开**已授权**的 ✓（没授权 ⇒ rejected ✓）
+  //   · 列表从 `AUTOMATION_IDS` 生成 ✓（不写死 ✗）
+  //   ⚠️ 只建一次 DOM（每帧重建会闪 ✗ —— 本文件的既有教训 ✓）
+  // ══════════════════════════════════════════════════════════
+  const gbox = el["neko-auto-grants"];
+  if (gbox) {
+    if (!gbox.dataset.built) {
+      gbox.dataset.built = "1";
+      for (const id of AUTOMATION_IDS) {
+        const row = document.createElement("div");
+        row.style.cssText = "display:flex;align-items:center;gap:6px;margin-top:4px";
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.id = `neko-grant-${id}`;
+        cb.style.cssText = "width:auto;margin:0";
+        cb.addEventListener("change", () => {
+          const st = gbox._state;
+          if (!st) return;
+          st.nekoAutoGrants ??= {};
+          st.nekoAuto ??= {};
+          if (cb.checked) st.nekoAutoGrants[id] = true;
+          else { delete st.nekoAutoGrants[id]; delete st.nekoAuto[id]; }
+          try { save(st); } catch { /* 存档失败不影响勾选 ✓ */ }
+        });
+        const lab = document.createElement("label");
+        lab.htmlFor = cb.id;
+        lab.textContent = GRANT_LABEL[id] ?? id;
+        lab.style.cssText = "font-size:11px;cursor:pointer";
+        row.appendChild(cb);
+        row.appendChild(lab);
+        gbox.appendChild(row);
+      }
+    }
+    gbox._state = state;
+    for (const id of AUTOMATION_IDS) {
+      const cb = document.getElementById(`neko-grant-${id}`);
+      if (!cb) continue;
+      const granted = state?.nekoAutoGrants?.[id] === true || state?.nekoAutoGrants?.__all === true;
+      const running = state?.nekoAuto?.[id] === true;
+      cb.checked = granted;
+      cb.title = running ? "猫娘当前已开启" : "";
     }
   }
 }

@@ -380,4 +380,6 @@ static/game/games/soccer/soccer-demo.js（6878 行）：0 处 SDK 引用
 - 猫娘通道**不需要** `dreamUpgrades[id]` ✓、**不花梦想点** ✓、**不占玩家槽位** ✓（§10 原文 ✓）
 - 没授权 ⇒ `rejected` + 原因 ✓（不假装成功 ✓）
 - 玩家入口（控制台）：`__game.nekoGrant(null, true)` 全部授权 ｜ `__game.nekoGrant("autoIpDouble", true)` 单条 ｜ `__game.nekoGrant(null, false)` 全部收回并关掉
-- ⏳ 仍未做：Neko 页面上的**勾选式授权 UI**（现在只有控制台入口 ✓）
+- ✅ **勾选式授权 UI 已做**（2026-11-13）：猫猫子页「猫娘自动化授权」，每个自动化一个勾选框 ✓
+  · 勾选 = 写 `nekoAutoGrants[id]` ✓（只有玩家能写 ✓）；取消 = 连同 `nekoAuto[id]` 一起清掉 ✓
+  · 每次改动**立即存档** ✓（`save(state)`）
