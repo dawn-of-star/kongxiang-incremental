@@ -72,8 +72,6 @@
 > - 旧的 minigame SDK 路线（`/kongxiang_demo` 模板 + `NekoMiniGame`）**仅保留为历史/实验**，
 >   不再是发行路径；相关文档见 [`docs/NEKO.md`](docs/NEKO.md)（已标注迁移）。
 
-> 网页版和 exe 版是**两份独立存档**（`localStorage` 按源隔离），互不相通。
-
 > 便携版 exe 里已经打进了完整的 Chromium 内核，**不依赖系统 WebView2、不依赖 Node、
 > 不依赖任何运行库**，Windows 10 1809+ / 11（x64）都能直接双击运行。
 
@@ -105,8 +103,8 @@ node serve.mjs
 ## 目录结构
 
 ```
-test-034/
-├── .github/workflows/           GitHub Actions：打 tag 自动构建 exe 并发 Release
+kongxiang-incremental/
+├── .github/workflows/           GitHub Actions：打 tag 构建 exe 发 Release；推 master 部署 Pages
 ├── .vscode/                     VSCode 配置（F5 / 任务都在这）
 ├── index.html                   ★ 唯一入口（AMOLED，走 src/）
 ├── css/amoled.css               AMOLED 主题（配色取自 Antimatter Dimensions）
@@ -116,7 +114,9 @@ test-034/
 ├── .npmrc                       Electron 下载源换成国内镜像
 ├── .gitignore / .gitattributes  node_modules、release、换行符与语言统计
 ├── docs/                        ★ 设计文档（不参与打包与发布）
+│   ├── README-STATUS.md         ★ 文档索引（哪些还有效、以哪份为准）
 │   ├── ARCHITECTURE.md          ★ 模块分层 / 目录职责 / 结构预算 / 维护性评分（2026）
+│   ├── CONFIG-FACTS.md          ★ 机器生成的计数 / 常量事实源（别手抄）
 │   ├── INFINITY-UPGRADES.md     ∞ 层升级清单（含 AD 原版逐条对照）
 │   ├── ZPE-ENGINE.md            ZPE 引擎（已实现 · 虚空科技第二个子页 · 含极强软上限）
 │   ├── IP-ECONOMY.md            无限点 → 永恒（24 小时档 · 各机制提速表）
@@ -124,9 +124,13 @@ test-034/
 │   ├── ZONES.md                 ★ 乘区归属（改乘区前看；计数见 CONFIG-FACTS）
 │   ├── BONUS-POSITIONS.md       ★ 全增益落点（a区 / b区 / c区 / 斜率）与中期指数缺口
 │   ├── SPACE-EXPANSION-FINAL.md ★ 空间膨胀终稿（**测试中 · 待验收**）：du1~du11 / SE / ST
+│   ├── TANGRAM.md               ★ 七巧板（几何 / 图案库 / 挑战 / 被动 IP）
+│   ├── DARK-MATTER.md           ★ 暗物质 / 第二台相变仪
 │   ├── PROGRESSION.md           ★ 主流程设计（层间门槛/重置关系 + 实测时长 + 已知缺口 G1~G7）
 │   ├── BALANCE-AUDIT.md         ★ 平衡审计（只读 · 2026）：坍缩频率 / 轮次倍率 / 引擎落点 / 升级曲线
-│   ├── archive/                 🗄️ 已归档：CHANGELOG-legacy / R-REPLACEMENT / SPACE-EXPANSION / TIMESPACE / DEPRECATED-INVENTORY
+│   ├── PORTABLE.md              便携包接入 N.E.K.O（**已迁移**，保留为历史/本地调试）
+│   ├── archive/                 🗄️ 已归档：CHANGELOG-legacy / R-REPLACEMENT / SPACE-EXPANSION / TIMESPACE / DEPRECATED-INVENTORY 等
+│   ├── …                        其余专题（TODO / HANDOVER-PROBLEMS / WIRING-* / COLLAPSE-MILESTONES-8）
 │   └── NEKO.md                  ★ N.E.K.O 接入（**已迁移到插件面板**；旧 minigame 路线保留历史）
 ├── electron/
 │   ├── main.cjs                 Electron 主进程：开窗口 + 菜单 + 单实例
@@ -139,27 +143,40 @@ test-034/
 │   ├── config/                  ★ 12 个领域模块（base / upgrades / milestones / zpe-engine /
 │   │                              eternity / dream / dark-energy / quantum / infinity /
 │   │                              dark-matter / zones / neko）+ infinity/、quantum/、zpe-engine/ 子模块
-│   ├── state.js                 状态门面（16 行 barrel）
+│   ├── state.js                 状态门面（15 行 barrel）
 │   ├── state/                   ★ schema / serialize / accessors / log / helpers
-│   ├── formulas.js              计算门面（19 行 barrel）
+│   ├── formulas.js              计算门面（18 行 barrel）
 │   ├── formulas/                ★ core / global / zpe / dark-energy / dark-energy-rate / entropy /
 │   │                              matter / costs / quantum / infinity
 │   ├── engine.js                引擎门面（17 行 barrel）
 │   ├── engine/                  ★ tick / actions / collapse / eternity + purchases/ 4 个子模块
-│   ├── neko.js                  N.E.K.O 门面（17 行 barrel，公开 API 不变）
-│   ├── neko/                    ★ bridge / chat / chat-ui / assist / control / actions / snapshot / log / cat-pet
+│   ├── neko.js                  N.E.K.O 门面（16 行 barrel，公开 API 不变）
+│   ├── neko/                    ★ bridge / plugin-bridge / chat / chat-ui / assist / control /
+│   │                              actions / snapshot / log / cat-pet
 │   ├── space/                   ★ core / config / upgrades / page（空间膨胀）
 │   ├── tangram/                 ★ core / board / bonus / game / passive / patterns / reward（七巧板）
+│   ├── autocrunch.js            自动无限（照 AD 的 Big Crunch autobuyer）
+│   ├── autocrunch-ui.js         自动无限规则面板
+│   ├── dream-effects.js         梦想页自动化的效果侧
+│   ├── dream-ui.js              梦想页分组 + 右侧开关
+│   ├── format.js                数字 / 时长格式化（唯一实现）
+│   ├── perf.js                  性能监视器
+│   ├── lock-ui.js               AD 式锁态（未解锁标签）
 │   ├── save.js                  localStorage 存档
 │   ├── ui.js                    装配层：静态结构构建 + `render()` 编排（不再堆面板逻辑）
 │   ├── ui-core.js               乘区上色 / 效果文案 / 格式化 / 共享回调
 │   ├── ui-cache.js              DOM 缓存 / 写入去重 / 真实写入计数
 │   ├── ui-panels.js             主面板 11 个区块的 render
-│   ├── ui-quantum.js 等 7 个    各面板的 render（量子 / 无限 / 永恒 / 暗物质 / 猫猫 / 七巧板）
+│   ├── ui-quantum.js 等 6 个    各面板的 render（量子 / 无限 / 永恒 / 暗物质 / 猫猫 / 七巧板）
 │   └── main.js                  装配 + requestAnimationFrame 主循环
-├── tools/                       开发期脚本（★ 不参与打包）
+├── tools/                       开发期脚本（★ 不参与打包；默认批跑 55 个）
 │   ├── run-all.mjs              ★ `npm test`：一次跑完下面全部自检
 │   ├── structure-guard.mjs      ★ 结构守卫（文件/函数预算 · 死模块 · 分层方向）
+│   ├── docs-audit.mjs           ★ 文档↔代码审计（路径 / 计数 / 标识符 / 状态头）
+│   ├── config-facts.mjs         生成并校验 docs/CONFIG-FACTS.md
+│   ├── consistency.mjs          「界面显示 == 实际运算」守卫
+│   ├── dom-smoke.mjs            ★ 真派发 click 的按钮/接线自检
+│   ├── check-web-bundle.cjs     网页版组装 + import 图校验（Pages 发布用）
 │   ├── smoke-protocol.cjs       自检：驱动真实的 app:// 处理函数发请求
 │   ├── smoke-electron.cjs       自检：真起 Electron 加载页面（需 npm install）
 │   ├── inspect-asar.cjs         自检：列出放进 exe 的文件清单（需打包产物）
@@ -174,15 +191,17 @@ test-034/
 │   ├── infinity-ladder-lab.mjs  ★ ∞ 层经济表（128 IP 要几次大坍缩 / 破∞总时长）
 │   ├── stage-timing.mjs         ★★ 全阶段成长时长表（**跑真引擎**，含节奏缺口断言 + 里程碑快照）
 │   ├── pacing-reference.mjs     ★★ 以 AD 世界记录为标尺的节奏对照（目标 = WR × 1.25/×1.5）
-│   └── …                        其余曲线/审计脚本
+│   └── …                        其余曲线/审计脚本（默认 55 个，`--list` 可列全）
 ├── dist/                        break_eternity.js 2.1.3（第三方库）
 │   ├── break_eternity.esm.js    ← src/ 直接 import 这个
-│   └── break_eternity.min.js    ← legacy/index.html 用（全局 Decimal）
+│   ├── break_eternity.min.js    ← legacy/index.html 用（全局 Decimal）
+│   └── …                        另有 cjs / 完整 js / d.ts 副本
 ├── legacy/                      原稿代码（0.3.4 的 engine/state/saveSystem/main）
 │   ├── index.html               原稿入口，留着做行为对照
 │   ├── style.css                原稿样式（0 个 CSS 变量，70 处硬编码颜色）
 │   ├── js/                      原稿 JS
 │   └── 注意！                    这个文件夹的说明
+├── _site/                       网页版组装产物（`npm run check:web` 生成，git 忽略）
 └── release/                     打包产物（git 忽略，不提交）
 ```
 
@@ -247,13 +266,11 @@ Win10 1809+ / Win11（x64）双击就能跑。发给不特定的人玩，这个�
 
 ### 为什么要走 Electron，而不是直接双击 index.html
 
-游戏是原生 ES 模块。Chromium 在 `file://` 下会以 CORS 为由拒绝加载 `<script type="module">`，
-页面直接白屏 —— 浏览器和 Electron 都是这个规则。
+原因和上面「不能双击 index.html」是同一条：`file://` 下 ES 模块会被 CORS 拦掉（Electron 也一样）。
 
 `electron/main.cjs` 里注册了一个 `app://` 自定义协议，用正确的 MIME 类型把静态文件伺服出去，
 等价于开发时的 `serve.mjs`。所以打包后的 exe 里，模块加载走的是「假 HTTP」，不是 `file://`。
 
-> 也正因为用的是 Electron 自带的 Chromium，**不依赖系统 WebView2**。
 > 换成 Tauri / Neutralino 这类方案体积能小到几 MB，但要求玩家系统里有 WebView2 ——
 > 老一点的 Win10 上不一定有，玩家就会看到白屏。要发给别人玩，Electron 更稳。
 
@@ -261,25 +278,15 @@ Win10 1809+ / Win11（x64）双击就能跑。发给不特定的人玩，这个�
 
 ## 上传到 GitHub
 
-仓库还没初始化，第一次要跑这几条（在项目根目录）：
-
-```bash
-git init
-git add .
-git commit -m "chore: 空想增量 0.6.17，加入 Electron 打包与自动构建"
-git branch -M main
-git remote add origin https://github.com/<你的用户名>/<仓库名>.git
-git push -u origin main
-```
-
-然后在 GitHub 网页上新建一个 **Public** 仓库（**不要**勾选 Add README / .gitignore，否则会有冲突）。
+仓库已经初始化（`origin` = `git@github.com:dawn-of-star/kongxiang-incremental.git`，默认分支 `master`），
+日常只需要发版：
 
 ### 发一个版本给玩家下载
 
 ```bash
-# 先把 package.json 的 version 和 tag 对齐
-git tag v0.6.17
-git push origin v0.6.17
+# 先把 package.json 的 version 和 tag 对齐（当前 0.8.7）
+git tag v0.8.7
+git push origin v0.8.7
 ```
 
 推上去之后 GitHub Actions 会自动：装依赖 → 打包 exe → 创建 Release 把两个文件挂上去。
@@ -297,17 +304,17 @@ git push origin v0.6.17
 
 > 仓库页 → **Settings** → 左侧 **Pages** → Build and deployment → **Source** 选 **GitHub Actions**
 
-工作流里的 `configure-pages` 带了 `enablement: true` 会尝试自动开启，但那一步依赖
-`GITHUB_TOKEN` 的权限，未必成功 —— **手动开是最稳的**，开完再推一次即可。
+`configure-pages` 的 `enablement: true` 实测无效（`GITHUB_TOKEN` 没有创建站点的权限，
+只会把报错变难懂）—— **首次必须手动开**，开完再推一次即可。
 
 ### 为什么不能直接把整个仓库发布出去
 
-发布前要先挑文件。游戏真正需要的只有 4 个：`index.html`、`css/`、`src/`、`dist/`。
+发布前要先挑文件。游戏真正需要的只有 5 个：`index.html`、`css/`、`src/`、`dist/`、`package.json`（界面版本号从这里读）。
 `legacy/`（0.3.4 原稿）、`tools/`（55 个默认批跑的开发脚本）、`electron/`、`build/` 都不该公开可访问。
 
 `tools/check-web-bundle.cjs` 负责这件事，它做两步：
 
-1. **只把白名单里的 4 项复制到 `_site/`**，然后只发布 `_site/`
+1. **只把白名单里的 5 项复制到 `_site/`**，然后只发布 `_site/`
 2. **把整张 import 图从 `index.html` 走一遍**，任何一个被引用却不存在的文件都直接报错
 
 第 2 步才是关键。ES 模块少一个文件就是**整页白屏**，而且**只在线上白屏** ——
@@ -402,7 +409,7 @@ JS 的 `Number` 上限是 1.8e308，`Math.pow(4, 512)` 就会溢出成 `Infinity
 
 **日志策略**：重复购买类升级（三条主升级、暗能量可重复升级、∞ 的①、ZPE 引擎等级）
 **只在关键节点写日志** —— 等级跨过 `1 / 5 / 10 / 50 / 100 / 500 / 1000 …`（×5、×2 交替）才写一条。
-规则集中在 `src/state.js` 的 `KEY_LEVELS` / `pushLevelLog()`：
+规则集中在 `src/state/log.js` 的 `KEY_LEVELS` / `pushLevelLog()`：
 自动获取模式一帧能买几百级，逐级写会把面板刷爆（真正重要的事件被冲走）。
 
 **子页**：虚空科技标签页**鼠标悬停**（或键盘 focus）会浮出两条入口 ——
@@ -425,11 +432,10 @@ JS 的 `Number` 上限是 1.8e308，`Math.pow(4, 512)` 就会溢出成 `Infinity
 | **过载**（打破无限后的软上限） | `OVERLOAD`（`halvingOrders` / `stepOrders` / `tierShift` / `crunchBelow`） | `tools/overload-lab.mjs`（零回归 + **收手阈值可达**）、`tools/infinity-ladder-lab.mjs` |
 | **量子捕获门槛**（累进档位） | `QUANTUM.captureTierFactor` | `tools/quantum-tier-lab.mjs` |
 | **永恒里程碑**（8 条，按永恒次数解锁） | `ETERNITY_MILESTONES`（em1~em8 全部实装，无 `pending`） | `tools/eternity-lab.mjs --check`（18 条：EP 公式 6 + 里程碑 12） |
-| **IP 阶梯的通道分工**（① / IC / 深度 / em5 各扛多少阶） | `INFINITY_CHALLENGES`、`IP_DOUBLE_SOFT_CAP` | `tools/ic-ladder-lab.mjs`（三张表） |
 | **ZPE 引擎的饱和拐点**（`k` 能不能长起来） | `MATTER_B_KNEE`、`ZPE_ENGINE.baseCostIp` | `tools/engine-knee-lab.mjs` |
 | **引擎价格形状**（多项式 vs 指数） | `ZPE_ENGINE.baseCostIp` | `tools/engine-cost-form.mjs`、`tools/engine-tier-cost-lab.mjs` |
 | **AD 星系曲线的真实形状**（照源码复算） | —（只读 AD 源码） | `tools/ad-galaxy-shape-lab.mjs` |
-| **引擎 5 条机制各自的内部终点** | `addPerLevel`、`prodLevelCoeff`、`multLevelCoeff`、`engineLevelCoeff`、`MATTER_B_KNEE` | `tools/engine-mechanism-lab.mjs` |
+| **引擎 5 条机制各自的内部终点** | `addPerLevel`、`prodLevelCoeff`、`multLevelCoeff`、`engineLevelCoeff`、`MATTER_B_KNEE` | `tools/engine-mech-lab.mjs` |
 | **按钮能不能点**（接线 / 禁用态 / 点击后的状态变化） | `src/ui.js` 的绑定 + `src/main.js` 的 handlers | `tools/dom-smoke.mjs`（**真的派发 click** 并断言状态变化） |
 | **未定义标识符**（import 漏了、名字写错） | 各模块的 `import` 清单 | `tools/undefined-ident-ref.mjs` |
 
@@ -550,7 +556,7 @@ R_eff = R(q) · 2^(−(L − 25)/100)        （L ≤ 25 时恒为 1，所以 e2
 ```
 
 **2025 改成 AD 复制器口径**（用户裁定）：AD 是「每超一个固定 OoM 步长 ⇒ 该档难度 ×固定因子」
-（`src/core/replicanti.js` 的 `scaleFactor ^ increases`）。我们落地为：
+（AD 源码 `src/core/replicanti.js` 的 `scaleFactor ^ increases`）。我们落地为：
 
 | 旋钮 | 值 | 说明 |
 |---|---|---|
