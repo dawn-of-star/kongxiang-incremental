@@ -1,7 +1,12 @@
 # 空想增量 × N.E.K.O 接入说明
 
-> **状态：✅ 权威（本文是 N.E.K.O 接入的唯一依据）** —— 最后核对 2025（本次文档整理）
-> ⚠️ 文中提到的"脚本全绿"是**默认批跑**的口径；`--strict` 另有已知失败（见 `README-STATUS.md`）✓
+> **状态：⚠️ 已迁移（插件面板是唯一接入路径）** —— 2026-11-14
+> · 现行插件仓库：https://github.com/dawn-of-star/kongxiang-neko-plugin
+> · 插件 id `kongxiang_incremental`；游戏页 `/plugin/kongxiang_incremental/ui/`
+> · **Steam 生态已被上游放弃**；本文保留旧 minigame SDK 路线（`/kongxiang_demo` + `NekoMiniGame`）
+>   的技术记录，按**历史/实验**阅读，不要再作为发行依据。
+>
+> 以下旧状态描述保留原文（供追溯）：
 > **版本：0.6.17（本轮完成态）** · 维护者：空想增量（Kongxiang Incremental）侧
 > 本文档用于与 N.E.K.O 开发者交流。写的是**我们想接入什么、我们能提供什么、需要你们确认什么**，
 > 以及**我们这一侧已经做到了哪一步**。

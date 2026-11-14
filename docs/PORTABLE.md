@@ -1,6 +1,10 @@
 # 便携包接入 N.E.K.O（零宿主改动）
 
 > 状态：**已实装**（2026-10）｜本文是便携包的操作说明，随 `tools/pack-portable.mjs` 一起维护。
+>
+> ⚠️ **2026-11-14 更新**：Steam 生态已被上游放弃，这种「复制到 `static/game/games/`」的静态路线
+> **不再是发行路径**；现行接入见 README 的「N.E.K.O 插件版」与
+> https://github.com/dawn-of-star/kongxiang-neko-plugin 。本文保留为**历史/本地调试参考**。
 
 ## 一句话
 

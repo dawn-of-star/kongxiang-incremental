@@ -9,6 +9,25 @@
 
 ---
 
+## 0.8.7 — N.E.K.O 接入重定向到插件面板
+
+> **公告**：把 N.E.K.O 相关功能与文档统一指向**插件面板**这一条路径。
+>
+> · README 新增「N.E.K.O 插件版（唯一接入路径）」：插件仓库
+>   https://github.com/dawn-of-star/kongxiang-neko-plugin 、插件 id、UI 地址、能力；
+>   旧 minigame SDK 路线（`/kongxiang_demo` + `NekoMiniGame`）标注为历史/实验。
+> · 猫猫子页接入状态改为三态：**插件面板模式** / 旧宿主（minigame，已弃用）/ 未接入
+>   （并提示「N.E.K.O 请用插件面板」）。
+> · `docs/NEKO.md` 标记已迁移；`docs/PORTABLE.md` 的静态复制路线标注历史/本地调试。
+> · 插件 `static/` 同步到 0.8.7。
+
+**这一版做了什么**
+
+1. `src/ui-neko.js`：用 `detectPluginId(location)` 判断插件面板模式，状态与徽章同步。
+2. README：新增插件版章节与表格行；目录树 NEKO.md 描述改为「已迁移」。
+3. 文档：NEKO.md / PORTABLE.md 迁移横幅。
+4. 版本 0.8.6 → 0.8.7。
+
 ## 0.8.6 — 插件面板全屏 + 动作闭环实测
 
 > **公告**：插件面板里现在可以**一键全屏**（右上角「⛶ 全屏」，退出会变「退出全屏」）。

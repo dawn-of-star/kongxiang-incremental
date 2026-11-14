@@ -8,6 +8,7 @@
 
 import { NEKO, NEKO_ITEMS, nekoDriftRoom, nekoGlobalExponent, nekoNextTier } from "./config.js";
 import { nekoHostPresent } from "./neko.js";
+import { detectPluginId } from "./neko/plugin-bridge.js";
 import { $, el } from "./ui-core.js";
 import { AUTOMATION_IDS } from "./dream-ui.js";   // ★ 2026-11-13：授权列表的唯一来源 ✓
 import { save } from "./save.js";                 // ★ 授权改动要立即存档 ✓
@@ -34,12 +35,18 @@ export function renderNeko(state) {
   //      不是看 `window.lanlan_config`（那是**旧式集成**，soccer/badminton 用的另一条路 ✗）
   if (el["neko-sdk-state"]) {
     const host = nekoHostPresent(globalThis.document);
-    el["neko-sdk-state"].textContent = host
-      ? "已检测到宿主（本游戏尚未注册 ⇒ 暂不连接）"
-      : "未接入（本页无宿主）";
+    const pluginId = detectPluginId(globalThis.location);
+    el["neko-sdk-state"].textContent = pluginId
+      ? `插件面板模式（${pluginId}）`
+      : host
+        ? "旧宿主路线（minigame SDK，已弃用）"
+        : "未接入（独立模式；N.E.K.O 请用插件面板）";
   }
   if (el["neko-chat-badge"]) {
-    el["neko-chat-badge"].textContent = nekoHostPresent(globalThis.document) ? "宿主已就绪" : "未接入";
+    const pluginId = detectPluginId(globalThis.location);
+    el["neko-chat-badge"].textContent = pluginId
+      ? "插件面板"
+      : nekoHostPresent(globalThis.document) ? "旧宿主" : "未接入";
   }
 
   if (el["neko-affinity"]) el["neko-affinity"].textContent = String(Math.round(a * 100) / 100);

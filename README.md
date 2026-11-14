@@ -2,7 +2,7 @@
 
 网页增量游戏。原生 ES 模块 + `break_eternity.js`，**零构建、零 npm install**。
 
-当前版本：**0.8.6**
+当前版本：**0.8.7**
 
 > **改完东西只想确认没搞坏？** 跑 `npm test`（或 `node tools/run-all.mjs`）——
 > 一次跑完 55 个自检脚本，只把失败细节打出来。约 4 分钟。
@@ -56,9 +56,21 @@
 | 你想干嘛 | 用什么 | 需要装什么 |
 |---|---|---|
 | **点开就玩（最省事）** | **https://dawn-of-star.github.io/kongxiang-incremental/** | 只需要浏览器 |
-| **下载到本地玩** | Release 里的 `KongxiangIncremental-0.8.6-win-x64.exe` | **什么都不用装**，双击即玩 |
+| **在 N.E.K.O 里玩（插件面板）** | 插件仓库 **https://github.com/dawn-of-star/kongxiang-neko-plugin** | N.E.K.O + 安装 `kongxiang_incremental` 插件 |
+| **下载到本地玩** | Release 里的 `KongxiangIncremental-0.8.7-win-x64.exe` | **什么都不用装**，双击即玩 |
 | 在本机改着玩 | `node serve.mjs` → http://127.0.0.1:8321/ | Node.js |
 | 改代码 / 自己打包 | 见下面「打包成 exe」 | Node.js + 首次 `npm install` |
+
+### N.E.K.O 插件版（**唯一接入路径**）
+
+> Steam 生态已被上游放弃；N.E.K.O 侧现在只走**插件面板**。
+>
+> - 插件仓库：https://github.com/dawn-of-star/kongxiang-neko-plugin
+> - 插件 id：`kongxiang_incremental`，UI 地址：`/plugin/kongxiang_incremental/ui/`
+> - 能力：游戏页上报快照；猫可通过 `kongxiang_state` / `kongxiang_action`
+>   读状态、排动作；动作由页面轮询执行并回执。
+> - 旧的 minigame SDK 路线（`/kongxiang_demo` 模板 + `NekoMiniGame`）**仅保留为历史/实验**，
+>   不再是发行路径；相关文档见 [`docs/NEKO.md`](docs/NEKO.md)（已标注迁移）。
 
 > 网页版和 exe 版是**两份独立存档**（`localStorage` 按源隔离），互不相通。
 
@@ -115,7 +127,7 @@ test-034/
 │   ├── PROGRESSION.md           ★ 主流程设计（层间门槛/重置关系 + 实测时长 + 已知缺口 G1~G7）
 │   ├── BALANCE-AUDIT.md         ★ 平衡审计（只读 · 2026）：坍缩频率 / 轮次倍率 / 引擎落点 / 升级曲线
 │   ├── archive/                 🗄️ 已归档：CHANGELOG-legacy / R-REPLACEMENT / SPACE-EXPANSION / TIMESPACE / DEPRECATED-INVENTORY
-│   └── NEKO.md                  ★ neko 接入说明（**已接入**：游戏内聊天 / 动作 / 主动搭话 / 猫猫漫游）
+│   └── NEKO.md                  ★ N.E.K.O 接入（**已迁移到插件面板**；旧 minigame 路线保留历史）
 ├── electron/
 │   ├── main.cjs                 Electron 主进程：开窗口 + 菜单 + 单实例
 │   └── static-protocol.cjs      ★ 注册 app:// 协议，把静态文件当 HTTP 伺服
@@ -194,8 +206,8 @@ npm run dist         # 产出 release/ 下的便携版 exe + zip
 
 | 文件 | 说明 |
 |---|---|
-| `release/KongxiangIncremental-0.8.6-win-x64.exe` | **给玩家的推荐版本**。单个自解压 exe，双击即玩，卸载就是删文件 |
-| `release/KongxiangIncremental-0.8.6-win-x64.zip` | 解压即用的绿色目录。部分杀软会误报自解压包，备一个这个 |
+| `release/KongxiangIncremental-0.8.7-win-x64.exe` | **给玩家的推荐版本**。单个自解压 exe，双击即玩，卸载就是删文件 |
+| `release/KongxiangIncremental-0.8.7-win-x64.zip` | 解压即用的绿色目录。部分杀软会误报自解压包，备一个这个 |
 
 想快速验证打包有没有问题，用 `npm run dist:dir`（只出 `release/win-unpacked/`，几十秒）。
 
