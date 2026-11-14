@@ -9,6 +9,28 @@
 
 ---
 
+## 0.8.6 — 插件面板全屏 + 动作闭环实测
+
+> **公告**：插件面板里现在可以**一键全屏**（右上角「⛶ 全屏」，退出会变「退出全屏」）。
+> 同时把「猫自己操作游戏」的最后一环实测补上了：
+>
+> · 原生聊天说「帮我升一下计数频率」→ Main 调用 `kongxiang_action`（回调 HTTP 200）
+>   → 插件队列 → 游戏页 2 秒内轮询执行 → `report_result` 回执；
+> · 页面快照 `multipliers.countFreq = 1.6`（= 8 级计数频率 × 1.075），确认动作真的落进了游戏。
+>
+> 结论：**聊天 → 模型调工具 → 插件排队 → 页面执行 → 回执** 全链路打通。
+>
+> ⚠️ Steam 生态已放弃，插件面板是唯一发行路径；插件仓库独立维护，版本与游戏解耦。
+
+**这一版做了什么**
+
+1. `index.html` + `css/amoled.css`：插件模式下显示全屏按钮（固定右上角）。
+2. `src/neko/plugin-bridge.js`：启动时绑定全屏按钮，`requestFullscreen()/exitFullscreen()`，
+   监听 `fullscreenchange` 更新文案。
+3. 插件仓库：新增 `queue_action` entry、LICENSE、CI/tests 脚手架、实测记录
+   （`kongxiang-neko-plugin`，提交 `93b6317`）。
+4. 版本 0.8.5 → 0.8.6；插件 `static/` 同步到 0.8.6。
+
 ## 0.8.5 — 插件面板模式（MVP）
 
 > **公告**：游戏现在能在 N.E.K.O **插件面板**里跑起来（Static UI），并打通了「快照 / 动作」通道。

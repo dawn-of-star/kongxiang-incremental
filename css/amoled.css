@@ -1282,3 +1282,19 @@ button { font: inherit; cursor: pointer; }
   from { opacity: 0; transform: translateY(-6px); }
   to { opacity: 1; transform: none; }
 }
+
+/* ── 插件面板里的全屏按钮（只在 /plugin/<id>/ui/ 下显示）── */
+#neko-fullscreen {
+  position: fixed;
+  top: 10px;
+  right: 12px;
+  z-index: 9000;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line, #333);
+  background: rgba(18, 18, 22, 0.9);
+  color: #ddd;
+  font-size: 13px;
+  cursor: pointer;
+}
+#neko-fullscreen:hover { border-color: #6cf; color: #fff; }

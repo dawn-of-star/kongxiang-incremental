@@ -142,6 +142,22 @@ export function createPluginBridge(options = {}) {
     }
   }
 
+  function bindFullscreenButton() {
+    const button = document.getElementById("neko-fullscreen");
+    if (!button || button.dataset.nekoBound === "1") return;
+    button.dataset.nekoBound = "1";
+    button.hidden = false;
+    const syncLabel = () => {
+      button.textContent = document.fullscreenElement ? "退出全屏" : "全屏";
+    };
+    button.addEventListener("click", () => {
+      if (document.fullscreenElement) document.exitFullscreen?.();
+      else document.documentElement.requestFullscreen?.().catch(() => {});
+    });
+    document.addEventListener("fullscreenchange", syncLabel);
+    syncLabel();
+  }
+
   function buildSnapshot() {
     try {
       const current = getState?.();
@@ -160,6 +176,7 @@ export function createPluginBridge(options = {}) {
     async start(snapshotBuilder) {
       snapshotFn = snapshotBuilder;
       state.running = true;
+      bindFullscreenButton();
       await syncState();
       void pollActions();
       const syncTimer = setInterval(() => { void syncState(); }, 3000);
