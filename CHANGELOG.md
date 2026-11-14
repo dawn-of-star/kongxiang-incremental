@@ -9,6 +9,29 @@
 
 ---
 
+## 0.8.5 — 插件面板模式（MVP）
+
+> **公告**：游戏现在能在 N.E.K.O **插件面板**里跑起来（Static UI），并打通了「快照 / 动作」通道。
+>
+> · 插件 `kongxiang_incremental`（独立仓库）用 `register_static_ui("static")` 托管全量游戏；
+> · 游戏页新增 `src/neko/plugin-bridge.js`：`POST /runs` → 轮询 → `/runs/{id}/export`
+>   取 `trigger_response`，带 CSRF；
+> · 每 3 秒上报 `nekoSnapshotForHost(state)`；每 2 秒领取动作并执行 / 回执；
+> · 猫咪侧工具：`kongxiang_state`（读快照）/ `kongxiang_action`（排动作）。
+>
+> ⚠️ Steam 生态已被上游放弃 ⇒ 本版起**插件面板是唯一发行路径**。
+>
+> 验证（本地独立插件服务器 48916）：
+> `/plugin/kongxiang_incremental/ui/` 200；main.js / css / esm MIME 正确；
+> `sync_state` run succeeded，export 返回 `data.ok=true`。
+
+**这一版做了什么**
+
+1. 新增 plugin-bridge（只识别 `/plugin/<id>/ui/`，不影响 standalone / minigame）。
+2. main.js 在插件模式下启动快照/动作通道；动作仍走 `dispatchNekoActions` 白名单。
+3. 插件仓库独立维护：`plugin/plugins/kongxiang_incremental/`（plugin.toml + __init__.py +
+   static + sync-static.mjs），版本与游戏解耦。
+
 ## 0.8.4 — 五项修复：离线/后台计时、存档回退与导出、坏档自愈
 
 > **公告**：这一版修的是“计时与存档”的五个真实 bug，外加两处体验：

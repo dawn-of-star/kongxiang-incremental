@@ -48,7 +48,8 @@ import { clear as clearSave, createSaveEnvelope, load, save } from "./save.js";
 import { newState, pushLog, serialize, setLogSink } from "./state.js";
 // ★★★ 2025（`docs/NEKO.md`）：N.E.K.O 接入层（**无宿主时全部 no-op** ✓）
 //   `dispatchNekoActions` = §6 动作白名单的派发器（三条约束都实现在 `neko.js` 里）
-import { createNekoBridge, dispatchNekoActions, nekoHostPresent } from "./neko.js";
+import { createNekoBridge, dispatchNekoActions, nekoHostPresent, nekoSnapshotForHost } from "./neko.js";
+import { createPluginBridge } from "./neko/plugin-bridge.js";
 import { createChatUi } from "./neko/chat-ui.js";
 import { mountCatPet, setCatPetEnabled, catPetEnabled } from "./neko/cat-pet.js";
 // ★★★ 2025：**性能监视器**（用户报「数字跳动速率及其低下」⇒ 装仪表而不是猜）
@@ -136,6 +137,23 @@ const nekoActionApi = {
   doBigCrunch,
   doEternity,
 };
+
+/**
+ * ★ 2026：插件面板模式（Static UI）的通道。
+ * 非插件页面返回 null，不影响 standalone / minigame。
+ * 只在 `/plugin/<id>/ui/` 下启动：同步快照 + 轮询动作。
+ */
+const nekoPluginBridge = createPluginBridge({
+  getState: () => state,
+  dispatchActions: (actions) => dispatchNekoActions(state, actions, nekoActionApi),
+});
+if (nekoPluginBridge) {
+  nekoPluginBridge.start(nekoSnapshotForHost).then(() => {
+    pushLog(state, `🔌 插件模式：快照/动作通道已启动（plugin=${nekoPluginBridge.pluginId}）`);
+  }).catch((err) => {
+    pushLog(state, `🔌 插件通道启动失败：${err?.message ?? err}`);
+  });
+}
 
 const nekoBridge = createNekoBridge({
   getState: () => state,
